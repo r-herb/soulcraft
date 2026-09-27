@@ -17,6 +17,8 @@ import { settings } from './save/settings.js';
 import { saveWorld, saveProfile } from './save/db.js';
 import { t } from './i18n/index.js';
 import { setIconAtlas } from './ui/icons.js';
+import { QuestManager, newQuestState } from './quest/questManager.js';
+import { QUEST_SEED, QUEST_SPAWN } from './world/quest.js';
 
 const DAY_SECONDS = 600; // one full day-night cycle
 const REACH = 5;
@@ -119,32 +121,56 @@ export class Game {
     };
   }
 
+  newQuestMeta() {
+    const m = this.newMeta({ name: t('quest.name'), seed: QUEST_SEED, difficulty: 'normal' });
+    m.mode = 'quest';
+    m.dim = 'quest';
+    m.quest = newQuestState();
+    return m;
+  }
+
+  get isQuest() { return !!(this.meta && this.meta.mode === 'quest'); }
+
   async start(meta, onProgress = () => {}) {
     this.meta = meta;
+    this.quest = meta.mode === 'quest' ? new QuestManager(this) : null;
     this.layout = Layout.get(meta.seed);
     this.player = new Player();
     this.inventory = new Inventory(meta.inventory);
     this.inventory.onChange = () => this.ui.hud && this.ui.hud.refreshHotbar();
-    if (!meta.inventory) this.giveStarterKit();
+    if (!meta.inventory) { if (this.quest) this.giveQuestKit(); else this.giveStarterKit(); }
+    // the Treasure Quest's blade follows the player into every normal world
+    if (!this.quest && this.profile.rewards && this.profile.rewards.starfall && !meta.starfallGiven) { meta.starfallGiven = true; this.inventory.add('starfall_blade', 1); }
     const p = meta.player;
     if (p) {
       this.player.pos.set(p.x, p.y, p.z);
       this.player.yaw = p.yaw || 0; this.player.pitch = p.pitch || 0;
       this.player.health = p.health ?? 20; this.player.maxHealth = p.maxHealth || 20;
       this.player.food = p.food ?? 20;
+    } else if (this.quest) {
+      this.player.pos.set(QUEST_SPAWN.x, QUEST_SPAWN.y, QUEST_SPAWN.z);
+      this.player.yaw = -Math.PI / 2; // down the course (+x)
     } else {
       const s = this.layout.spawnPoint();
       this.player.pos.set(s.x, s.y, s.z);
       this.player.yaw = Math.PI; // face the village well
     }
     this.player.autoJump = settings().autoJump;
-    await this.loadRealm(meta.dim, onProgress, !p);
+    await this.loadRealm(meta.dim, onProgress, !p && !this.quest);
     this.running = true;
     this.paused = false;
     this.clock.start();
     this.ui.hud.show(this);
     this.bosses.restore();
     this.startLoop();
+  }
+
+  giveQuestKit() {
+    this.inventory.add('iron_sword', 1);
+    this.inventory.add('bow', 1);
+    this.inventory.add('arrow', 32);
+    this.inventory.add('roast', 8);
+    this.inventory.add('sunfruit', 6);
   }
 
   giveStarterKit() {
@@ -162,6 +188,7 @@ export class Game {
     this.meta.dim = dim;
     if (!this.meta.edits[dim]) this.meta.edits[dim] = {};
     this.world = new World({ scene: this.scene, pool: this.pool, materials: this.materials, seed: this.meta.seed, dim, edits: this.meta.edits[dim] });
+    if (this.quest) { this.world.genExtra = () => this.quest.genExtra(); this.quest.reset(); }
     this.world.onBlockChange = (x, y, z, prev, id) => this.entities.onBlockChange(x, y, z, prev, id);
     const rd = settings().renderDistance;
     const need = (2 * Math.min(rd, 2) + 1) ** 2;
@@ -249,7 +276,7 @@ export class Game {
     if (!this.meta || !this.player) return false;
     // return crafting grid contents so nothing is lost
     if (this.inventory.grid.some(Boolean)) this.inventory.returnGrid();
-    const ok = await saveWorld(this.serialize());
+    const ok = await saveWorld(this.serialize(), this.isQuest ? 'quest' : 'current');
     await saveProfile(this.profile);
     if (!silent || !ok) this.ui.toast(ok ? t(silent ? 'toast.autosaved' : 'toast.saved') : t('toast.saveFailed'), ok ? 'ok' : 'warn');
     return ok;
@@ -305,6 +332,7 @@ export class Game {
     this.interact(dt, inp);
     this.entities.update(dt);
     this.bosses.update(dt);
+    if (this.quest) this.quest.update(dt);
     // footsteps
     if (pl.moving) { this.stepT -= dt; if (this.stepT <= 0) { this.audio.sfx('step'); this.stepT = 0.38; } }
     // music mood
@@ -366,7 +394,7 @@ export class Game {
         this.entities.playerHit(ent, this.meleeDamage(ent), dir);
       }
       this.resetBreaking();
-    } else if (inp.attack && hit) {
+    } else if (inp.attack && hit && (!this.quest || this.quest.canBreak(hit))) {
       this.mine(dt, hit);
     } else {
       if (inp.pressed.has('attack')) this.held.swing();
@@ -449,6 +477,8 @@ export class Game {
   use(hit, ent, dir, fresh) {
     const h = this.inventory.held;
     const def = h && ITEMS[h.item];
+    if (this.quest && hit && fresh && this.quest.interact(hit)) { this.useCooldown = 0.3; return; }
+    if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
     // villagers
     if (ent && ent.villager && fresh) { this.ui.openTrade(ent); this.useCooldown = 0.3; return; }
     // workbench opens crafting
@@ -489,10 +519,17 @@ export class Game {
       this.useCooldown = 0.5;
       return;
     }
+    // Bridge assist in the quest's build zone: looking down past the edge
+    // places the block next to the last one, no side-face aiming needed.
+    if (def && def.block !== undefined && this.quest && fresh) {
+      const cell = this.quest.bridgeCell(this.player.eye, dir, hit);
+      if (cell) hit = { x: cell.x, y: cell.y - 1, z: cell.z, nx: 0, ny: 1, nz: 0, id: 0, assist: true };
+    }
     if (def && def.block !== undefined && hit) {
       const x = hit.x + hit.nx, y = hit.y + hit.ny, z = hit.z + hit.nz;
       const cur = this.world.getBlock(x, y, z);
       if (cur < 0 || !BLOCKS[cur].replaceable) return;
+      if (this.quest && !this.quest.canPlace(x, y, z)) { if (fresh) this.ui.toast(t('quest.noBuild'), 'warn'); this.useCooldown = 0.4; return; }
       if (y < 1 || y > 126) return;
       const nb = BLOCKS[def.block];
       if (nb.solid && (this.player.intersectsBlock(x, y, z) || this.entities.occupies(x, y, z))) return;
@@ -552,7 +589,9 @@ export class Game {
     // Respawn at the realm's entry point; bosses reset their fight.
     const dim = this.meta.dim;
     this.bosses.onPlayerDeath();
-    if (dim === 'overworld') {
+    if (this.quest) {
+      this.quest.toCheckpoint();
+    } else if (dim === 'overworld') {
       const inChamber = Math.abs(p.pos.x - CHAMBER.x) < 30 && Math.abs(p.pos.z - CHAMBER.z) < 30 && p.pos.y < CHAMBER.ceil + 2;
       if (inChamber) { p.pos.set(CHAMBER.x + 0.5, CHAMBER.floor + 1.1, CHAMBER.z + CHAMBER.z0 + 3.5); }
       else { const s = this.layout.spawnPoint(); p.pos.set(s.x, s.y, s.z); await this.ensureLoaded(); this.placeOnGround(); }
@@ -588,6 +627,7 @@ export class Game {
   hunger(dt) {
     const p = this.player;
     if (p.dead) return;
+    if (this.quest) { p.food = 20; this._regenT = (this._regenT || 0) + dt; if (this._regenT > 2.5) { this._regenT = 0; if (p.health < p.maxHealth) p.health++; } return; }
     const drain = (p.moving ? 0.018 : 0.008) * (this.meta.difficulty === 'peaceful' ? 0.3 : 1);
     p.saturation -= drain * dt * 2.5;
     if (p.saturation < 0) { p.saturation = 0; p.food = Math.max(0, p.food - drain * dt * 2.5); }

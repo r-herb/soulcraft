@@ -99,6 +99,17 @@ export class BossManager {
     }
   }
 
+  // A fight started by other code (the Treasure Quest's final boss).
+  startCustom(boss) {
+    const g = this.game;
+    this.active = boss;
+    g.ui.hud.clearTutorial();
+    g.ui._tutShown = null;
+    g.ui.hud.titleCard(t('boss.' + boss.id), t('boss.' + boss.id + '.intro'));
+    g.audio.sfx('roar');
+    g.vibrate(80);
+  }
+
   start(id) {
     const g = this.game;
     this.active = new CLASSES[id](g, ARENAS[id]);
@@ -112,6 +123,17 @@ export class BossManager {
   onBossDefeated(b) {
     const g = this.game;
     const id = b.id;
+    if (b.questBoss) {
+      g.audio.sfx('victory');
+      g.ui.toast(t('toast.bossDefeated', { name: t('boss.' + id) }), 'ok');
+      const c = b.center();
+      g.entities.particles.emit(c.x, c.y, c.z, 1, 0.85, 0.3, 80, 9, 1.4);
+      for (const m of b.minions) if (!m.dead) m.dead = true;
+      g.addCrystals(80);
+      setTimeout(() => { if (this.active === b) this.clearActive(); }, 50);
+      if (g.quest) g.quest.onBossDefeated(b);
+      return;
+    }
     g.meta.bosses[id] = true;
     g.meta.stats.kills++;
     g.audio.sfx('victory');

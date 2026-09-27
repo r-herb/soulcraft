@@ -100,6 +100,9 @@ const DRAW = {
   wood_sword: (c) => sword(c, 'wood'), stone_sword: (c) => sword(c, 'stone'), iron_sword: (c) => sword(c, 'iron'),
   gold_sword: (c) => sword(c, 'gold'), emberite_sword: (c) => sword(c, 'emberite'),
   bow: (c) => { line(c, 4, 2, 11, 5, '#8a6238', 2); line(c, 11, 5, 12, 11, '#8a6238', 2); line(c, 12, 11, 5, 14, '#8a6238', 2); line(c, 4, 3, 5, 13, '#e8e8e8'); },
+  treasure_map: (c) => { rect(c, 2, 3, 12, 10, '#e8d5a0'); rect(c, 2, 3, 12, 1, '#c9a86a'); rect(c, 2, 12, 12, 1, '#c9a86a'); line(c, 4, 10, 7, 7, '#8a5a2a'); line(c, 7, 7, 9, 9, '#8a5a2a'); line(c, 10, 5, 12, 7, '#d24a24'); line(c, 12, 5, 10, 7, '#d24a24'); },
+  golden_key: (c) => { rect(c, 3, 3, 5, 5, '#ffd65c'); rect(c, 4, 4, 3, 3, '#8a6a24'); line(c, 7, 7, 13, 13, '#ffd65c', 2); rect(c, 11, 12, 2, 2, '#ffd65c'); rect(c, 12, 10, 2, 2, '#ffd65c'); },
+  starfall_blade: (c) => { line(c, 4, 11, 13, 2, '#b6fbff', 2); line(c, 5, 11, 13, 3, '#7ff3ff'); px(c, 14, 1, '#ffffff'); px(c, 10, 3, '#ffffff'); px(c, 12, 6, '#fff08a'); line(c, 2, 9, 6, 13, '#f6c667', 2); line(c, 1, 13, 3, 11, '#6d45d6', 2); px(c, 1, 14, '#b98bff'); },
   spear: (c) => { line(c, 2, 14, 11, 5, '#7a5530', 2); rect(c, 11, 2, 3, 3, '#dfe3e8'); rect(c, 12, 3, 2, 2, '#9aa0a8'); px(c, 14, 1, '#ffffff'); },
 };
 

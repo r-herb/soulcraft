@@ -291,3 +291,13 @@ body.touch .desktop-only { display: none !important; }
 #hud.overlay-open .crosshair,
 #hud.overlay-open .title-card,
 #hud.overlay-open .hud-top-right { display: none !important; }
+
+/* Treasure Quest */
+.quest-obj { position: absolute; top: calc(var(--sp-2) + var(--safe-t)); left: 50%; transform: translateX(-50%); max-width: min(46vw, 440px); text-align: center; background: rgba(5, 4, 15, 0.55); border: 2px solid rgba(246, 198, 103, 0.55); border-radius: var(--r-md); padding: 4px var(--sp-3); pointer-events: none; }
+.quest-obj b { display: block; font-family: var(--font-display); font-size: 10px; font-weight: 400; color: var(--c-gold-400); text-shadow: var(--text-shadow); margin-bottom: 3px; }
+.quest-obj span { font-size: var(--fs-sm); text-shadow: var(--text-shadow); }
+.parchment { width: 100%; max-width: 760px; height: auto; image-rendering: pixelated; border: var(--px) solid #5a3a1a; border-radius: var(--r-sm); background: #e8d5a0; }
+.reward-row { display: flex; gap: var(--sp-4); justify-content: center; align-items: center; }
+.reward-row .rw { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--c-gold-400); }
+.reward-row canvas { width: 64px; height: 64px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(246, 198, 103, 0.7)); }
+#hud.overlay-open .quest-obj { display: none !important; }

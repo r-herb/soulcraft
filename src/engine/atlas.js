@@ -188,6 +188,29 @@ const painters = {
   emberite_block: (p) => { p.noise(['#d9562a', '#e86a36', '#b8401c']); p.border('#5a2415'); p.speckle('#ffc07a', 5); },
   soul_block: (p) => { p.noise(['#58e1f0', '#7ff3ff', '#3cc6d8']); p.border('#1f7c8c'); p.speckle('#ffffff', 5); },
   ember_moss: (p) => { p.noise(['#b8371f', '#d24a24', '#9c2c18']); p.speckle('#ff9a4a', 6); },
+  // Treasure Quest
+  ruin_stone: (p) => { p.bricks('#8f8a74', '#5e5a4a', 8, 5); p.speckle('#6f8f4a', 5); },
+  ruin_top: (p) => { p.noise(['#9a957e', '#8a8570', '#a6a18a']); p.speckle('#6f8f4a', 4); for (let i = 0; i < 16; i++) p.set(i, 7, hex('#6e6a58')); },
+  quest_gate: (p) => {
+    p.clear();
+    for (let x = 1; x < 16; x += 4) for (let y = 0; y < 16; y++) { p.set(x, y, hex('#c9a24a')); p.set(x + 1, y, hex('#8a6a24')); }
+    for (let x = 0; x < 16; x++) { p.set(x, 3, hex('#c9a24a')); p.set(x, 12, hex('#c9a24a')); }
+  },
+  checkpoint: (p) => { p.noise(['#2e5a8a', '#3a6aa0']); p.border('#1f3a5a'); for (let i = 4; i < 12; i++) for (let j = 4; j < 12; j++) if (Math.abs(i - 7.5) + Math.abs(j - 7.5) < 4.5) p.set(i, j, hex(p.glow ? '#b6fbff' : '#7ff3ff')); },
+  jump_pad: (p) => { p.noise(['#3a8a3a', '#2f7a2c']); p.border('#1e4a1e'); for (let k = 0; k < 3; k++) for (let i = 0; i < 5; i++) { p.set(5 + i, 3 + k * 4 + i, hex('#b6ff7a')); p.set(10 - i, 3 + k * 4 + i, hex('#b6ff7a')); } },
+  crumble: (p) => { p.noise(['#c9b27a', '#b89f66', '#d6c28c']); for (let k = 0; k < 5; k++) { let x = Math.floor(p.r() * 16), y = Math.floor(p.r() * 16); for (let i = 0; i < 6; i++) { p.set(x, y, hex('#6e5a34')); x += p.r() < 0.5 ? 1 : 0; y += 1; } } },
+  lever_off: (p) => { painters.ruin_stone(p); for (let y = 4; y < 13; y++) { p.set(7, y, hex('#6b4a2f')); p.set(8, y, hex('#6b4a2f')); } for (let x = 6; x < 10; x++) for (let y = 11; y < 14; y++) p.set(x, y, hex('#3a3a40')); for (let x = 6; x < 10; x++) for (let y = 3; y < 6; y++) p.set(x, y, hex('#a1523e')); },
+  lever_on: (p) => { painters.ruin_stone(p); for (let y = 4; y < 13; y++) { p.set(7, y, hex('#6b4a2f')); p.set(8, y, hex('#6b4a2f')); } for (let x = 6; x < 10; x++) for (let y = 2; y < 5; y++) p.set(x, y, hex('#3a3a40')); for (let x = 6; x < 10; x++) for (let y = 11; y < 14; y++) p.set(x, y, hex('#7fe36a')); },
+  lamp_off: (p) => { p.noise(['#3a3530', '#45403a']); p.border('#1e1a16'); for (let i = 3; i < 13; i++) for (let j = 3; j < 13; j++) p.set(i, j, hex((i + j) % 4 ? '#5a4a30' : '#4a3a24')); },
+  lamp_on: (p) => { p.noise(['#ffd36b', '#ffe08a']); p.border('#8a5b2a'); p.speckle('#fff8d0', 8); },
+  tile_off: (p) => { p.noise(['#4a4f6a', '#565b78']); p.border('#2e3248'); },
+  tile_lit: (p) => { p.noise(['#b98bff', '#d7b8ff']); p.border('#6d45d6'); p.speckle('#ffffff', 6); },
+  tile_ok: (p) => { p.noise(['#6fe39a', '#8ff0b0']); p.border('#2a8a4a'); },
+  trap: (p) => { painters.ruin_stone(p); for (let x = 5; x < 11; x++) for (let y = 5; y < 11; y++) p.set(x, y, hex('#1e1a16')); p.set(7, 7, hex('#3a3530')); p.set(8, 8, hex('#3a3530')); },
+  trap_lit: (p) => { painters.ruin_stone(p); for (let x = 5; x < 11; x++) for (let y = 5; y < 11; y++) p.set(x, y, hex('#ff5a3a')); p.set(7, 7, hex('#ffd08a')); p.set(8, 8, hex('#ffd08a')); },
+  chest_side: (p) => { p.noise(['#8a5a2a', '#7a4e24']); p.border('#3a2410'); for (let x = 0; x < 16; x++) p.set(x, 6, hex('#d8a22e')); for (let x = 6; x < 10; x++) for (let y = 5; y < 9; y++) p.set(x, y, hex('#ffe08a')); },
+  chest_top: (p) => { p.noise(['#8a5a2a', '#7a4e24']); p.border('#d8a22e'); p.speckle('#ffe08a', 3); },
+  gold_brick: (p) => { p.bricks('#f0c23a', '#a8781c', 8, 4); p.speckle('#fff4b0', 5); },
 };
 
 export function buildAtlas(style = 'classic') {

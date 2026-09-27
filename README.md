@@ -8,6 +8,30 @@ villagers, unlock skins, and defeat five guardians to free the souls.
 
 All art, names, characters and sounds are original and generated in code.
 
+## Treasure Quest
+
+A separate adventure mode (title screen → **Treasure Quest**) with its own
+save slot. Find the treasure map in the ruins, then clear 12 levels:
+
+1. Map Ruins: a maze hiding the map
+2. Sky Steps: parkour over the void
+3. Arrow Hall: dodge wall traps that glow before they fire
+4. Monster Den: the gate locks behind you until every monster is down
+5. Lever Riddle: each lever flips its lamp and its neighbours
+6. Crumbling Bridge: blocks fall away over magma
+7. Key Grove: three hidden golden keys (a hedge maze, a pond, a tower)
+8. Memory Tiles: repeat the light sequence
+9. Shadow Maze: a dark maze with monsters
+10. Jump Pads: fly across the gaps
+11. Builder's Gap: build your own plank bridge (look down past the edge
+    and tap to place)
+12. Hoard Golem: the final boss (dodge the charge, then hit the exposed core)
+
+The vault's chest gives the Treasure Hunter skin, the Starfall Blade and
+250 soul crystals. The skin and the blade also show up in every normal world.
+Levels have checkpoints, and falling just sends you back to the last one.
+With `?dev=1`, **Quest: skip level** jumps ahead one level.
+
 ## Controls
 
 | | Touch (landscape) | Desktop |
@@ -54,6 +78,9 @@ What the tests cover:
 - `tests/survival.spec.js`: a night enemy chases and hurts the player and
   dies to the sword; eating works; death leads to respawn; villagers trade
   and friendship grows; the shop sells and equips a skin; the Russian UI fits.
+- `tests/quest.spec.js` (desktop): plays the Treasure Quest from the camp
+  to the chest with an autopilot (`tests/questpilot.js`) that uses the normal
+  controls, then checks that the rewards carry over into a normal world.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
   through the real Soul Map, from the Void Dragon to the Soul Storm and the
   victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries

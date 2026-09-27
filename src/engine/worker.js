@@ -6,7 +6,7 @@ self.onmessage = (e) => {
   const m = e.data;
   try {
     if (m.type === 'gen') {
-      const data = generateChunk(m.seed, m.dim, m.cx, m.cz);
+      const data = generateChunk(m.seed, m.dim, m.cx, m.cz, m.extra);
       self.postMessage({ id: m.id, type: 'gen', data }, [data.buffer]);
     } else if (m.type === 'mesh') {
       const r = meshChunk(m.vol);

@@ -10,6 +10,7 @@ import { Game } from './game.js';
 import { loadProfile, loadWorld, saveProfile, storageOk } from './save/db.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
+import { LEVELS as QUEST_LEVELS } from './world/quest.js';
 
 function hasWebGL() {
   try {
@@ -30,7 +31,17 @@ async function boot() {
   input.sensitivity = settings().sensitivity;
 
   const app = {
-    game: null, profile: null, saveInfo: null,
+    game: null, profile: null, saveInfo: null, questInfo: null,
+    async startQuest() {
+      ui.showLoading(t('loading.world'));
+      await startGame(app.game.newQuestMeta());
+    },
+    async continueQuest() {
+      ui.showLoading(t('loading.world'));
+      const data = await loadWorld('quest');
+      if (!data) { await app.startQuest(); return; }
+      await startGame(data);
+    },
     async newGame(params) {
       ui.showLoading(t('loading.world'));
       const meta = app.game.newMeta({ name: params.name, seed: seedFromString(params.seed), difficulty: params.difficulty });
@@ -46,6 +57,7 @@ async function boot() {
       const g = app.game;
       if (g.running) { await g.save(true); g.stop(); }
       app.saveInfo = await readSaveInfo();
+      app.questInfo = await readQuestInfo();
       ui.showTitle();
     },
   };
@@ -68,6 +80,7 @@ async function boot() {
   app.game.profile = app.profile;
   app.game.held.setSkin(app.profile.skin);
   app.saveInfo = await readSaveInfo();
+  app.questInfo = await readQuestInfo();
   ui.setLoading(1, t('loading.ready'));
   if (!storageOk) ui.toast(t('error.save'), 'warn');
 
@@ -76,10 +89,17 @@ async function boot() {
       await app.game.start(meta, (f) => ui.setLoading(0.1 + f * 0.9, t('loading.chunks')));
       ui.closeAll();
       if (!(settings().tutorialDone || {}).move) setTimeout(() => ui.tutorial('move'), 800);
+      else if (meta.mode === 'quest' && !meta.player) setTimeout(() => ui.toast(t('quest.obj.0'), 'soul'), 800);
     } catch (e) {
       console.error(e);
       ui.showError('error.generic', 'error.generic', false);
     }
+  }
+
+  async function readQuestInfo() {
+    const q = await loadWorld('quest');
+    if (!q || !q.quest) return null;
+    return { progress: q.quest.solved.filter((i) => i > 0 && i <= 12).length, done: q.quest.done };
   }
 
   async function readSaveInfo() {
@@ -132,7 +152,7 @@ async function boot() {
   if (new URLSearchParams(location.search).get('dev') === '1') initDevPanel(app, ui);
 
   // test / debug handle
-  window.__sc = { app, ui, input, audio, get game() { return app.game; } };
+  window.__sc = { app, ui, input, audio, questLevels: QUEST_LEVELS, get game() { return app.game; } };
 
   registerSW();
 }

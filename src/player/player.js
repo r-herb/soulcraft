@@ -89,10 +89,16 @@ export class Player {
     const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
     const wx = (fx * inp.move.z + rx * inp.move.x) * speed;
     const wz = (fz * inp.move.z + rz * inp.move.x) * speed;
-    const accel = this.onGround ? 14 : this.inWater ? 6 : 4;
-    const k = Math.min(1, accel * dt);
-    this.vel.x += (wx - this.vel.x) * k;
-    this.vel.z += (wz - this.vel.z) * k;
+    const steering = Math.abs(inp.move.x) + Math.abs(inp.move.z) > 0.05;
+    if (this.airLock > 0) {
+      // launched (jump pads): keep the flight, ignore steering
+      this.airLock -= dt;
+    } else {
+      const accel = this.onGround ? 14 : this.inWater ? 6 : steering ? 4 : 0.6;
+      const k = Math.min(1, accel * dt);
+      this.vel.x += (wx - this.vel.x) * k;
+      this.vel.z += (wz - this.vel.z) * k;
+    }
     // knockback impulse decays separately
     this.vel.x += this.knock.x; this.vel.z += this.knock.z;
     if (this.knock.y) { this.vel.y = Math.max(this.vel.y, this.knock.y); }
@@ -133,6 +139,7 @@ export class Player {
     }
     if (this.inWater) this.fallStart = null;
     this.onGround = o.onGround;
+    if (o.onGround && this.airLock > 0 && this.vel.y <= 0) this.airLock = 0;
     this.moving = Math.hypot(this.vel.x, this.vel.z) > 0.5 && this.onGround;
     if (this.moving) this.walkPhase += dt * Math.hypot(this.vel.x, this.vel.z) * 1.6;
     if (this.hurtTime > 0) this.hurtTime -= dt;

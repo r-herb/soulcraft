@@ -35,8 +35,9 @@ export function initDevPanel(app, ui) {
     btn(t('dev.day'), (g) => { g.meta.time = 0.1; }, 'day');
     btn(t('dev.night'), (g) => { g.meta.time = 0.6; }, 'night');
     btn(t('dev.unlock'), (g) => { g.meta.hasLantern = true; for (const id of BOSS_ORDER.slice(0, -1)) g.meta.bosses[id] = g.meta.bosses[id] || false; g.meta.devUnlock = true; }, 'unlock');
+    btn(t('dev.questSkip'), (g) => { if (g.quest) g.quest.devSkip(); }, 'quest-skip');
     for (const id of BOSS_ORDER) {
-      btn(t('dev.tp') + ': ' + t('boss.' + id), (g) => { g.meta.devUnlock = true; g.travel(ARENAS[id].dim, id === 'whirlwindKing' ? 'chamber' : id); }, 'tp-' + id);
+      btn(t('dev.tp') + ': ' + t('boss.' + id), (g) => { if (g.isQuest) return; g.meta.devUnlock = true; g.travel(ARENAS[id].dim, id === 'whirlwindKing' ? 'chamber' : id); }, 'tp-' + id);
     }
     btn(t('dev.kill'), (g) => { const b = g.bosses.active; if (b) Boss.prototype.hurt.call(b, Math.ceil(b.maxHp * 0.25), 'dev'); }, 'kill');
   };

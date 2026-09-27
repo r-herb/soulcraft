@@ -2,6 +2,7 @@
 import { CHUNK, HEIGHT, SEA, B } from './blocks.js';
 import { Layout, CHAMBER, ARENAS } from './structures.js';
 import { Noise, hash3 } from './noise.js';
+import { QUEST_BOXES } from './quest.js';
 
 const S = CHUNK;
 const idx = (x, y, z) => x + z * S + y * S * S;
@@ -62,9 +63,10 @@ function oreAt(seed, x, y, z, stoneId) {
   return d < r * r + hash3(seed, x, y, z) * 0.9 ? type : 0;
 }
 
-export function generateChunk(seed, dim, cx, cz) {
+export function generateChunk(seed, dim, cx, cz, extra) {
   const data = new Uint8Array(S * S * HEIGHT);
-  if (dim === 'emberdeep') genEmberdeep(seed, cx, cz, data);
+  if (dim === 'quest') genQuest(cx, cz, data, extra);
+  else if (dim === 'emberdeep') genEmberdeep(seed, cx, cz, data);
   else if (dim === 'void') genVoid(seed, cx, cz, data);
   else if (dim === 'soul') genSoul(seed, cx, cz, data);
   else genOverworld(seed, cx, cz, data);
@@ -378,5 +380,21 @@ function genSoul(seed, cx, cz, data) {
       if (data[idx(px, py, pz)] === B.air) data[idx(px, py, pz)] = B.spirit_leaves;
     }
     if (inside) for (let t = 1; t <= th; t++) data[idx(x, h + t, z)] = B.spirit_log;
+  }
+}
+
+// The Treasure Quest course: hand-built boxes, in order (later boxes win).
+// Gates of levels already solved are left open.
+function genQuest(cx, cz, data, extra) {
+  const x0 = cx * S, z0 = cz * S, x1 = x0 + S - 1, z1 = z0 + S - 1;
+  const solved = new Set((extra && extra.solved) || []);
+  for (const b of QUEST_BOXES) {
+    if (b[3] < x0 || b[0] > x1 || b[5] < z0 || b[2] > z1) continue;
+    const id = b[7] >= 0 && solved.has(b[7]) ? B.air : b[6];
+    const ax = Math.max(b[0], x0), bx = Math.min(b[3], x1);
+    const az = Math.max(b[2], z0), bz = Math.min(b[5], z1);
+    for (let y = Math.max(0, b[1]); y <= Math.min(HEIGHT - 1, b[4]); y++) {
+      for (let z = az; z <= bz; z++) for (let x = ax; x <= bx; x++) data[idx(x - x0, y, z - z0)] = id;
+    }
   }
 }

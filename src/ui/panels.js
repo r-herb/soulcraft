@@ -10,6 +10,7 @@ import { saveProfile } from '../save/db.js';
 import { BOSS_ORDER } from '../bosses/bosses.js';
 import { ARENAS } from '../world/structures.js';
 import { FRIEND_XP } from '../entities/villager.js';
+import { LEVELS, LEVEL_COUNT } from '../world/quest.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -236,7 +237,7 @@ export function shop(args, ui) {
       const card = el(`<button class="skin-card ${s.id === sel ? 'sel' : ''}" data-skin="${s.id}"><canvas></canvas><span class="nm"></span><span class="pr"></span></button>`);
       drawSkinPortrait(card.querySelector('canvas'), s.id);
       card.querySelector('.nm').textContent = t('skin.' + s.id);
-      card.querySelector('.pr').innerHTML = profile.skin === s.id ? esc(t('shop.equipped')) : owned ? '&#10003;' : s.price ? `<span class="crystal-ico"></span>${s.price}` : esc(t('shop.free'));
+      card.querySelector('.pr').innerHTML = profile.skin === s.id ? esc(t('shop.equipped')) : owned ? '&#10003;' : s.quest ? esc(t('shop.questOnly')) : s.price ? `<span class="crystal-ico"></span>${s.price}` : esc(t('shop.free'));
       card.addEventListener('click', () => { ui.click(); sel = s.id; draw(); });
       grid.appendChild(card);
     }
@@ -244,10 +245,11 @@ export function shop(args, ui) {
     const owned = profile.skins.includes(sel);
     node.querySelector('.pv-name').textContent = t('skin.' + sel);
     const b = node.querySelector('.pv-act');
-    b.disabled = profile.skin === sel;
-    b.innerHTML = profile.skin === sel ? esc(t('shop.equipped')) : owned ? esc(t('shop.equip')) : `${esc(t('shop.buy'))} <span class="crystal-ico"></span>${s.price}`;
+    b.disabled = profile.skin === sel || (s.quest && !owned);
+    b.innerHTML = profile.skin === sel ? esc(t('shop.equipped')) : owned ? esc(t('shop.equip')) : s.quest ? esc(t('shop.questOnly')) : `${esc(t('shop.buy'))} <span class="crystal-ico"></span>${s.price}`;
     b.onclick = async () => {
       if (!owned) {
+        if (s.quest) return;
         if (profile.crystals < s.price) { ui.toast(t('toast.noCrystals'), 'warn'); return; }
         profile.crystals -= s.price;
         profile.skins.push(s.id);
@@ -335,6 +337,83 @@ export function victory(args, ui) {
       </div>
       <div class="row" style="justify-content:center"><button class="btn primary" data-act="continue" data-i18n="victory.continue"></button><button class="btn" data-act="title" data-i18n="victory.title_screen"></button></div>
     </div></div>`);
+  node.querySelector('[data-act="continue"]').addEventListener('click', () => { ui.click(); ui.closeAll(); });
+  node.querySelector('[data-act="title"]').addEventListener('click', () => { ui.click(); ui.app.quitToTitle(); });
+  return node;
+}
+
+// ---------------- Treasure Quest: the map ----------------
+export function treasureMap(args, ui) {
+  const g = ui.game;
+  const q = g.quest;
+  const node = el(`<div class="screen scrim" data-screen="treasureMap">
+    <div class="panel" style="width:min(820px,100%)">
+      ${head(esc(t('quest.mapTitle')))}
+      <canvas class="parchment" width="380" height="120"></canvas>
+      <div class="row" style="justify-content:space-between"><span class="faint cur"></span><span class="value-tag prog"></span></div>
+    </div></div>`);
+  const cv = node.querySelector('canvas');
+  const x = cv.getContext('2d');
+  const hasMap = q && q.state.hasMap;
+  // parchment
+  x.fillStyle = '#e8d5a0'; x.fillRect(0, 0, cv.width, cv.height);
+  x.fillStyle = 'rgba(138,90,42,0.12)';
+  for (let i = 0; i < 90; i++) x.fillRect((i * 97) % cv.width, (i * 53) % cv.height, 3, 2);
+  const pts = [];
+  for (let i = 0; i <= 13; i++) pts.push([18 + i * 26, 60 + Math.sin(i * 1.3) * 32]);
+  const cur = q ? q.current() : 0;
+  const solved = (i) => q && q.solved(i);
+  // dotted route
+  x.fillStyle = '#8a5a2a';
+  for (let i = 0; i < 13; i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+    for (let k = 0; k < 8; k++) { const f = k / 8; x.fillRect(Math.round(ax + (bx - ax) * f), Math.round(ay + (by - ay) * f), 2, 2); }
+  }
+  x.font = '8px monospace';
+  pts.forEach(([px, py], i) => {
+    const hidden = !hasMap && i > 1;
+    if (i === 13) {
+      // the X
+      x.strokeStyle = hidden ? '#b89f66' : '#d24a24'; x.lineWidth = 3;
+      x.beginPath(); x.moveTo(px - 6, py - 6); x.lineTo(px + 6, py + 6); x.moveTo(px + 6, py - 6); x.lineTo(px - 6, py + 6); x.stroke();
+      return;
+    }
+    x.fillStyle = hidden ? '#c9b27a' : solved(i) ? '#3a8a3a' : i === 12 ? '#a1523e' : '#5a3a1a';
+    x.fillRect(px - 5, py - 5, 10, 10);
+    if (i === cur) { x.strokeStyle = '#1f9fb8'; x.lineWidth = 2; x.strokeRect(px - 8, py - 8, 16, 16); }
+    x.fillStyle = '#3a2410';
+    if (!hidden) x.fillText(i === 0 ? '*' : i === 12 ? '!' : String(i), px - 3, py + 16);
+  });
+  if (!hasMap) { x.fillStyle = 'rgba(58,36,16,0.7)'; x.font = '10px monospace'; x.fillText('?', 200, 30); }
+  node.querySelector('.cur').textContent = t('map.here') + ': ' + (cur === 0 ? t('quest.lvl.0') : cur > LEVEL_COUNT ? t('quest.lvl.13') : t('quest.levelOf', { n: cur, total: LEVEL_COUNT }) + ' - ' + t('quest.lvl.' + cur));
+  node.querySelector('.prog').textContent = t('quest.progress', { n: q ? q.progress() : 0, total: LEVEL_COUNT });
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.closeAll(); });
+  void LEVELS;
+  return node;
+}
+
+// ---------------- Treasure Quest: complete ----------------
+export function questComplete(args, ui) {
+  const g = ui.game;
+  const st = g.meta.quest;
+  const mins = Math.floor(g.meta.playTime / 60), secs = Math.floor(g.meta.playTime % 60);
+  const node = el(`<div class="screen victory" data-screen="questComplete">
+    <div class="panel" style="width:min(560px,100%);text-align:center">
+      <h1 class="logo" style="font-size:clamp(16px,3.6vw,28px)" data-i18n="quest.complete"></h1>
+      <p class="dim" data-i18n="quest.completeBody"></p>
+      <div class="reward-row"><div class="rw rw-skin"><canvas></canvas><span data-i18n="skin.treasure"></span></div><div class="rw rw-blade"></div><div class="rw"><span class="crystal-ico" style="width:28px;height:28px"></span><span>+250</span></div></div>
+      <div class="stats-grid">
+        <div><span data-i18n="victory.time"></span><b>${mins}:${String(secs).padStart(2, '0')}</b></div>
+        <div><span data-i18n="quest.falls"></span><b>${st.falls}</b></div>
+        <div><span data-i18n="victory.deaths"></span><b>${g.meta.stats.deaths}</b></div>
+        <div><span data-i18n="victory.enemies"></span><b>${g.meta.stats.kills}</b></div>
+      </div>
+      <div class="row" style="justify-content:center"><button class="btn primary" data-act="continue" data-i18n="victory.continue"></button><button class="btn" data-act="title" data-i18n="victory.title_screen"></button></div>
+    </div></div>`);
+  drawSkinPortrait(node.querySelector('.rw-skin canvas'), 'treasure');
+  const blade = node.querySelector('.rw-blade');
+  iconInto(blade, 'starfall_blade', 64);
+  const nm = document.createElement('span'); nm.textContent = t('item.starfall_blade'); blade.appendChild(nm);
   node.querySelector('[data-act="continue"]').addEventListener('click', () => { ui.click(); ui.closeAll(); });
   node.querySelector('[data-act="title"]').addEventListener('click', () => { ui.click(); ui.app.quitToTitle(); });
   return node;

@@ -13,6 +13,10 @@ export const TILES = [
   'soul_soil', 'voidstone', 'spiritstone', 'chamber_brick', 'chamber_lamp', 'ember_lamp', 'glowbell', 'tallgrass',
   'path', 'crafting_top', 'crafting_side', 'void_crystal', 'basalt', 'soul_glass', 'spirit_tree', 'spirit_leaves',
   'snow', 'wool_blue', 'vault', 'iron_block', 'gold_block', 'emberite_block', 'soul_block', 'ember_moss',
+  // Treasure Quest
+  'ruin_stone', 'ruin_top', 'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on',
+  'lamp_off', 'lamp_on', 'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'chest_side',
+  'chest_top', 'gold_brick',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -87,6 +91,23 @@ const LIST = [
   def(43, 'emberite_block', { tex: 'emberite_block', hardness: 4, tool: 'pick', tier: 3, light: 6 }),
   def(44, 'soul_block', { tex: 'soul_block', hardness: 2, tool: 'pick', tier: 1, light: 12 }),
   def(45, 'ember_moss', { tex: { top: 'ember_moss', side: 'ashstone', bottom: 'ashstone' }, hardness: 1, tool: 'pick', drop: 'ashstone' }),
+  // Treasure Quest blocks (the quest world does not allow breaking)
+  def(46, 'ruin_stone', { tex: { top: 'ruin_top', side: 'ruin_stone', bottom: 'ruin_top' }, hardness: 2, tool: 'pick', tier: 1 }),
+  def(47, 'quest_gate', { tex: 'quest_gate', layer: 1, opaque: false, hardness: -1, light: 4 }),
+  def(48, 'checkpoint', { tex: { top: 'checkpoint', side: 'ruin_stone', bottom: 'ruin_top' }, hardness: -1, light: 10 }),
+  def(49, 'jump_pad', { tex: { top: 'jump_pad', side: 'ruin_stone', bottom: 'ruin_top' }, hardness: -1, light: 8 }),
+  def(50, 'crumble', { tex: 'crumble', hardness: -1 }),
+  def(51, 'lever_off', { tex: { top: 'ruin_top', side: 'lever_off', bottom: 'ruin_top' }, hardness: -1 }),
+  def(52, 'lever_on', { tex: { top: 'ruin_top', side: 'lever_on', bottom: 'ruin_top' }, hardness: -1, light: 6 }),
+  def(53, 'lamp_off', { tex: 'lamp_off', hardness: -1 }),
+  def(54, 'lamp_on', { tex: 'lamp_on', hardness: -1, light: 15 }),
+  def(55, 'tile_off', { tex: { top: 'tile_off', side: 'ruin_stone', bottom: 'ruin_top' }, hardness: -1 }),
+  def(56, 'tile_lit', { tex: { top: 'tile_lit', side: 'ruin_stone', bottom: 'ruin_top' }, hardness: -1, light: 14 }),
+  def(57, 'tile_ok', { tex: { top: 'tile_ok', side: 'ruin_stone', bottom: 'ruin_top' }, hardness: -1, light: 12 }),
+  def(58, 'trap', { tex: { top: 'ruin_top', side: 'trap', bottom: 'ruin_top' }, hardness: -1 }),
+  def(59, 'trap_lit', { tex: { top: 'ruin_top', side: 'trap_lit', bottom: 'ruin_top' }, hardness: -1, light: 12 }),
+  def(60, 'treasure_chest', { tex: { top: 'chest_top', side: 'chest_side', bottom: 'chest_top' }, hardness: -1, light: 8 }),
+  def(61, 'gold_brick', { tex: 'gold_brick', hardness: 3, tool: 'pick', tier: 2, light: 4 }),
 ];
 
 export const BLOCKS = [];

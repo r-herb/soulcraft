@@ -46,12 +46,12 @@ async function tx(store, mode, fn) {
   });
 }
 
-export async function saveWorld(data) {
+export async function saveWorld(data, slot = 'current') {
   try {
     const rec = JSON.parse(JSON.stringify(data));
-    rec.id = 'current';
+    rec.id = slot;
     rec.savedAt = Date.now();
-    const r = await tx('worlds', 'readwrite', (s) => (s ? s.put(rec) : memory.worlds.set('current', rec)));
+    const r = await tx('worlds', 'readwrite', (s) => (s ? s.put(rec) : memory.worlds.set(slot, rec)));
     void r;
     return true;
   } catch (e) {
@@ -60,10 +60,10 @@ export async function saveWorld(data) {
   }
 }
 
-export async function loadWorld() {
+export async function loadWorld(slot = 'current') {
   try {
-    const r = await tx('worlds', 'readonly', (s) => (s ? s.get('current') : null));
-    if (r === null || r === undefined) return memory.worlds.get('current') || null;
+    const r = await tx('worlds', 'readonly', (s) => (s ? s.get(slot) : null));
+    if (r === null || r === undefined) return memory.worlds.get(slot) || null;
     return r;
   } catch (e) {
     console.warn('loadWorld failed', e);
@@ -71,8 +71,8 @@ export async function loadWorld() {
   }
 }
 
-export async function deleteWorld() {
-  try { await tx('worlds', 'readwrite', (s) => (s ? s.delete('current') : memory.worlds.delete('current'))); } catch (e) { console.warn(e); }
+export async function deleteWorld(slot = 'current') {
+  try { await tx('worlds', 'readwrite', (s) => (s ? s.delete(slot) : memory.worlds.delete(slot))); } catch (e) { console.warn(e); }
 }
 
 const DEFAULT_PROFILE = { id: 'profile', crystals: 0, skins: ['wanderer'], skin: 'wanderer', totalCrystals: 0 };

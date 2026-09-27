@@ -44,6 +44,7 @@ export class Hud {
         <button class="hud-btn pe" data-b="fullscreen" data-i18n-aria="hud.fullscreen">${SVG.fullscreen}</button>
         <button class="hud-btn pe" data-b="pause" data-i18n-aria="hud.pause">${SVG.pause}</button>
       </div>
+      <div class="quest-obj hidden"><b></b><span></span></div>
       <div class="boss-bar hidden"><div class="boss-name"></div><div class="boss-hp"><i></i></div><div class="boss-hint"></div></div>
       <div class="held-name"></div>
       <div class="hotbar pe"></div>
@@ -62,6 +63,7 @@ export class Hud {
     this.fpsEl = q('.fps'); this.bossBar = q('.boss-bar');
     this.hurt = q('.hurt-flash'); this.water = q('.underwater'); this.magma = q('.inmagma');
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
+    this.questObj = q('.quest-obj');
     const buttons = {};
     this.el.querySelectorAll('[data-a]').forEach((b) => { buttons[b.dataset.a] = b; });
     input.attachTouch({ lookZone: q('.look-zone'), joyZone: q('.joy-zone'), joyBase: q('.joy-base'), joyKnob: q('.joy-knob'), buttons });
@@ -190,6 +192,16 @@ export class Hud {
     if (settings().fps) this.fpsEl.textContent = t('hud.fps', { n: g.fps });
     this.water.classList.toggle('hidden', !(p.inWater && g.world.getBlock(p.pos.x, p.pos.y + 1.62, p.pos.z) === 10));
     this.magma.classList.toggle('hidden', !p.inMagma);
+    // quest objective
+    if (g.quest && !g.bosses.active) {
+      const [head, detail] = g.quest.objective();
+      if (L.qh !== head || L.qd !== detail) {
+        L.qh = head; L.qd = detail;
+        this.questObj.querySelector('b').textContent = head;
+        this.questObj.querySelector('span').textContent = detail;
+      }
+      this.questObj.classList.remove('hidden');
+    } else this.questObj.classList.add('hidden');
     // boss
     const boss = g.bosses.active;
     if (boss && boss.showBar) {

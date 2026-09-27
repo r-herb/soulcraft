@@ -101,6 +101,8 @@ export const SKINS = [
   { id: 'void', price: 200, c: { skin: '#b9a6e8', hair: '#231d36', shirt: '#332a4d', pants: '#1c172c', eye: '#b98bff', accent: '#9a6bff' } },
   { id: 'spirit', price: 300, c: { skin: '#e8fbff', hair: '#7ff3ff', shirt: '#dcf0f7', pants: '#6cc6d8', eye: '#1f9fb8', accent: '#7ff3ff' } },
   { id: 'storm', price: 500, c: { skin: '#8a6a52', hair: '#f0f7fa', shirt: '#231f57', shirt2: '#44d6e8', pants: '#0e0c2b', eye: '#7ff3ff', accent: '#f6c667' } },
+  // earned only by finishing the Treasure Quest
+  { id: 'treasure', price: -1, quest: true, c: { skin: '#e0ac86', hair: '#fff08a', shirt: '#f6c667', shirt2: '#7ff3ff', pants: '#6d45d6', eye: '#b6fbff', accent: '#ffffff' } },
 ];
 export function skinColors(id) { return (SKINS.find((s) => s.id === id) || SKINS[0]).c; }
 

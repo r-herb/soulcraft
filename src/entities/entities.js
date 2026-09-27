@@ -153,6 +153,7 @@ const PROJ_STYLE = {
   fireball: { color: 0xff7a2e, size: [0.55, 0.55, 0.55], gravity: 0, emissive: 0xff5a1a },
   void_orb: { color: 0xb98bff, size: [0.7, 0.7, 0.7], gravity: 0, emissive: 0x6d45d6 },
   storm_bolt: { color: 0xb6fbff, size: [0.4, 0.4, 0.9], gravity: 0, emissive: 0x7ff3ff },
+  coin: { color: 0xffd65c, size: [0.45, 0.12, 0.45], gravity: 9, emissive: 0x8a5a0a },
 };
 
 class Projectile extends Entity {
@@ -284,6 +285,7 @@ const MOB_DEFS = {
   soulMinion: { hp: 8, speed: 4.2, dmg: 2, reach: 1.4, name: 'mob.soulMinion', flying: true, drops: [] , w: 0.7, h: 0.7 },
   fireSpirit: { hp: 10, speed: 4.4, dmg: 4, reach: 1.4, name: 'mob.fireSpirit', flying: true, drops: [['charcoal', 0.6]], w: 0.7, h: 0.8 },
   whirlwind: { hp: 999, speed: 2.6, dmg: 1, reach: 1.6, name: 'mob.whirlwind', hazard: true, drops: [], w: 1.4, h: 3 },
+  mimic: { hp: 12, speed: 5, dmg: 2, reach: 1.4, name: 'mob.mimic', drops: [], w: 1.1, h: 0.7 },
 };
 
 export class Mob extends Entity {
@@ -314,8 +316,9 @@ export class Mob extends Entity {
       this.object.add(this.rig.group);
       const bow = box(0.06, 0.8, 0.06, '#8a6238'); bow.position.set(0, -0.5, 0.15); this.rig.armL.add(bow);
       this.rig.armL.rotation.x = -1.4;
-    } else if (tp === 'skitter') {
-      const body = box(0.9, 0.45, 1.1, '#3a2a2a', faceTexture('eyes', '#3a2a2a', '#ff4d4d'));
+    } else if (tp === 'skitter' || tp === 'mimic') {
+      const mim = tp === 'mimic';
+      const body = box(0.9, 0.45, 1.1, mim ? '#d8a22e' : '#3a2a2a', faceTexture('eyes', mim ? '#d8a22e' : '#3a2a2a', mim ? '#7ff3ff' : '#ff4d4d'));
       body.position.y = 0.45;
       this.object.add(body);
       this.legs = [];
@@ -323,7 +326,7 @@ export class Mob extends Entity {
         const side = i < 3 ? -1 : 1;
         const leg = new THREE.Group();
         leg.position.set(side * 0.45, 0.45, -0.35 + (i % 3) * 0.35);
-        const m = box(0.7, 0.08, 0.08, '#231818'); m.position.x = side * 0.35; m.rotation.z = side * -0.6;
+        const m = box(0.7, 0.08, 0.08, mim ? '#8a6a24' : '#231818'); m.position.x = side * 0.35; m.rotation.z = side * -0.6;
         leg.add(m);
         this.object.add(leg);
         this.legs.push(leg);
@@ -384,7 +387,7 @@ export class Mob extends Entity {
     }
     const o = this.physics(dt);
     if (!d.flying && this.onGround && (o.hitX || o.hitZ) && (mx || mz)) this.vel.y = 8.2;
-    if (this.type === 'skitter' && aggro && this.onGround && dist < 4 && dist > 2 && Math.random() < dt * 1.5) { this.vel.y = 7; this.vel.x = dx / dist * 8; this.vel.z = dz / dist * 8; }
+    if ((this.type === 'skitter' || this.type === 'mimic') && aggro && this.onGround && dist < 4 && dist > 2 && Math.random() < dt * 1.5) { this.vel.y = 7; this.vel.x = dx / dist * 8; this.vel.z = dz / dist * 8; }
     // attack
     if (aggro && this.attackT <= 0) {
       if (d.ranged && dist < d.reach) {
@@ -592,7 +595,7 @@ export class EntityManager {
     const g = this.game;
     const diff = g.meta.difficulty;
     if (diff === 'peaceful') return;
-    if (g.bosses.active) return;
+    if (g.bosses.active || g.meta.dim === 'quest') return;
     const hostile = this.list.filter((e) => e instanceof Mob && !e.bossMinion).length;
     const cap = diff === 'hard' ? 12 : 8;
     if (hostile >= cap) return;

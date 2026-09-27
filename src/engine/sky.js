@@ -9,6 +9,7 @@ export const REALM_ATMOS = {
   overworld: null,
   emberdeep: { color: 0x3a0f0a, daylight: 0.0, minLight: 0.28, fogNear: 0.35, fogFar: 0.95 },
   void: { color: 0x120a26, daylight: 0.55, minLight: 0.2, fogNear: 0.5, fogFar: 1.0 },
+  quest: { color: 0x8fd0ff, daylight: 1, minLight: 0.08, fogNear: 0.6, fogFar: 1.0 },
   soul: { color: 0x5aa9c4, daylight: 0.85, minLight: 0.15, fogNear: 0.45, fogFar: 1.0 },
 };
 

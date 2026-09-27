@@ -35,7 +35,7 @@ jobs:
         run: npm run build
 
       - name: Playwright smoke + survival tests (mobile landscape + desktop)
-        run: npx playwright test --grep-invert "Boss progression"
+        run: npx playwright test --grep-invert "Boss progression|Treasure Quest"
         env:
           CI: "1"
 
@@ -88,8 +88,42 @@ jobs:
             test-results
           retention-days: 7
 
+  # Plays the Treasure Quest from the camp to the treasure chest.
+  quest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Treasure Quest playthrough
+        run: npx playwright test tests/quest.spec.js --project=desktop
+        env:
+          CI: "1"
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: quest-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
   deploy:
-    needs: [test, bosses]
+    needs: [test, bosses, quest]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25

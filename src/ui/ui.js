@@ -163,8 +163,8 @@ export class UI {
             <span><span data-i18n="title.continue"></span><span class="continue-meta">${save ? esc(save.name) + ' - ' + esc(t('hud.day', { n: save.day })) : esc(t('title.nosave'))}</span></span>
           </button>
           <button class="btn violet" data-act="new" data-i18n="title.new"></button>
-          <button class="btn" data-act="skins" data-i18n="title.skins"></button>
-          <button class="btn" data-act="settings" data-i18n="title.settings"></button>
+          <button class="btn gold" data-act="quest" data-i18n="title.quest"></button>
+          <div class="row"><button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
         </div>
       </div>
       <div class="title-foot">
@@ -191,6 +191,7 @@ export class UI {
     node.querySelector('[data-act="continue"]').addEventListener('click', () => { this.click(); this.app.continueGame(); });
     node.querySelector('[data-act="new"]').addEventListener('click', () => { this.click(); this.open('newWorld'); });
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
+    node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
     node.querySelector('[data-act="settings"]').addEventListener('click', () => { this.click(); this.open('settings'); });
     return node;
   }
@@ -223,6 +224,29 @@ export class UI {
       const seed = node.querySelector('#nw-seed').value.trim();
       this.app.newGame({ name, seed, difficulty: diff });
     });
+    return node;
+  }
+
+  screen_questIntro() {
+    const info = this.app.questInfo;
+    const node = el(`<div class="screen solid" data-screen="questIntro">
+      <div class="panel" style="width:min(560px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="quest.name"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body col" style="gap:var(--sp-3)">
+          <p class="dim" style="margin:0" data-i18n="quest.intro"></p>
+          <div class="row quest-rewards"><span class="faint" data-i18n="quest.rewards"></span></div>
+          ${info ? `<p class="faint" style="margin:0">${esc(info.done ? t('quest.obj.done') : t('quest.progress', { n: info.progress, total: 12 }))}</p>` : ''}
+          <div class="row">
+            ${info ? '<button class="btn primary" style="flex:1" data-act="continue" data-i18n="title.continue"></button>' : ''}
+            <button class="btn ${info ? '' : 'primary'} gold" style="flex:1" data-act="start" data-i18n="${info ? 'quest.restart' : 'quest.start'}"></button>
+          </div>
+        </div>
+      </div></div>`);
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('[data-act="start"]').addEventListener('click', () => { this.click(); this.app.startQuest(); });
+    const c = node.querySelector('[data-act="continue"]');
+    if (c) c.addEventListener('click', () => { this.click(); this.app.continueQuest(); });
     return node;
   }
 
@@ -284,7 +308,7 @@ export class UI {
   // ---------- in-game overlays ----------
   openPause() { if (!this.game || this.game.player.dead) return; this.open('pause'); }
   openInventory() { this.open('inventory'); this.tutorialDone('craft'); }
-  openMap() { this.open('map'); }
+  openMap() { this.open(this.game && this.game.isQuest ? 'treasureMap' : 'map'); }
   openTrade(v) { this.open('trade', { villager: v }); this.tutorialDone('village'); }
   openDeath(cause, source) { this.stack = [{ name: 'death', args: { cause, source } }]; this.render(); this.onOverlayChange(); }
 
@@ -312,7 +336,7 @@ export class UI {
   screen_death(args) {
     const g = this.game;
     const src = args.source || '';
-    const causeKey = { fall: 'death.cause.fall', mob: 'death.cause.mob', magma: 'death.cause.magma', void: 'death.cause.void', boss: 'death.cause.boss' }[args.cause] || 'death.cause.generic';
+    const causeKey = g.isQuest && args.cause === 'magma' ? 'quest.burned' : { fall: 'death.cause.fall', mob: 'death.cause.mob', magma: 'death.cause.magma', void: 'death.cause.void', boss: 'death.cause.boss' }[args.cause] || 'death.cause.generic';
     const node = el(`<div class="screen death" data-screen="death">
       <h1 data-i18n="death.title"></h1>
       <p class="dim">${esc(t(causeKey, { name: src }))}</p>
