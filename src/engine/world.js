@@ -257,7 +257,8 @@ export class World {
       geo.setAttribute('aUV', new THREE.BufferAttribute(g.uv, 3));
       geo.setAttribute('aLight', new THREE.BufferAttribute(g.light, 3));
       geo.setIndex(new THREE.BufferAttribute(g.idx, 1));
-      geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(8, HEIGHT / 2, 8), Math.hypot(8, HEIGHT / 2, 8));
+      // tight bounds so frustum culling can drop chunks above/below the view too
+      geo.computeBoundingSphere();
       const m = new THREE.Mesh(geo, mat);
       m.position.set(c.cx * S, 0, c.cz * S);
       m.matrixAutoUpdate = false;
@@ -270,9 +271,6 @@ export class World {
     if (c.water) c.water.renderOrder = 1;
     c.meshed = true;
   }
-
-  // Tighter bounding spheres would help culling; chunks are tall and thin,
-  // so we cull by the column's actual vertical range once meshed.
 
   loadedCount() { let n = 0; for (const c of this.chunks.values()) if (c.meshed) n++; return n; }
 

@@ -35,10 +35,14 @@ The page background is a radial night-sky gradient (`--bg-page`).
 ## Type
 
 - **Press Start 2P** (display): logo, panel titles, boss title cards, section labels.
-- **Pixelify Sans** (body, 400/700): everything else.
+- **Tiny5** (body): everything else. Pixelify Sans was tried first, but its
+  Cyrillic has no capital О or П, and its в and д read like е and а, so
+  Russian text was hard to read. Tiny5 covers every Russian letter
+  cleanly. It has a single weight, so `font-synthesis: none` stops the
+  browser from faking bold.
 
 Both fonts are self-hosted from `public/fonts`, with Latin and Cyrillic subsets
-(OFL licensed, from @fontsource). Sizes are the `--fs-*` tokens. The logo
+(OFL licensed, from @fontsource). Coverage of the full Russian alphabet was checked glyph by glyph. Sizes are the `--fs-*` tokens. The logo
 scales with the viewport (`--fs-logo: clamp(26px, 6.4vw, 54px)`).
 
 ## Shape and depth

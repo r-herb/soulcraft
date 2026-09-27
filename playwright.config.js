@@ -18,7 +18,7 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
-  use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure', launchOptions: launch },
+  use: { baseURL, actionTimeout: 15_000, navigationTimeout: 60_000, trace: 'retain-on-failure', screenshot: 'only-on-failure', launchOptions: launch },
   webServer: live ? undefined : {
     command: 'npm run preview',
     url: 'http://localhost:4173',

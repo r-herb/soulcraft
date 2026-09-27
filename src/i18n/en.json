@@ -298,7 +298,7 @@
   "desc.gold_sword": "Extra damage against the Ember Warden.",
   "desc.emberite_sword": "Huge damage against the Ember Warden.",
   "desc.food": "Restores {n} hunger.",
-  "desc.damage": "Damage: {n}",
+  "desc.damage": "Damage: {n} hearts",
   "dev.title": "Developer",
   "dev.god": "God mode",
   "dev.give": "Give kit",

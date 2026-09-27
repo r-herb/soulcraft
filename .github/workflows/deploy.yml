@@ -1,7 +1,7 @@
 name: Test and deploy
 
-# Every push and pull request runs the Playwright smoke tests against the
-# production build. Pushes to main then deploy that exact build to Cloudflare
+# Every push and pull request runs the Playwright tests against the
+# production build (smoke and survival tests, plus the full boss progression). Pushes to main then deploy that exact build to Cloudflare
 # Pages (project "soulcraft") on https://soulcraft.8nomads.com - only if the
 # tests passed.
 on:
@@ -34,8 +34,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Playwright smoke tests (mobile landscape + desktop)
-        run: npx playwright test
+      - name: Playwright smoke + survival tests (mobile landscape + desktop)
+        run: npx playwright test --grep-invert "Boss progression"
         env:
           CI: "1"
 
@@ -54,8 +54,42 @@ jobs:
           path: dist
           retention-days: 7
 
+  # Plays all five guardian fights in order, through to the victory screen.
+  bosses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Boss progression test
+        run: npx playwright test tests/bosses.spec.js --project=desktop
+        env:
+          CI: "1"
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: boss-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
   deploy:
-    needs: test
+    needs: [test, bosses]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25

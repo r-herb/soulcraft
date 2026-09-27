@@ -44,16 +44,20 @@ npx playwright install chromium   # first time only
 npm test                          # smoke tests: mobile landscape (844x390, touch) + desktop
 ```
 
-The smoke tests check that:
+What the tests cover:
 
-- the page loads with no console errors
-- the title screen appears
-- EN/RU switching changes the text
-- a new world starts and renders
-- the joystick and keyboard move the player
-- a block can be broken and placed
-- the inventory, recipe book, pause and settings work
-- a saved world reloads with its progress
+- `tests/smoke.spec.js` (mobile 844x390 with touch, and desktop): the page
+  loads with no console errors, the title screen appears, EN/RU switching
+  changes the text, a new world starts and renders, the joystick and keyboard
+  move the player, a block can be broken and placed, the inventory and recipe
+  book work, pause and settings work, and a saved world reloads with its progress.
+- `tests/survival.spec.js`: a night enemy chases and hurts the player and
+  dies to the sword; eating works; death leads to respawn; villagers trade
+  and friendship grows; the shop sells and equips a skin; the Russian UI fits.
+- `tests/bosses.spec.js` (desktop): plays the whole guardian progression
+  through the real Soul Map, from the Void Dragon to the Soul Storm and the
+  victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries
+  glowing shells and throws wind charges, with god mode on.
 
 `npm run test:live` runs a check against the live site.
 

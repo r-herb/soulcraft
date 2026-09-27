@@ -17,10 +17,10 @@ test.describe('Boss progression', () => {
     await openTitle(page, '&dev=1');
     await startNewWorld(page, 'bosses');
     // dev panel: god mode + a kit (includes the Void Lantern that opens the map)
-    await page.locator('[data-dev="toggle"]').click();
-    await page.locator('[data-dev="god"]').click();
-    await page.locator('[data-dev="give"]').click();
-    await page.locator('[data-dev="toggle"]').click();
+    // (the desktop game holds pointer lock, so the panel is driven from the page)
+    await expect(page.locator('[data-dev="god"]')).toHaveCount(1);
+    await page.evaluate(() => { for (const k of ['god', 'give']) document.querySelector(`[data-dev="${k}"]`).click(); });
+    expect(await page.evaluate(() => window.__sc.game.player.god)).toBe(true);
     await page.evaluate(installBot);
 
     for (const id of ORDER) {
@@ -32,6 +32,7 @@ test.describe('Boss progression', () => {
       const next = ORDER[ORDER.indexOf(id) + 1];
       if (next) await expect(page.locator(`.map-node[data-boss="${next}"]`)).toHaveClass(/locked/);
       await node.locator('button').click();
+      await page.evaluate(() => window.__sc.input.exitLock());
       await page.waitForFunction(() => !document.querySelector('[data-screen="loading"]') && window.__sc.game.running && !window.__sc.game.paused, null, { timeout: 90_000 });
       // walk into the arena
       await page.evaluate((bossId) => {
@@ -44,7 +45,14 @@ test.describe('Boss progression', () => {
       await expect(page.locator('.boss-bar')).toBeVisible();
       await expect(page.locator('.title-card')).toBeVisible();
       const t0 = Date.now();
-      await page.waitForFunction((bossId) => window.__sc.game.meta.bosses[bossId], id, { timeout: 12 * 60_000, polling: 1000 });
+      // poll, logging progress so a slow fight is visible in the CI log
+      for (let i = 0; ; i++) {
+        const st = await page.evaluate((bossId) => { const g = window.__sc.game; const b = g.bosses.active; return { done: g.meta.bosses[bossId], hp: b ? Math.round(b.hp) : null, fps: g.fps, pos: g.player.pos.toArray().map(Math.round), dim: g.meta.dim, paused: g.paused }; }, id);
+        if (st.done) break;
+        if (i % 3 === 0) console.log(id, JSON.stringify(st));
+        expect(Date.now() - t0, `${id} not defeated in 12 minutes`).toBeLessThan(12 * 60_000);
+        await page.waitForTimeout(5000);
+      }
       const stats = await page.evaluate(() => ({ ...window.__bot, timer: undefined }));
       console.log(`${id} defeated in ${Math.round((Date.now() - t0) / 1000)}s`, JSON.stringify(stats));
       if (id !== 'soulStorm') {

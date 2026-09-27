@@ -23,7 +23,7 @@ function describe(key) {
   if (!d) return '';
   const parts = [];
   if (d.food) parts.push(t('desc.food', { n: d.food }));
-  if (d.damage && (d.weapon || d.tool)) parts.push(t('desc.damage', { n: d.damage / 2 + (d.damage % 2 ? '' : '') }));
+  if (d.damage && (d.weapon || d.tool)) parts.push(t('desc.damage', { n: d.damage / 2 }));
   const extra = t('desc.' + key);
   if (extra !== 'desc.' + key) parts.push(extra);
   return parts.join(' ');

@@ -7,6 +7,7 @@ html, body {
   overscroll-behavior: none; touch-action: none;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   -webkit-text-size-adjust: 100%;
+  font-synthesis: none; /* Tiny5 has one weight; never smear it into fake bold */
 }
 input, select, textarea { -webkit-user-select: text; user-select: text; font-family: var(--font-body); touch-action: manipulation; }
 button { font-family: var(--font-body); touch-action: manipulation; }
@@ -279,3 +280,14 @@ body.touch .desktop-only { display: none !important; }
   .title-layout { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: var(--sp-3); }
   .settings-grid { grid-template-columns: 1fr; }
 }
+
+/* while a menu is open only the status bars stay visible */
+#hud.overlay-open .tutorial,
+#hud.overlay-open .action-pad,
+#hud.overlay-open .joy-zone,
+#hud.overlay-open .look-zone,
+#hud.overlay-open .hotbar,
+#hud.overlay-open .held-name,
+#hud.overlay-open .crosshair,
+#hud.overlay-open .title-card,
+#hud.overlay-open .hud-top-right { display: none !important; }

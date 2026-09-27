@@ -132,9 +132,9 @@ export function meshChunk(vol) {
     for (let s = 0; s < dimLen; s++) {
       let any = false;
       for (let v = 0; v < vLen; v++) for (let u = 0; u < uLen; u++) {
-        const c = [0, 0, 0];
-        c[axis] = s; c[ua] = u; c[va] = v;
-        const x = c[0] + PAD, y = c[1], z = c[2] + PAD;
+        let lx, y, lz;
+        if (axis === 0) { lx = s; lz = u; y = v; } else if (axis === 1) { y = s; lx = u; lz = v; } else { lz = s; lx = u; y = v; }
+        const x = lx + PAD, z = lz + PAD;
         const i = x + z * SZ + y * SY;
         const m = u + v * uLen;
         mask1[m] = 0;
