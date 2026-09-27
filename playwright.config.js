@@ -8,6 +8,12 @@ const executablePath = !process.env.CI && existsSync(localChromium) ? localChrom
 const live = process.env.LIVE_URL;
 const baseURL = live || process.env.BASE_URL || 'http://localhost:4173';
 
+// The accounts API server (wrangler + workerd) costs CPU, and the quest and
+// boss bots time their jumps against the frame rate, so runs that only
+// target those long playthroughs (or set NO_API=1) leave it out.
+const args = process.argv.slice(2).join(' ');
+const withApi = !process.env.NO_API && !(/(quest|bosses)\.spec/.test(args) && !/accounts/.test(args));
+
 const launch = { executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] };
 
 export default defineConfig({
@@ -26,7 +32,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
-    {
+    withApi && {
       // the accounts API: Pages Functions + a throwaway local D1 database
       command: 'rm -rf .wrangler/test-state && npx wrangler d1 migrations apply soulcraft --local --persist-to .wrangler/test-state && npx wrangler pages dev dist --port 8788 --persist-to .wrangler/test-state --binding SUPERADMIN_LOGIN=admin --binding SUPERADMIN_PASSWORD=admin-pass-123',
       url: 'http://localhost:8788',
@@ -34,7 +40,7 @@ export default defineConfig({
       timeout: 120_000,
       env: { WRANGLER_SEND_METRICS: 'false', CLOUDFLARE_ACCOUNT_ID: 'local' },
     },
-  ],
+  ].filter(Boolean),
   projects: live ? [
     { name: 'live', testMatch: /live\.spec\.js/, use: { ...devices['Desktop Chrome'], launchOptions: launch } },
   ] : [

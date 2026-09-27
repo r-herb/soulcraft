@@ -66,7 +66,7 @@ test.describe('Treasure Quest', () => {
       await step(2, async () => {
         const qp = window.__qp; const L = qp.levels[2];
         const pts = L.stones.map((s) => [(s.x0 + s.x1 + 1) / 2, (s.z0 + s.z1 + 1) / 2, { y: s.y + 1, jumpGaps: true, sprint: true, tol: 0.4 }]);
-        await qp.path([[L.ox + 5.2, 0.5], ...pts, [L.ox + 48.5, 0.5, { jumpGaps: true, sprint: true }]]);
+        await qp.course([[L.ox + 5.2, 0.5], ...pts, [L.ox + 48.5, 0.5, { jumpGaps: true, sprint: true }]]);
       });
       await toNext(2);
     }
@@ -107,7 +107,7 @@ test.describe('Treasure Quest', () => {
 
     // 6: crumbling bridge
     if (from <= 6) {
-      await step(6, async () => { const qp = window.__qp; const L = qp.levels[6]; await qp.path([[L.ox + 48.5, 0.9, { jumpGaps: true, sprint: true }]]); });
+      await step(6, async () => { const qp = window.__qp; const L = qp.levels[6]; await qp.course([[L.ox + 48.5, 0.9, { jumpGaps: true, sprint: true }]]); });
       await toNext(6);
     }
 

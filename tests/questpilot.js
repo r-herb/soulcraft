@@ -6,7 +6,7 @@ export function installPilot() {
   const input = window.__sc.input;
   const LV = window.__sc.questLevels;
   const F = 40;
-  const pilot = { target: null, resolve: null, reject: null, stuckT: 0, lastPos: null, jumpHold: 0, log: [] };
+  const pilot = { target: null, resolve: null, reject: null, falls: 0, stuckT: 0, lastPos: null, jumpHold: 0, log: [] };
   window.__qp = pilot;
 
   const aimAt = (x, y, z) => {
@@ -44,6 +44,16 @@ export function installPilot() {
     if (p.inWater && !tg.dive) pilot.jumpHold = 3;
     // climb: target higher than us and a block in front
     if (p.onGround && tg.y !== undefined && tg.y > p.pos.y + 0.5 && d < 3.2) pilot.jumpHold = 3;
+    // fell off the course: the game put us back at the checkpoint
+    const falls = g.meta.quest ? g.meta.quest.falls : 0;
+    if (tg.retryOnFall && falls > pilot.falls) {
+      pilot.falls = falls;
+      pilot.target = null;
+      const rj = pilot.reject; pilot.resolve = null; pilot.reject = null;
+      if (rj) rj(new Error('fell'));
+      return;
+    }
+    pilot.falls = falls;
     // stuck detection
     const moved = pilot.lastPos ? Math.hypot(p.pos.x - pilot.lastPos.x, p.pos.z - pilot.lastPos.z) : 1;
     pilot.lastPos = { x: p.pos.x, z: p.pos.z };
@@ -54,11 +64,23 @@ export function installPilot() {
   // Walk to a point; resolves when reached.
   pilot.go = (x, z, opts = {}) => new Promise((resolve, reject) => {
     pilot.target = { x, z, ...opts };
-    const tm = setTimeout(() => { if (pilot.target && pilot.target.x === x && pilot.target.z === z) { pilot.target = null; const p = g.player.pos; reject(new Error(`pilot stuck going to ${x.toFixed(1)},${z.toFixed(1)} at ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`)); } }, opts.timeout || 90000);
-    pilot.resolve = (v) => { clearTimeout(tm); resolve(v); };
+    const tm = setTimeout(() => { if (pilot.target && pilot.target.x === x && pilot.target.z === z) { pilot.target = null; const p = g.player.pos; const pl = g.player; reject(new Error(`pilot stuck going to ${x.toFixed(1)},${z.toFixed(1)} at ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)} (running=${g.running} paused=${g.paused} onGround=${pl.onGround} vel=${pl.vel.x.toFixed(2)},${pl.vel.y.toFixed(2)},${pl.vel.z.toFixed(2)} screens=${[...document.querySelectorAll('[data-screen]')].map((e) => e.dataset.screen).join('+')})`)); } }, opts.timeout || 90000);
+    pilot.resolve = (v) => { clearTimeout(tm); pilot.reject = null; resolve(v); };
+    pilot.reject = (e) => { clearTimeout(tm); reject(e); };
   });
   pilot.path = async (pts, opts = {}) => { for (const p of pts) await pilot.go(p[0], p[1], { ...opts, ...(p[2] || {}) }); };
   pilot.stop = () => { pilot.target = null; };
+  // A jumping course: after a fall the game respawns us at the checkpoint,
+  // so start the whole course again from there.
+  pilot.course = async (pts, tries = 8) => {
+    for (let i = 1; ; i++) {
+      try { await pilot.path(pts, { retryOnFall: true }); return; } catch (e) {
+        if (e.message !== 'fell' || i >= tries) throw e;
+        pilot.log.push('fell, retrying the course');
+        await new Promise((r) => setTimeout(r, 600));
+      }
+    }
+  };
   pilot.aimAt = aimAt;
   pilot.press = (k) => input.pressed.add(k);
   pilot.levels = LV;
