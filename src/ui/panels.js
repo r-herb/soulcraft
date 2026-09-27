@@ -6,7 +6,7 @@ import { slotEl, fillSlot, itemName } from './hud.js';
 import { RECIPES, matchRecipe, canAfford, recipeNeeds } from '../player/crafting.js';
 import { ITEMS, maxStack } from '../player/items.js';
 import { SKINS, drawSkinPortrait } from '../entities/models.js';
-import { saveProfile } from '../save/db.js';
+import { storeProfile } from '../save/account.js';
 import { BOSS_ORDER } from '../bosses/bosses.js';
 import { ARENAS } from '../world/structures.js';
 import { FRIEND_XP } from '../entities/villager.js';
@@ -259,7 +259,7 @@ export function shop(args, ui) {
       profile.skin = s.id;
       ui.click();
       if (ui.game && ui.game.held) ui.game.held.setSkin(s.id);
-      await saveProfile(profile);
+      await storeProfile(profile);
       draw();
     };
   };

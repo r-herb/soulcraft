@@ -14,9 +14,10 @@
     "three": "0.180.0"
   },
   "devDependencies": {
-    "@fontsource/tiny5": "5.3.0",
     "@fontsource/press-start-2p": "5.2.7",
+    "@fontsource/tiny5": "5.3.0",
     "@playwright/test": "1.56.1",
-    "vite": "7.1.12"
+    "vite": "7.1.12",
+    "wrangler": "4.142.0"
   }
 }

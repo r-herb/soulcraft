@@ -8,3 +8,4 @@ scratch/
 *.log
 .DS_Store
 .env*
+.dev.vars

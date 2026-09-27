@@ -6,6 +6,7 @@ import { settings, setSetting } from '../save/settings.js';
 import { SVG } from './icons.js';
 import { Hud } from './hud.js';
 import * as panels from './panels.js';
+import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
 
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
@@ -168,9 +169,14 @@ export class UI {
         </div>
       </div>
       <div class="title-foot">
+        <div class="row">
         <div class="lang-switch" role="group" aria-label="Language">
           <button data-lang="en" class="${lang === 'en' ? 'on' : ''}">EN</button>
           <button data-lang="ru" class="${lang === 'ru' ? 'on' : ''}">RU</button>
+        </div>
+        ${account.available ? (account.user
+    ? `<button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
+    : '<button class="btn small ghost acct-btn" data-act="signin" data-i18n="acct.signIn"></button>') : ''}
         </div>
         <span class="faint">${esc(t('title.version', { v: VERSION }))}</span>
       </div>
@@ -192,6 +198,10 @@ export class UI {
     node.querySelector('[data-act="new"]').addEventListener('click', () => { this.click(); this.open('newWorld'); });
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
     node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
+    const si = node.querySelector('[data-act="signin"]');
+    if (si) si.addEventListener('click', () => { this.click(); this.open('signin'); });
+    const pr = node.querySelector('[data-act="profile"]');
+    if (pr) pr.addEventListener('click', () => { this.click(); this.open('profile'); });
     node.querySelector('[data-act="settings"]').addEventListener('click', () => { this.click(); this.open('settings'); });
     return node;
   }
@@ -247,6 +257,119 @@ export class UI {
     node.querySelector('[data-act="start"]').addEventListener('click', () => { this.click(); this.app.startQuest(); });
     const c = node.querySelector('[data-act="continue"]');
     if (c) c.addEventListener('click', () => { this.click(); this.app.continueQuest(); });
+    return node;
+  }
+
+  // ---------- account ----------
+  acctError(e) {
+    const k = 'acct.err.' + (e && e.code);
+    const s = t(k);
+    return s === k ? t('acct.err.generic') : s;
+  }
+
+  screen_signin() {
+    const node = el(`<div class="screen solid" data-screen="signin">
+      <div class="panel" style="width:min(460px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="acct.signIn"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <form class="panel-body col" style="gap:var(--sp-3)" novalidate>
+          <div class="field"><label for="si-login" data-i18n="acct.login"></label><input id="si-login" class="input" autocomplete="username" inputmode="email" maxlength="120"></div>
+          <div class="field"><label for="si-pass" data-i18n="acct.password"></label><input id="si-pass" class="input" type="password" autocomplete="current-password" maxlength="200"></div>
+          <label class="check"><input type="checkbox" id="si-remember" checked> <span data-i18n="acct.remember"></span></label>
+          <p class="form-error" role="alert"></p>
+          <button class="btn primary wide" type="submit" data-act="submit" data-i18n="acct.signIn"></button>
+          <p class="faint" style="margin:0" data-i18n="acct.note"></p>
+        </form>
+      </div></div>`);
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    const form = node.querySelector('form');
+    const errEl = node.querySelector('.form-error');
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      this.click();
+      const btn = node.querySelector('[data-act="submit"]');
+      btn.disabled = true; errEl.textContent = '';
+      try {
+        const u = await signIn(node.querySelector('#si-login').value, node.querySelector('#si-pass').value, node.querySelector('#si-remember').checked);
+        await this.app.reloadAccount();
+        this.toast(t('acct.welcome', { name: u.name }), 'ok');
+        this.showTitle();
+      } catch (e) {
+        errEl.textContent = this.acctError(e);
+        btn.disabled = false;
+      }
+    });
+    return node;
+  }
+
+  screen_profile() {
+    const u = account.user;
+    if (!u) return this.screen_signin();
+    const node = el(`<div class="screen solid" data-screen="profile">
+      <div class="panel" style="width:min(720px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="acct.profile"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body">
+          <div class="profile-grid">
+            <div class="col" style="align-items:center">
+              <div class="avatar-lg">${u.avatar ? `<img alt="" src="${esc(u.avatar)}">` : ''}</div>
+              <label class="btn small"><span data-i18n="acct.photo"></span><input type="file" accept="image/*" class="hidden" data-act="photo"></label>
+              <button class="btn small ghost" data-act="nophoto" ${u.avatar ? '' : 'disabled'} data-i18n="acct.removePhoto"></button>
+            </div>
+            <form class="col" data-form="profile" novalidate>
+              <div class="field"><label for="pf-name" data-i18n="acct.name"></label><input id="pf-name" class="input" maxlength="40" autocomplete="nickname" value="${esc(u.name)}"></div>
+              <div class="field"><label for="pf-email" data-i18n="acct.email"></label><input id="pf-email" class="input" type="email" maxlength="120" autocomplete="email" value="${esc(u.email || '')}"></div>
+              <div class="field"><label for="pf-phone" data-i18n="acct.phone"></label><input id="pf-phone" class="input" type="tel" maxlength="24" autocomplete="tel" value="${esc(u.phone || '')}"></div>
+              <p class="form-error" data-err="profile" role="alert"></p>
+              <button class="btn primary" type="submit" data-i18n="acct.save"></button>
+            </form>
+          </div>
+          <form class="col" data-form="password" style="margin-top:var(--sp-4)" novalidate>
+            <div class="section-label" data-i18n="acct.changePw"></div>
+            <div class="row" style="flex-wrap:wrap">
+              <input class="input" style="flex:1;min-width:140px" type="password" id="pw-cur" autocomplete="current-password" data-i18n-placeholder="acct.current">
+              <input class="input" style="flex:1;min-width:140px" type="password" id="pw-new" autocomplete="new-password" data-i18n-placeholder="acct.new">
+              <input class="input" style="flex:1;min-width:140px" type="password" id="pw-rep" autocomplete="new-password" data-i18n-placeholder="acct.repeat">
+            </div>
+            <p class="form-error" data-err="password" role="alert"></p>
+            <button class="btn" type="submit" data-i18n="acct.changePw"></button>
+          </form>
+          <p class="faint" data-i18n="acct.cloud"></p>
+          <button class="btn ember" data-act="signout" data-i18n="acct.signOut"></button>
+        </div>
+      </div></div>`);
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    const pErr = node.querySelector('[data-err="profile"]'), wErr = node.querySelector('[data-err="password"]');
+    const save = async (fields) => {
+      pErr.textContent = '';
+      try { await updateProfile(fields); this.toast(t('acct.saved'), 'ok'); this.render(); }
+      catch (e) { pErr.textContent = this.acctError(e); }
+    };
+    node.querySelector('[data-form="profile"]').addEventListener('submit', (ev) => {
+      ev.preventDefault(); this.click();
+      save({ name: node.querySelector('#pf-name').value, email: node.querySelector('#pf-email').value, phone: node.querySelector('#pf-phone').value });
+    });
+    node.querySelector('[data-act="photo"]').addEventListener('change', async (ev) => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      try { await save({ avatar: await resizeAvatar(f) }); } catch { pErr.textContent = t('acct.err.bad_avatar'); }
+    });
+    node.querySelector('[data-act="nophoto"]').addEventListener('click', () => { this.click(); save({ avatar: null }); });
+    node.querySelector('[data-form="password"]').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); this.click();
+      wErr.textContent = '';
+      const cur = node.querySelector('#pw-cur').value, nw = node.querySelector('#pw-new').value, rep = node.querySelector('#pw-rep').value;
+      if (nw !== rep) { wErr.textContent = t('acct.pwMismatch'); return; }
+      try { await changePassword(cur, nw); this.toast(t('acct.pwChanged'), 'ok'); node.querySelectorAll('[data-form="password"] input').forEach((i) => { i.value = ''; }); }
+      catch (e) { wErr.textContent = this.acctError(e); }
+    });
+    node.querySelector('[data-act="signout"]').addEventListener('click', async () => {
+      this.click();
+      await signOut();
+      await this.app.reloadAccount();
+      this.toast(t('acct.signedOut'));
+      this.showTitle();
+    });
     return node;
   }
 

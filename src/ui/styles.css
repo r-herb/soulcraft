@@ -301,3 +301,16 @@ body.touch .desktop-only { display: none !important; }
 .reward-row .rw { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--c-gold-400); }
 .reward-row canvas { width: 64px; height: 64px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(246, 198, 103, 0.7)); }
 #hud.overlay-open .quest-obj { display: none !important; }
+
+/* accounts */
+.acct-btn { gap: 6px; max-width: 200px; }
+.acct-btn span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar-sm { width: 24px; height: 24px; border-radius: 4px; object-fit: cover; image-rendering: auto; border: 2px solid var(--c-ink); flex: none; }
+.avatar-sm.ph { background: var(--c-night-500); display: inline-block; }
+.avatar-lg { width: 112px; height: 112px; border-radius: var(--r-md); border: var(--px) solid var(--border-panel); background: var(--c-night-700) radial-gradient(circle at 50% 38%, var(--c-night-500) 22%, transparent 23%), var(--c-night-700); overflow: hidden; }
+.avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+.profile-grid { display: grid; grid-template-columns: 150px 1fr; gap: var(--sp-4); }
+.check { display: flex; align-items: center; gap: var(--sp-2); min-height: 44px; font-size: var(--fs-sm); color: var(--c-text-dim); }
+.check input { width: 22px; height: 22px; accent-color: var(--c-soul-500); }
+.form-error { color: var(--c-danger); font-size: var(--fs-sm); margin: 0; min-height: 1em; }
+@media (max-width: 700px) { .profile-grid { grid-template-columns: 1fr; } }

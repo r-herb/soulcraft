@@ -1,0 +1,13 @@
+# Cloudflare Pages project "soulcraft": static game in dist/ plus the
+# accounts API in functions/ with the D1 database bound as DB.
+# The deploy workflow replaces database_id with the real id of the
+# "soulcraft" D1 database; the placeholder is used for local dev.
+name = "soulcraft"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "soulcraft"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

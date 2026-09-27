@@ -19,23 +19,38 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL, actionTimeout: 15_000, navigationTimeout: 60_000, trace: 'retain-on-failure', screenshot: 'only-on-failure', launchOptions: launch },
-  webServer: live ? undefined : {
-    command: 'npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-  },
+  webServer: live ? undefined : [
+    {
+      command: 'npm run preview',
+      url: 'http://localhost:4173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      // the accounts API: Pages Functions + a throwaway local D1 database
+      command: 'rm -rf .wrangler/test-state && npx wrangler d1 migrations apply soulcraft --local --persist-to .wrangler/test-state && npx wrangler pages dev dist --port 8788 --persist-to .wrangler/test-state --binding SUPERADMIN_LOGIN=admin --binding SUPERADMIN_PASSWORD=admin-pass-123',
+      url: 'http://localhost:8788',
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: { WRANGLER_SEND_METRICS: 'false', CLOUDFLARE_ACCOUNT_ID: 'local' },
+    },
+  ],
   projects: live ? [
     { name: 'live', testMatch: /live\.spec\.js/, use: { ...devices['Desktop Chrome'], launchOptions: launch } },
   ] : [
     {
+      name: 'accounts',
+      testMatch: /accounts\.spec\.js/,
+      use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:8788', viewport: { width: 1280, height: 720 }, launchOptions: launch },
+    },
+    {
       name: 'mobile',
-      testIgnore: /live\.spec\.js/,
+      testIgnore: /(live|accounts)\.spec\.js/,
       use: { viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: devices['Pixel 7'].userAgent, launchOptions: launch },
     },
     {
       name: 'desktop',
-      testIgnore: /live\.spec\.js/,
+      testIgnore: /(live|accounts)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
   ],

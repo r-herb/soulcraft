@@ -26,3 +26,14 @@
 
 /manifest.webmanifest
   Cache-Control: no-cache
+
+/api/*
+  Cache-Control: no-store
+
+/admin
+  Cache-Control: no-cache
+  X-Robots-Tag: noindex, nofollow
+
+/admin.html
+  Cache-Control: no-cache
+  X-Robots-Tag: noindex, nofollow

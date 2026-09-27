@@ -6,7 +6,7 @@ import { LEVELS, F, SPACING, levelAt, QUEST_SEED, LEVEL_COUNT } from '../world/q
 import { B, BLOCKS } from '../world/blocks.js';
 import { t } from '../i18n/index.js';
 import { HoardGolem } from '../bosses/hoardGolem.js';
-import { saveProfile } from '../save/db.js';
+import { storeProfile } from '../save/account.js';
 
 export function newQuestState() {
   return { checkpoint: 0, solved: [0], hasMap: false, keys: [false, false, false], falls: 0, done: false, rewarded: false, started: 0 };
@@ -389,7 +389,7 @@ export class QuestManager {
       g.held.setSkin('treasure');
       g.giveItem('starfall_blade', 1);
       g.addCrystals(250);
-      await saveProfile(prof);
+      await storeProfile(prof);
     }
     g.audio.sfx('victory');
     const c = LEVELS[13].chest;

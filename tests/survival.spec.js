@@ -46,8 +46,13 @@ test.describe('Survival', () => {
     await startNewWorld(page, 'hunger');
     await page.evaluate(() => { const g = window.__sc.game; g.player.food = 6; const i = g.inventory.slots.findIndex((s) => s && s.item === 'sunfruit'); g.selectSlot(i); });
     if (info.project.name === 'mobile') await page.locator('.act.use').click();
-    else await page.evaluate(() => window.__sc.input.pressed.add('use'));
-    await page.waitForFunction(() => window.__sc.game.player.food > 6, null, { timeout: 10_000 });
+    // a single-frame press can land on a use cooldown, so keep pressing until it eats
+    await page.waitForFunction(() => {
+      const g = window.__sc.game;
+      if (g.player.food > 6) return true;
+      window.__sc.input.pressed.add('use');
+      return false;
+    }, null, { timeout: 10_000, polling: 500 });
     // die from a fall-sized hit
     await page.evaluate(() => window.__sc.game.damagePlayer(100, 'fall'));
     await expect(page.locator('[data-screen="death"]')).toBeVisible();

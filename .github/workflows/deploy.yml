@@ -1,9 +1,11 @@
 name: Test and deploy
 
 # Every push and pull request runs the Playwright tests against the
-# production build (smoke and survival tests, plus the full boss progression). Pushes to main then deploy that exact build to Cloudflare
-# Pages (project "soulcraft") on https://soulcraft.8nomads.com - only if the
-# tests passed.
+# production build (smoke, survival and accounts tests, the full boss
+# progression and the Treasure Quest). Pushes to main then deploy that exact
+# build, plus the accounts API (Pages Functions + D1), to Cloudflare Pages
+# (project "soulcraft") on https://soulcraft.8nomads.com - only if the tests
+# passed.
 on:
   push:
     branches: ["main"]
@@ -34,7 +36,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Playwright smoke + survival tests (mobile landscape + desktop)
+      - name: Playwright smoke + survival + accounts tests (mobile landscape + desktop)
         run: npx playwright test --grep-invert "Boss progression|Treasure Quest"
         env:
           CI: "1"
@@ -130,6 +132,7 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
     steps:
       - uses: actions/checkout@v5
 
@@ -155,12 +158,33 @@ jobs:
 
       - name: Create the Pages project if missing
         run: |
-          if npx wrangler@4.142.0 pages project list 2>/dev/null | grep -q '\bsoulcraft\b'; then
+          if npx wrangler pages project list 2>/dev/null | grep -q '\bsoulcraft\b'; then
             echo "Pages project soulcraft exists"
           else
-            npx wrangler@4.142.0 pages project create soulcraft --production-branch main
+            npx wrangler pages project create soulcraft --production-branch main
           fi
 
+      # Accounts: the D1 database, its schema, and the superadmin login.
+      - name: D1 database for accounts (create if missing)
+        run: node scripts/cloudflare-d1.mjs
+
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply soulcraft --remote
+
+      - name: Superadmin login (Pages secrets from GitHub secrets)
+        env:
+          SUPERADMIN_LOGIN: ${{ secrets.SUPERADMIN_LOGIN }}
+          SUPERADMIN_PASSWORD: ${{ secrets.SUPERADMIN_PASSWORD }}
+        run: |
+          if [ -z "$SUPERADMIN_LOGIN" ] || [ -z "$SUPERADMIN_PASSWORD" ]; then
+            echo "::warning::SUPERADMIN_LOGIN / SUPERADMIN_PASSWORD are not set in GitHub secrets - the admin panel will refuse every sign-in."
+            exit 0
+          fi
+          printf '%s' "$SUPERADMIN_LOGIN" | npx wrangler pages secret put SUPERADMIN_LOGIN --project-name soulcraft
+          printf '%s' "$SUPERADMIN_PASSWORD" | npx wrangler pages secret put SUPERADMIN_PASSWORD --project-name soulcraft
+
+      # Runs from the repo root, so functions/ (the /api) and wrangler.toml
+      # (the D1 binding) go up with the static build.
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
@@ -175,7 +199,7 @@ jobs:
       - name: Wait for the live site to serve this build
         run: |
           set -euo pipefail
-          want=$(grep -o 'assets/index-[^"]*\.js' dist/index.html | head -1)
+          want=$(grep -o 'assets/main-[^"]*\.js' dist/index.html | head -1)
           echo "expecting $want"
           for i in $(seq 1 40); do
             body=$(curl -sS --max-time 20 https://soulcraft.8nomads.com/ || true)
@@ -197,3 +221,5 @@ jobs:
         env:
           CI: "1"
           LIVE_URL: https://soulcraft.8nomads.com
+          SUPERADMIN_LOGIN: ${{ secrets.SUPERADMIN_LOGIN }}
+          SUPERADMIN_PASSWORD: ${{ secrets.SUPERADMIN_PASSWORD }}

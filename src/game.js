@@ -14,7 +14,8 @@ import { EntityManager } from './entities/entities.js';
 import { BossManager, BOSS_ORDER } from './bosses/bosses.js';
 import { HeldItem } from './player/held.js';
 import { settings } from './save/settings.js';
-import { saveWorld, saveProfile } from './save/db.js';
+import { saveWorld } from './save/db.js';
+import { slot, pushSave, storeProfile } from './save/account.js';
 import { t } from './i18n/index.js';
 import { setIconAtlas } from './ui/icons.js';
 import { QuestManager, newQuestState } from './quest/questManager.js';
@@ -276,8 +277,12 @@ export class Game {
     if (!this.meta || !this.player) return false;
     // return crafting grid contents so nothing is lost
     if (this.inventory.grid.some(Boolean)) this.inventory.returnGrid();
-    const ok = await saveWorld(this.serialize(), this.isQuest ? 'quest' : 'current');
-    await saveProfile(this.profile);
+    const base = this.isQuest ? 'quest' : 'current';
+    const rec = this.serialize();
+    rec.savedAt = Date.now();
+    const ok = await saveWorld(rec, slot(base), true);
+    pushSave(base, rec);
+    await storeProfile(this.profile);
     if (!silent || !ok) this.ui.toast(ok ? t(silent ? 'toast.autosaved' : 'toast.saved') : t('toast.saveFailed'), ok ? 'ok' : 'warn');
     return ok;
   }

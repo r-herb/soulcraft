@@ -7,7 +7,8 @@ import { UI } from './ui/ui.js';
 import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
 import { Game } from './game.js';
-import { loadProfile, loadWorld, saveProfile, storageOk } from './save/db.js';
+import { loadProfile, loadWorld, storageOk } from './save/db.js';
+import { initAccount, slot, storeProfile } from './save/account.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -38,7 +39,7 @@ async function boot() {
     },
     async continueQuest() {
       ui.showLoading(t('loading.world'));
-      const data = await loadWorld('quest');
+      const data = await loadWorld(slot('quest'));
       if (!data) { await app.startQuest(); return; }
       await startGame(data);
     },
@@ -49,9 +50,17 @@ async function boot() {
     },
     async continueGame() {
       ui.showLoading(t('loading.world'));
-      const data = await loadWorld();
+      const data = await loadWorld(slot('current'));
       if (!data) { ui.showTitle(); return; }
       await startGame(data);
+    },
+    // after signing in or out: switch to that account's saves and profile
+    async reloadAccount() {
+      app.profile = await loadProfile(slot('profile'));
+      app.game.profile = app.profile;
+      app.game.held.setSkin(app.profile.skin);
+      app.saveInfo = await readSaveInfo();
+      app.questInfo = await readQuestInfo();
     },
     async quitToTitle() {
       const g = app.game;
@@ -76,7 +85,8 @@ async function boot() {
     return;
   }
   ui.setLoading(0.5);
-  app.profile = await loadProfile();
+  await initAccount();
+  app.profile = await loadProfile(slot('profile'));
   app.game.profile = app.profile;
   app.game.held.setSkin(app.profile.skin);
   app.saveInfo = await readSaveInfo();
@@ -97,13 +107,13 @@ async function boot() {
   }
 
   async function readQuestInfo() {
-    const q = await loadWorld('quest');
+    const q = await loadWorld(slot('quest'));
     if (!q || !q.quest) return null;
     return { progress: q.quest.solved.filter((i) => i > 0 && i <= 12).length, done: q.quest.done };
   }
 
   async function readSaveInfo() {
-    const w = await loadWorld();
+    const w = await loadWorld(slot('current'));
     return w ? { name: w.name, day: w.day } : null;
   }
 
@@ -118,7 +128,7 @@ async function boot() {
     const g = app.game;
     if (document.hidden) {
       audio.suspend();
-      if (g && g.running) { g.save(true); saveProfile(app.profile); }
+      if (g && g.running) { g.save(true); storeProfile(app.profile); }
     } else audio.resume();
   });
   window.addEventListener('pagehide', () => { const g = app.game; if (g && g.running) g.save(true); });

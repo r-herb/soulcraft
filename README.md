@@ -51,6 +51,27 @@ With `?dev=1`, **Quest: skip level** jumps ahead one level.
 Control size, opacity, look sensitivity, auto-jump and vibration are all in
 Settings.
 
+## Accounts and the admin panel
+
+Playing needs no account: guests keep their worlds in the browser. Players
+the admin has added can sign in on the title screen with their **email or
+phone number** and password. Signed-in players get:
+
+- cloud saves (the world, the Treasure Quest and the profile), so progress
+  follows them to any device; the newest copy wins,
+- "Keep me signed in" (a 90-day HttpOnly session cookie),
+- a profile with a photo, name, email and phone, and a password change form.
+
+The admin panel is at **https://soulcraft.8nomads.com/admin** (English only).
+The superadmin signs in with the `SUPERADMIN_LOGIN` / `SUPERADMIN_PASSWORD`
+GitHub secrets and can add, edit, disable and delete users, set their
+passwords, upload a photo, and see each user's saves.
+
+The API is a Cloudflare Pages Function (`functions/api/[[path]].js`, helpers
+in `server/lib.js`) backed by a D1 database (`migrations/`). Passwords are
+stored as PBKDF2-SHA256 hashes, sessions as SHA-256 token hashes, and
+repeated failed sign-ins are throttled.
+
 ## Run locally
 
 ```bash
@@ -65,8 +86,11 @@ npm run preview    # serve the build at http://localhost:4173
 ```bash
 npm run build
 npx playwright install chromium   # first time only
-npm test                          # smoke tests: mobile landscape (844x390, touch) + desktop
+npm test                          # smoke tests: mobile landscape (844x390, touch) + desktop, and accounts
 ```
+
+The accounts tests start `wrangler pages dev` with a throwaway local D1
+database (superadmin `admin` / `admin-pass-123`, local only).
 
 What the tests cover:
 
@@ -78,6 +102,10 @@ What the tests cover:
 - `tests/survival.spec.js`: a night enemy chases and hurts the player and
   dies to the sword; eating works; death leads to respawn; villagers trade
   and friendship grows; the shop sells and equips a skin; the Russian UI fits.
+- `tests/accounts.spec.js`: the superadmin adds, edits, searches, disables
+  and deletes users; a player signs in with a phone number, edits the
+  profile, uploads a photo and changes the password; saves move to a second
+  device; "keep me signed in" survives a reload; the admin resets a password.
 - `tests/quest.spec.js` (desktop): plays the Treasure Quest from the camp
   to the chest with an autopilot (`tests/questpilot.js`) that uses the normal
   controls, then checks that the rewards carry over into a normal world.
@@ -98,15 +126,20 @@ button that takes 25% of the current boss's health.
 This repository deploys itself with GitHub Actions and Cloudflare Pages
 (`.github/workflows/deploy.yml`). Every push to `main`:
 
-1. Runs `npm ci`, a production build, then the Playwright smoke tests.
-2. If the tests pass, deploys that exact `dist/` to the Cloudflare Pages
+1. Runs `npm ci`, a production build, then the Playwright tests (smoke,
+   survival and accounts; the boss progression and the Treasure Quest run
+   as parallel jobs).
+2. Makes sure the D1 database **soulcraft** exists (`scripts/cloudflare-d1.mjs`
+   writes its id into `wrangler.toml`), applies `migrations/`, and copies the
+   superadmin login into the Pages project secrets.
+3. If the tests pass, deploys that exact `dist/` plus `functions/` to the Cloudflare Pages
    project **soulcraft** with `cloudflare/wrangler-action` (the project is
    created with `wrangler pages project create soulcraft --production-branch main`
    if it does not exist yet).
-3. Runs `scripts/cloudflare-domain.mjs`, which attaches **soulcraft.8nomads.com**
+4. Runs `scripts/cloudflare-domain.mjs`, which attaches **soulcraft.8nomads.com**
    to the project and creates a proxied CNAME in the `8nomads.com` zone. It
    waits until the domain is active with HTTPS.
-4. Waits until the live site serves the new build, prints the cache and
+5. Waits until the live site serves the new build, prints the cache and
    security headers, and runs a Playwright check against the live URL.
 
 Pull requests run the tests but do not deploy.
@@ -118,9 +151,11 @@ Set these under Settings > Secrets and variables > Actions:
 | Secret | Value |
 |---|---|
 | `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account that holds the `8nomads.com` zone |
-| `CLOUDFLARE_API_TOKEN` | A custom API token with **Account > Cloudflare Pages > Edit**, **Zone > DNS > Edit** and **Zone > Zone > Read** (zone: 8nomads.com) |
+| `CLOUDFLARE_API_TOKEN` | A custom API token with **Account > Cloudflare Pages > Edit**, **Account > D1 > Edit**, **Zone > DNS > Edit** and **Zone > Zone > Read** (zone: 8nomads.com) |
+| `SUPERADMIN_LOGIN` | The admin panel username |
+| `SUPERADMIN_PASSWORD` | The admin panel password |
 
-If a permission is missing, the domain script names it in the job log.
+If a permission is missing, the deploy scripts name it in the job log.
 
 ### Caching
 
@@ -144,7 +179,11 @@ src/bosses/          the five guardian fights
 src/ui/              tokens.css, styles.css, screens, HUD, panels, icons, dev panel
 src/i18n/            en.json, ru.json, t() helper
 src/audio/           Web Audio sound effects and generative music
-src/save/            IndexedDB saves, settings
+src/save/            IndexedDB saves, settings, account + cloud sync
+src/admin/           the /admin panel (admin.html)
+functions/api/       accounts API (Cloudflare Pages Function)
+server/              API helpers: hashing, sessions, validation
+migrations/          D1 schema
 public/              manifest, icons, fonts, _headers
 tests/               Playwright tests
 ```
@@ -169,3 +208,8 @@ tests/               Playwright tests
 **Запуск:** `npm install && npm run dev`.
 **Тесты:** `npm run build && npm test`.
 **Панель разработчика:** добавь `?dev=1` к адресу.
+
+**Аккаунты:** играть можно и без входа. Игроки, которых добавил администратор,
+входят по email или телефону и паролю: сохранения хранятся в облаке и
+переходят на другие устройства, есть профиль с фото и смена пароля. Панель
+администратора: https://soulcraft.8nomads.com/admin (на английском).

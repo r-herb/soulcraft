@@ -40,7 +40,10 @@ function serviceWorker() {
 
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(VERSION) },
-  build: { target: 'es2020', outDir: 'dist', assetsInlineLimit: 0, chunkSizeWarningLimit: 900 },
+  build: {
+    target: 'es2020', outDir: 'dist', assetsInlineLimit: 0, chunkSizeWarningLimit: 900,
+    rollupOptions: { input: { main: 'index.html', admin: 'admin.html' } },
+  },
   worker: { format: 'es' },
   server: { host: true, port: 5173 },
   preview: { host: true, port: 4173 },

@@ -15,3 +15,20 @@ test('live site serves the game', async ({ page }) => {
   expect(manifest.status()).toBe(200);
   expect(problems.filter((p) => !/swiftshader|WebGL/i.test(p))).toEqual([]);
 });
+
+test('live accounts API and admin panel are up', async ({ page, request }) => {
+  const me = await request.get('/api/me');
+  expect(me.status()).toBe(200); // API + database reachable
+  expect(await me.json()).toEqual({ role: null, user: null }); // nobody signed in
+  expect((await request.get('/api/saves')).status()).toBe(401);
+  await page.goto('/admin');
+  await expect(page.locator('form[data-form="login"]')).toBeVisible({ timeout: 30_000 });
+  // the superadmin from the GitHub secrets can sign in
+  const login = process.env.SUPERADMIN_LOGIN, password = process.env.SUPERADMIN_PASSWORD;
+  test.skip(!login || !password, 'SUPERADMIN_* secrets not set');
+  await page.fill('#a-login', login);
+  await page.fill('#a-pass', password);
+  await page.click('form[data-form="login"] button[type=submit]');
+  await expect(page.locator('table.users')).toBeVisible({ timeout: 30_000 });
+  await page.request.post('/api/auth/logout', { data: {} });
+});

@@ -1,0 +1,34 @@
+/* Admin panel: same tokens as the game, a calmer layout for real work. */
+body.admin { overflow: auto; touch-action: auto; -webkit-user-select: text; user-select: text; height: auto; min-height: 100%; background: var(--bg-page); }
+.admin-wrap { max-width: 1100px; margin: 0 auto; padding: calc(var(--sp-4) + var(--safe-t)) calc(var(--sp-4) + var(--safe-r)) var(--sp-6) calc(var(--sp-4) + var(--safe-l)); display: flex; flex-direction: column; gap: var(--sp-4); }
+.admin-top { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.admin-top h1 { font-family: var(--font-display); font-size: var(--fs-display-md); color: var(--c-soul-300); margin: 0; flex: 1; text-shadow: var(--text-shadow); }
+.admin-card { background: var(--surface-panel); border: var(--px) solid var(--border-panel); border-radius: var(--r-md); padding: var(--sp-4); }
+.admin-login { max-width: 420px; margin: 10vh auto 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.toolbar { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; }
+.toolbar .input { flex: 1; min-width: 200px; }
+table.users { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+table.users th { text-align: left; color: var(--c-text-dim); font-weight: 400; padding: var(--sp-2); border-bottom: 2px solid var(--border-slot); white-space: nowrap; }
+table.users td { padding: var(--sp-2); border-bottom: 1px solid var(--border-slot); vertical-align: middle; }
+table.users tr.off td { opacity: 0.5; }
+table.users .acts { display: flex; gap: 4px; flex-wrap: wrap; }
+table.users .btn { min-height: 34px; padding: 0 var(--sp-2); font-size: var(--fs-xs); }
+.av { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; background: var(--c-night-500); display: block; }
+.badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: var(--fs-xs); background: var(--c-ok); color: var(--c-ink); }
+.badge.off { background: var(--c-danger); }
+.empty { color: var(--c-text-faint); text-align: center; padding: var(--sp-5); }
+dialog.admin-dlg { background: var(--surface-panel); color: var(--c-text); border: var(--px) solid var(--border-panel); border-radius: var(--r-md); padding: var(--sp-4); width: min(520px, calc(100vw - 32px)); box-shadow: var(--shadow-panel); }
+dialog.admin-dlg::backdrop { background: rgba(5, 4, 15, 0.7); }
+dialog.admin-dlg h2 { font-family: var(--font-display); font-size: var(--fs-display-sm); color: var(--c-soul-300); margin: 0 0 var(--sp-3); }
+dialog.admin-dlg form { display: flex; flex-direction: column; gap: var(--sp-3); }
+.dlg-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+.saves-list { display: flex; flex-direction: column; gap: var(--sp-2); font-size: var(--fs-sm); }
+.saves-list div { background: var(--surface-slot); padding: var(--sp-2); border-radius: var(--r-sm); }
+.admin-toast { position: fixed; bottom: calc(var(--sp-4) + var(--safe-b)); left: 50%; transform: translateX(-50%); background: var(--surface-panel); border: 2px solid var(--c-ok); color: var(--c-ok); padding: var(--sp-2) var(--sp-4); border-radius: var(--r-sm); z-index: 10; }
+.admin-toast.bad { border-color: var(--c-danger); color: var(--c-danger); }
+@media (max-width: 760px) {
+  table.users thead { display: none; }
+  table.users tr { display: grid; grid-template-columns: 40px 1fr; gap: 4px var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px solid var(--border-slot); }
+  table.users td { border: 0; padding: 0; }
+  table.users td:first-child { grid-row: span 6; }
+}

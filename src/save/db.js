@@ -46,11 +46,11 @@ async function tx(store, mode, fn) {
   });
 }
 
-export async function saveWorld(data, slot = 'current') {
+export async function saveWorld(data, slot = 'current', keepStamp = false) {
   try {
     const rec = JSON.parse(JSON.stringify(data));
     rec.id = slot;
-    rec.savedAt = Date.now();
+    if (!keepStamp || !rec.savedAt) rec.savedAt = Date.now();
     const r = await tx('worlds', 'readwrite', (s) => (s ? s.put(rec) : memory.worlds.set(slot, rec)));
     void r;
     return true;
@@ -77,21 +77,23 @@ export async function deleteWorld(slot = 'current') {
 
 const DEFAULT_PROFILE = { id: 'profile', crystals: 0, skins: ['wanderer'], skin: 'wanderer', totalCrystals: 0 };
 
-export async function loadProfile() {
+export async function loadProfile(id = 'profile') {
   try {
-    const r = await tx('profile', 'readonly', (s) => (s ? s.get('profile') : null));
-    const p = r || memory.profile.get('profile');
-    return { ...DEFAULT_PROFILE, ...(p || {}) };
+    const r = await tx('profile', 'readonly', (s) => (s ? s.get(id) : null));
+    const p = r || memory.profile.get(id);
+    return { ...DEFAULT_PROFILE, ...(p || {}), id };
   } catch (e) {
     console.warn('loadProfile failed', e);
     return { ...DEFAULT_PROFILE };
   }
 }
 
-export async function saveProfile(p) {
+export async function saveProfile(p, id = 'profile', keepStamp = false) {
   try {
-    const rec = JSON.parse(JSON.stringify({ ...p, id: 'profile' }));
-    await tx('profile', 'readwrite', (s) => (s ? s.put(rec) : memory.profile.set('profile', rec)));
+    const rec = JSON.parse(JSON.stringify({ ...p, id }));
+    if (!keepStamp || !rec.savedAt) rec.savedAt = Date.now();
+    p.savedAt = rec.savedAt;
+    await tx('profile', 'readwrite', (s) => (s ? s.put(rec) : memory.profile.set(id, rec)));
     return true;
   } catch (e) {
     console.warn('saveProfile failed', e);
