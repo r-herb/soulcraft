@@ -1,0 +1,49 @@
+// Settings live in localStorage (small, synchronous); guarded everywhere.
+import { detectLang } from '../i18n/index.js';
+
+const KEY = 'soulcraft.settings.v1';
+const isTouch = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
+
+export const DEFAULTS = {
+  lang: null,
+  textures: 'classic',
+  music: true,
+  funMusic: false,
+  volume: 0.7,
+  renderDistance: isTouch ? 3 : 5,
+  controlSize: 1,
+  controlOpacity: 0.7,
+  vibration: true,
+  fps: false,
+  sensitivity: 1,
+  autoJump: true,
+  tutorialDone: {},
+};
+
+let current = null;
+const listeners = new Set();
+
+export function loadSettings() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { s = {}; }
+  current = { ...DEFAULTS, ...s };
+  if (!current.lang) current.lang = detectLang();
+  current.renderDistance = Math.max(2, Math.min(8, current.renderDistance | 0 || DEFAULTS.renderDistance));
+  return current;
+}
+
+export function settings() { return current || loadSettings(); }
+
+export function saveSettings() {
+  try { localStorage.setItem(KEY, JSON.stringify(current)); } catch { /* private mode or full */ }
+}
+
+export function setSetting(k, v) {
+  settings()[k] = v;
+  saveSettings();
+  listeners.forEach((fn) => { try { fn(k, v); } catch (e) { console.warn(e); } });
+}
+
+export function onSetting(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+
+export { isTouch };

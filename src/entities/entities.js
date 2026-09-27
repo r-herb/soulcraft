@@ -1,0 +1,627 @@
+// Entities: item drops, particles, projectiles, hostile mobs and villagers.
+import * as THREE from 'three';
+import { moveBody } from '../player/player.js';
+import { humanoid, box, faceTexture, animateWalk, lambert } from './models.js';
+import { iconCanvas } from '../ui/icons.js';
+import { isNight } from '../engine/sky.js';
+import { B, IS_SOLID, ATLAS_COLS } from '../world/blocks.js';
+import { hash3 } from '../world/noise.js';
+import { t } from '../i18n/index.js';
+import { Villager } from './villager.js';
+
+const tmp = new THREE.Vector3();
+const tmp2 = new THREE.Vector3();
+
+export class Entity {
+  constructor(game, x, y, z) {
+    this.game = game;
+    this.pos = new THREE.Vector3(x, y, z);
+    this.vel = new THREE.Vector3();
+    this.w = 0.6; this.h = 1.8;
+    this.hp = 10; this.maxHp = 10;
+    this.dead = false;
+    this.hittable = true;
+    this.onGround = false;
+    this.hurtT = 0;
+    this.yaw = 0;
+    this.object = new THREE.Group();
+    this.object.position.copy(this.pos);
+    game.scene.add(this.object);
+    this._out = {};
+    this.gravity = 28;
+  }
+  get center() { return tmp.set(this.pos.x, this.pos.y + this.h / 2, this.pos.z); }
+  physics(dt) {
+    this.vel.y -= this.gravity * dt;
+    this.vel.y = Math.max(this.vel.y, -40);
+    const o = moveBody(this.game.world, this.pos, this.vel, this.w, this.h, dt, this._out);
+    this.onGround = o.onGround;
+    if (this.onGround) { this.vel.x *= Math.max(0, 1 - 10 * dt); this.vel.z *= Math.max(0, 1 - 10 * dt); }
+    return o;
+  }
+  damage(amount, dir) {
+    if (this.dead) return false;
+    this.hp -= amount;
+    this.hurtT = 0.3;
+    if (dir) { this.vel.x += dir.x * 7; this.vel.z += dir.z * 7; this.vel.y = Math.max(this.vel.y, 5); }
+    if (this.hp <= 0) { this.hp = 0; this.die(); }
+    return true;
+  }
+  die() { this.dead = true; }
+  sync() {
+    this.object.position.copy(this.pos);
+    this.object.rotation.y = this.yaw;
+    const red = this.hurtT > 0;
+    if (red !== this._red) {
+      this._red = red;
+      this.object.traverse((o) => { if (o.material && !Array.isArray(o.material) && o.material.emissive) { if (!o.userData.ownMat) { o.material = o.material.clone(); o.userData.ownMat = true; } o.material.emissive.setHex(red ? 0x880000 : 0x000000); } });
+    }
+  }
+  remove() { this.game.scene.remove(this.object); this.object.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+}
+
+// ---------------- Item drops ----------------
+const dropGeo = new THREE.PlaneGeometry(0.4, 0.4);
+class ItemDrop extends Entity {
+  constructor(game, item, count, pos, vel) {
+    super(game, pos.x, pos.y, pos.z);
+    this.item = item; this.count = count;
+    this.w = 0.3; this.h = 0.3;
+    this.hittable = false;
+    this.life = 300;
+    this.pickDelay = 0.6;
+    const tex = new THREE.CanvasTexture(iconCanvas(item, 32));
+    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    this.mesh = new THREE.Mesh(dropGeo, new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide }));
+    this.mesh.position.y = 0.2;
+    this.object.add(this.mesh);
+    if (vel) this.vel.copy(vel); else this.vel.set((Math.random() - 0.5) * 3, 4, (Math.random() - 0.5) * 3);
+    this.spin = Math.random() * 6;
+  }
+  update(dt) {
+    this.life -= dt; this.pickDelay -= dt;
+    if (this.life <= 0) { this.dead = true; return; }
+    const p = this.game.player;
+    const d = tmp2.set(p.pos.x - this.pos.x, p.pos.y + 0.8 - this.pos.y, p.pos.z - this.pos.z);
+    const dist = d.length();
+    if (this.pickDelay <= 0 && dist < 3.5 && !p.dead) {
+      if (dist < 1.1) {
+        const left = this.game.inventory.add(this.item, this.count);
+        if (left < this.count) this.game.audio.sfx('pickup');
+        this.count = left;
+        if (left <= 0) { this.dead = true; return; }
+        this.pickDelay = 1;
+      } else { d.normalize().multiplyScalar(8); this.vel.x = d.x; this.vel.z = d.z; this.vel.y = d.y + 2; }
+    }
+    this.physics(dt);
+    this.spin += dt * 2;
+    this.mesh.rotation.y = this.spin;
+    this.mesh.position.y = 0.25 + Math.sin(this.spin * 1.5) * 0.06;
+  }
+}
+
+// ---------------- Particles ----------------
+class Particles {
+  constructor(scene) {
+    this.max = 400;
+    this.geo = new THREE.BufferGeometry();
+    this.pos = new Float32Array(this.max * 3);
+    this.col = new Float32Array(this.max * 3);
+    this.vel = new Float32Array(this.max * 3);
+    this.life = new Float32Array(this.max);
+    this.geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+    this.geo.setAttribute('color', new THREE.BufferAttribute(this.col, 3));
+    this.points = new THREE.Points(this.geo, new THREE.PointsMaterial({ size: 0.14, vertexColors: true, sizeAttenuation: true }));
+    this.points.frustumCulled = false;
+    scene.add(this.points);
+    this.i = 0;
+  }
+  emit(x, y, z, r, g, b, n = 12, speed = 3, life = 0.8, gravity = true) {
+    for (let k = 0; k < n; k++) {
+      const i = this.i; this.i = (this.i + 1) % this.max;
+      this.pos[i * 3] = x + (Math.random() - 0.5) * 0.6; this.pos[i * 3 + 1] = y + (Math.random() - 0.5) * 0.6; this.pos[i * 3 + 2] = z + (Math.random() - 0.5) * 0.6;
+      this.vel[i * 3] = (Math.random() - 0.5) * speed; this.vel[i * 3 + 1] = Math.random() * speed * (gravity ? 1 : 0.5); this.vel[i * 3 + 2] = (Math.random() - 0.5) * speed;
+      const v = 0.8 + Math.random() * 0.4;
+      this.col[i * 3] = r * v; this.col[i * 3 + 1] = g * v; this.col[i * 3 + 2] = b * v;
+      this.life[i] = life * (0.6 + Math.random() * 0.6) * (gravity ? 1 : -1);
+    }
+  }
+  update(dt) {
+    for (let i = 0; i < this.max; i++) {
+      let l = this.life[i];
+      if (l === 0) continue;
+      const grav = l > 0;
+      l = grav ? l - dt : l + dt;
+      if ((grav && l <= 0) || (!grav && l >= 0)) { this.life[i] = 0; this.pos[i * 3 + 1] = -9999; continue; }
+      this.life[i] = l;
+      if (grav) this.vel[i * 3 + 1] -= 14 * dt;
+      this.pos[i * 3] += this.vel[i * 3] * dt; this.pos[i * 3 + 1] += this.vel[i * 3 + 1] * dt; this.pos[i * 3 + 2] += this.vel[i * 3 + 2] * dt;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+    this.geo.attributes.color.needsUpdate = true;
+  }
+  clear() { this.life.fill(0); this.pos.fill(-9999); this.geo.attributes.position.needsUpdate = true; }
+}
+
+// ---------------- Projectiles ----------------
+const PROJ_STYLE = {
+  arrow: { color: 0xc9ccd2, size: [0.08, 0.08, 0.6], gravity: 14 },
+  spear: { color: 0xdfe3e8, size: [0.1, 0.1, 1.1], gravity: 12 },
+  wind: { color: 0xbff7ec, size: [0.35, 0.35, 0.35], gravity: 3, emissive: 0x2a8a7a },
+  shell_dark: { color: 0x231d36, size: [0.6, 0.6, 0.6], gravity: 0, emissive: 0x1a0f33 },
+  shell_glow: { color: 0x7ff3ff, size: [0.6, 0.6, 0.6], gravity: 0, emissive: 0x44d6e8 },
+  fireball: { color: 0xff7a2e, size: [0.55, 0.55, 0.55], gravity: 0, emissive: 0xff5a1a },
+  void_orb: { color: 0xb98bff, size: [0.7, 0.7, 0.7], gravity: 0, emissive: 0x6d45d6 },
+  storm_bolt: { color: 0xb6fbff, size: [0.4, 0.4, 0.9], gravity: 0, emissive: 0x7ff3ff },
+};
+
+class Projectile extends Entity {
+  constructor(game, o) {
+    super(game, o.pos.x, o.pos.y, o.pos.z);
+    this.kind = o.kind;
+    this.owner = o.owner;
+    this.damageAmt = o.damage || 0;
+    this.vel.copy(o.vel);
+    this.hittable = !!o.deflectable;
+    this.deflectable = !!o.deflectable;
+    this.w = 0.3; this.h = 0.3;
+    this.life = o.life || 8;
+    this.homing = o.homing || 0;
+    this.onImpact = o.onImpact || null;
+    this.radius = o.radius || 0.6;
+    const st = PROJ_STYLE[this.kind] || PROJ_STYLE.arrow;
+    this.gravity = o.gravity !== undefined ? o.gravity : st.gravity;
+    const mat = new THREE.MeshLambertMaterial({ color: st.color, emissive: st.emissive || 0x000000 });
+    this.mesh = new THREE.Mesh(new THREE.BoxGeometry(...st.size), mat);
+    this.mesh.position.y = 0.15;
+    this.object.add(this.mesh);
+    if (this.kind === 'shell_glow' || this.kind === 'void_orb' || this.kind === 'fireball') {
+      const halo = new THREE.Mesh(new THREE.BoxGeometry(st.size[0] * 1.6, st.size[1] * 1.6, st.size[2] * 1.6), new THREE.MeshBasicMaterial({ color: st.emissive, transparent: true, opacity: 0.3, depthWrite: false }));
+      this.mesh.add(halo);
+    }
+  }
+  update(dt) {
+    this.life -= dt;
+    if (this.life <= 0) { this.dead = true; return; }
+    const g = this.game;
+    if (this.homeTarget && !this.homeTarget.dead) {
+      tmp2.copy(this.homeTarget.center()).sub(this.pos).normalize().multiplyScalar(20);
+      this.vel.lerp(tmp2, Math.min(1, 6 * dt));
+    }
+    if (this.homing && this.owner !== 'player') {
+      const p = g.player.pos;
+      tmp2.set(p.x - this.pos.x, p.y + 1 - this.pos.y, p.z - this.pos.z).normalize().multiplyScalar(this.vel.length());
+      this.vel.lerp(tmp2, Math.min(1, this.homing * dt));
+    }
+    this.vel.y -= this.gravity * dt;
+    const steps = 3;
+    for (let s = 0; s < steps && !this.dead; s++) {
+      this.pos.addScaledVector(this.vel, dt / steps);
+      // world collision
+      const id = g.world.getBlock(this.pos.x, this.pos.y + 0.15, this.pos.z);
+      if (id > 0 && IS_SOLID[id]) { this.impact(null); return; }
+      // hit player
+      if (this.owner !== 'player') {
+        const p = g.player;
+        if (!p.dead && Math.abs(p.pos.x - this.pos.x) < 0.3 + this.radius && Math.abs(p.pos.z - this.pos.z) < 0.3 + this.radius && this.pos.y > p.pos.y - this.radius && this.pos.y < p.pos.y + 1.8 + this.radius * 0.5) {
+          tmp2.copy(this.vel).setY(0).normalize();
+          g.damagePlayer(this.damageAmt, this.owner === 'boss' ? 'boss' : 'mob', this.sourceName, tmp2);
+          this.impact(g.player);
+          return;
+        }
+      } else {
+        // hit mobs / bosses
+        for (const e of g.entities.list) {
+          if (e === this || !e.hittable || e.dead || e instanceof Projectile || e.villager) continue;
+          if (hitsAABB(this.pos, e, 0.25)) {
+            tmp2.copy(this.vel).setY(0).normalize();
+            g.entities.playerHit(e, this.damageAmt, tmp2, this.kind);
+            this.impact(e);
+            return;
+          }
+        }
+        const boss = g.bosses.active;
+        if (boss && boss.hitTest && boss.hitTest(this.pos, 0.4)) {
+          boss.onProjectile(this);
+          this.impact(boss);
+          return;
+        }
+      }
+    }
+    if (this.vel.lengthSq() > 0.01) {
+      this.yaw = Math.atan2(this.vel.x, this.vel.z);
+      this.mesh.rotation.x = -Math.atan2(this.vel.y, Math.hypot(this.vel.x, this.vel.z));
+    }
+    if (this.kind === 'wind' || this.kind === 'shell_glow' || this.kind === 'void_orb') this.mesh.rotation.z += dt * 8;
+  }
+  // Hit back by the player: flies home to the boss that threw it.
+  deflect(boss) {
+    const g = this.game;
+    this.owner = 'player';
+    this.deflected = true;
+    this.deflectable = false;
+    this.hittable = false;
+    this.life = 6;
+    this.homeTarget = boss || null;
+    const target = boss ? boss.center() : this.pos.clone().add(this.vel.clone().multiplyScalar(-1));
+    this.vel.copy(target.sub(this.pos).normalize().multiplyScalar(20));
+    g.audio.sfx('deflect');
+    g.entities.particles.emit(this.pos.x, this.pos.y, this.pos.z, 0.7, 1, 1, 16, 5, 0.4, false);
+  }
+
+  impact(target) {
+    if (this.dead) return;
+    this.dead = true;
+    const g = this.game;
+    if (this.onImpact) this.onImpact(this, target);
+    if (this.kind === 'spear' && this.owner === 'player') {
+      g.entities.dropItem('spear', 1, this.pos.clone().setY(this.pos.y + 0.3), new THREE.Vector3(0, 2, 0));
+    }
+    if (this.kind === 'wind') {
+      g.audio.sfx('wind');
+      g.entities.particles.emit(this.pos.x, this.pos.y, this.pos.z, 0.75, 0.97, 0.93, 24, 7, 0.5, false);
+      // knockback nearby mobs and the player
+      for (const e of g.entities.list) if (e.hittable && !e.villager && e.pos.distanceTo(this.pos) < 3) { tmp2.subVectors(e.pos, this.pos).setY(0).normalize(); e.vel.addScaledVector(tmp2, 10); e.vel.y = 7; }
+      const pd = g.player.pos.distanceTo(this.pos);
+      if (pd < 2.5) { tmp2.subVectors(g.player.pos, this.pos).setY(0).normalize(); g.player.knock.set(tmp2.x * 6, 9, tmp2.z * 6); }
+    }
+    if (this.kind === 'fireball' || this.kind === 'void_orb') {
+      g.entities.particles.emit(this.pos.x, this.pos.y, this.pos.z, this.kind === 'fireball' ? 1 : 0.7, this.kind === 'fireball' ? 0.5 : 0.5, this.kind === 'fireball' ? 0.2 : 1, 20, 5, 0.6);
+    }
+  }
+}
+
+function hitsAABB(p, e, r) {
+  const hw = e.w / 2 + r;
+  return p.x > e.pos.x - hw && p.x < e.pos.x + hw && p.z > e.pos.z - hw && p.z < e.pos.z + hw && p.y > e.pos.y - r && p.y < e.pos.y + e.h + r;
+}
+
+// ---------------- Mobs ----------------
+const MOB_DEFS = {
+  hollow: { hp: 20, speed: 3.2, dmg: 3, reach: 1.5, name: 'mob.hollow', burns: true, drops: [['bone_dust', 0.8], ['sunfruit', 0.15], ['roast', 0.2]] },
+  skitter: { hp: 14, speed: 5.2, dmg: 2, reach: 1.4, name: 'mob.skitter', burns: false, drops: [['fiber', 0.8], ['roast', 0.3]], w: 1.1, h: 0.7 },
+  gloomshot: { hp: 18, speed: 3, dmg: 3, reach: 14, name: 'mob.gloomshot', burns: true, ranged: true, drops: [['arrow', 0.9], ['bone_dust', 0.5]] },
+  soulMinion: { hp: 8, speed: 4.2, dmg: 2, reach: 1.4, name: 'mob.soulMinion', flying: true, drops: [] , w: 0.7, h: 0.7 },
+  fireSpirit: { hp: 10, speed: 4.4, dmg: 4, reach: 1.4, name: 'mob.fireSpirit', flying: true, drops: [['charcoal', 0.6]], w: 0.7, h: 0.8 },
+  whirlwind: { hp: 999, speed: 2.6, dmg: 1, reach: 1.6, name: 'mob.whirlwind', hazard: true, drops: [], w: 1.4, h: 3 },
+};
+
+export class Mob extends Entity {
+  constructor(game, type, x, y, z) {
+    super(game, x, y, z);
+    const d = MOB_DEFS[type];
+    this.type = type; this.def = d;
+    this.hp = this.maxHp = d.hp;
+    this.w = d.w || 0.6; this.h = d.h || 1.8;
+    this.attackT = 0.5 + Math.random();
+    this.wanderT = 0;
+    this.wanderDir = new THREE.Vector3();
+    this.phase = Math.random() * 6;
+    this.name = t(d.name);
+    this.nameKey = d.name;
+    this.hittable = type !== 'whirlwind';
+    this.build();
+    if (d.flying) this.gravity = 0;
+  }
+  build() {
+    const tp = this.type;
+    if (tp === 'hollow') {
+      this.rig = humanoid({ skin: '#8f8aa8', hair: '#3a3450', shirt: '#4b4468', pants: '#2b2640', eye: '#b98bff' }, 'hollow');
+      this.object.add(this.rig.group);
+      this.rig.armL.rotation.x = this.rig.armR.rotation.x = -1.3;
+    } else if (tp === 'gloomshot') {
+      this.rig = humanoid({ skin: '#5a5470', hair: '#17143d', shirt: '#231f57', pants: '#17143d', eye: '#7ff3ff' }, 'hollow', 0.95);
+      this.object.add(this.rig.group);
+      const bow = box(0.06, 0.8, 0.06, '#8a6238'); bow.position.set(0, -0.5, 0.15); this.rig.armL.add(bow);
+      this.rig.armL.rotation.x = -1.4;
+    } else if (tp === 'skitter') {
+      const body = box(0.9, 0.45, 1.1, '#3a2a2a', faceTexture('eyes', '#3a2a2a', '#ff4d4d'));
+      body.position.y = 0.45;
+      this.object.add(body);
+      this.legs = [];
+      for (let i = 0; i < 6; i++) {
+        const side = i < 3 ? -1 : 1;
+        const leg = new THREE.Group();
+        leg.position.set(side * 0.45, 0.45, -0.35 + (i % 3) * 0.35);
+        const m = box(0.7, 0.08, 0.08, '#231818'); m.position.x = side * 0.35; m.rotation.z = side * -0.6;
+        leg.add(m);
+        this.object.add(leg);
+        this.legs.push(leg);
+      }
+    } else if (tp === 'soulMinion' || tp === 'fireSpirit') {
+      const fire = tp === 'fireSpirit';
+      const col = fire ? '#ff7a2e' : '#7ff3ff';
+      const b = box(0.6, 0.6, 0.6, col, faceTexture('ghost', col, fire ? '#5a1a0a' : '#1f2a6b'), { emissive: fire ? 0x8a2a00 : 0x1f7c8c });
+      b.position.y = 0.35;
+      this.object.add(b);
+      const tail = box(0.35, 0.35, 0.35, col, null, { emissive: fire ? 0x8a2a00 : 0x1f7c8c, transparent: true, opacity: 0.6 });
+      tail.position.set(0, -0.2, -0.3);
+      b.add(tail);
+      this.bodyMesh = b;
+    } else if (tp === 'whirlwind') {
+      this.rings = [];
+      for (let i = 0; i < 5; i++) {
+        const r = new THREE.Mesh(new THREE.TorusGeometry(0.35 + i * 0.18, 0.08, 4, 10), new THREE.MeshBasicMaterial({ color: 0xbff7ec, transparent: true, opacity: 0.55, depthWrite: false }));
+        r.rotation.x = Math.PI / 2;
+        r.position.y = 0.3 + i * 0.6;
+        this.object.add(r);
+        this.rings.push(r);
+      }
+    }
+  }
+  update(dt) {
+    const g = this.game, p = g.player, d = this.def;
+    this.hurtT -= dt;
+    this.attackT -= dt;
+    this.phase += dt * 6;
+    if (this.life !== undefined) { this.life -= dt; if (this.life <= 0) { this.dead = true; this.poof(); return; } }
+    const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, dy = p.pos.y - this.pos.y;
+    const dist = Math.hypot(dx, dz);
+    // burn in daylight
+    if (d.burns && g.meta.dim === 'overworld' && !isNight(g.meta.time) && g.world.skyExposed(this.pos.x, this.pos.y + 1.6, this.pos.z)) {
+      this.burnT = (this.burnT || 0) - dt;
+      if (this.burnT <= 0) { this.burnT = 0.8; this.damage(3, null); g.entities.particles.emit(this.pos.x, this.pos.y + 1, this.pos.z, 1, 0.5, 0.1, 6, 1.5, 0.6); }
+    }
+    const aggro = !p.dead && dist < 24 && Math.abs(dy) < 12;
+    let mx = 0, mz = 0;
+    if (aggro) {
+      if (d.ranged && dist < 7) { mx = -dx / dist; mz = -dz / dist; }
+      else if (!d.ranged || dist > 11) { mx = dx / (dist || 1); mz = dz / (dist || 1); }
+      this.yaw = Math.atan2(dx, dz);
+    } else {
+      this.wanderT -= dt;
+      if (this.wanderT <= 0) { this.wanderT = 2 + Math.random() * 4; const a = Math.random() * Math.PI * 2; const go = Math.random() < 0.6; this.wanderDir.set(go ? Math.sin(a) : 0, 0, go ? Math.cos(a) : 0); }
+      mx = this.wanderDir.x * 0.5; mz = this.wanderDir.z * 0.5;
+      if (mx || mz) this.yaw = Math.atan2(mx, mz);
+    }
+    const sp = d.speed * (g.meta.difficulty === 'hard' ? 1.15 : 1);
+    const k = Math.min(1, (this.onGround || d.flying ? 10 : 2) * dt);
+    this.vel.x += (mx * sp - this.vel.x) * k;
+    this.vel.z += (mz * sp - this.vel.z) * k;
+    if (d.flying) {
+      const targetY = aggro ? p.pos.y + 1.0 + Math.sin(this.phase * 0.5) * 0.5 : this.pos.y;
+      this.vel.y += ((targetY - this.pos.y) * 2 - this.vel.y) * Math.min(1, 4 * dt);
+    }
+    const o = this.physics(dt);
+    if (!d.flying && this.onGround && (o.hitX || o.hitZ) && (mx || mz)) this.vel.y = 8.2;
+    if (this.type === 'skitter' && aggro && this.onGround && dist < 4 && dist > 2 && Math.random() < dt * 1.5) { this.vel.y = 7; this.vel.x = dx / dist * 8; this.vel.z = dz / dist * 8; }
+    // attack
+    if (aggro && this.attackT <= 0) {
+      if (d.ranged && dist < d.reach) {
+        this.attackT = 2.2;
+        const from = new THREE.Vector3(this.pos.x, this.pos.y + 1.5, this.pos.z);
+        const to = new THREE.Vector3(p.pos.x, p.pos.y + 1.3, p.pos.z);
+        const dir = to.sub(from); const len = dir.length(); dir.normalize(); dir.y += len * 0.012;
+        g.entities.shoot('arrow', from, dir.normalize(), 22, d.dmg, 'mob', this.name);
+        g.audio.sfx('shoot');
+      } else if (!d.ranged && dist < d.reach && Math.abs(dy + (d.flying ? 1 : 0)) < 2) {
+        this.attackT = d.hazard ? 0.6 : 1.0;
+        tmp2.set(dx, 0, dz).normalize();
+        if (d.hazard) { p.knock.set(tmp2.x * 9, 10, tmp2.z * 9); g.damagePlayer(d.dmg, 'mob', this.name); }
+        else g.damagePlayer(d.dmg, 'mob', this.name, tmp2);
+        if (this.rig) this.rig.armR.rotation.x = -2;
+      }
+    }
+    // animation
+    const moving = Math.hypot(this.vel.x, this.vel.z);
+    if (this.rig) { animateWalk(this.rig, this.phase, Math.min(1, moving / 3)); if (this.type === 'hollow') { this.rig.armL.rotation.x = -1.3 + Math.sin(this.phase) * 0.1; this.rig.armR.rotation.x += (-1.3 - this.rig.armR.rotation.x) * 0.2; } }
+    if (this.legs) this.legs.forEach((l, i) => { l.rotation.y = Math.sin(this.phase * 2 + i) * 0.4 * Math.min(1, moving); });
+    if (this.bodyMesh) this.bodyMesh.position.y = 0.35 + Math.sin(this.phase) * 0.1;
+    if (this.rings) this.rings.forEach((r, i) => { r.rotation.z += dt * (4 + i); r.position.x = Math.sin(this.phase + i) * 0.1; });
+    if (this.type === 'fireSpirit' && Math.random() < dt * 8) g.entities.particles.emit(this.pos.x, this.pos.y + 0.4, this.pos.z, 1, 0.55, 0.15, 1, 1, 0.5, false);
+    if (this.type === 'whirlwind' && Math.random() < dt * 20) g.entities.particles.emit(this.pos.x, this.pos.y + Math.random() * 3, this.pos.z, 0.8, 0.97, 0.93, 1, 3, 0.4, false);
+    // despawn far away
+    if (dist > 80) this.dead = true;
+  }
+  damage(amount, dir) {
+    if (this.def.hazard) return false;
+    const ok = super.damage(amount, dir);
+    if (ok) this.game.audio.sfx('hit');
+    return ok;
+  }
+  die() {
+    super.die();
+    const g = this.game;
+    g.audio.sfx('mobdie');
+    this.poof();
+    if (this.noDrops) return;
+    g.meta.stats.kills++;
+    for (const [item, chance] of this.def.drops) if (Math.random() < chance) g.entities.dropItem(item, 1 + (Math.random() < 0.3 ? 1 : 0), this.pos.clone().setY(this.pos.y + 0.5));
+    if (Math.random() < 0.08) g.addCrystals(1);
+  }
+  poof() { this.game.entities.particles.emit(this.pos.x, this.pos.y + this.h / 2, this.pos.z, 0.8, 0.8, 0.9, 16, 3, 0.7); }
+}
+
+// ---------------- Manager ----------------
+export class EntityManager {
+  constructor(game) {
+    this.game = game;
+    this.list = [];
+    this.particles = new Particles(game.scene);
+    this.spawnT = 0;
+    this.villagesSpawned = new Set();
+    this.tileColors = null;
+  }
+  clear() {
+    for (const e of this.list) e.remove();
+    this.list = [];
+    this.villagesSpawned.clear();
+    this.particles.clear();
+  }
+  add(e) { this.list.push(e); return e; }
+  onRealmLoaded() { this.spawnVillagers(true); }
+  onNewDay() { for (const e of this.list) if (e.villager) e.refreshTrades(); }
+  onBlockChange() {}
+
+  dropItem(item, count, pos, vel) {
+    if (!item || count <= 0) return null;
+    return this.add(new ItemDrop(this.game, item, count, pos, vel));
+  }
+
+  shoot(kind, from, dir, speed, damage, owner, sourceName) {
+    const pr = new Projectile(this.game, { kind, pos: from.clone().addScaledVector(dir, 0.6).setY(from.y - 0.15), vel: dir.clone().multiplyScalar(speed), damage, owner });
+    pr.sourceName = sourceName;
+    return this.add(pr);
+  }
+
+  spawnProjectile(o) { const p = new Projectile(this.game, o); p.sourceName = o.sourceName; return this.add(p); }
+
+  spawnMob(type, x, y, z) { return this.add(new Mob(this.game, type, x, y, z)); }
+
+  burst(x, y, z, tile) {
+    const c = this.tileColor(tile);
+    this.particles.emit(x, y, z, c[0], c[1], c[2], 14, 3.5, 0.7);
+  }
+
+  tileColor(tile) {
+    if (!this.tileColors || this.tileColorsSrc !== this.game.atlasCanvas) {
+      this.tileColorsSrc = this.game.atlasCanvas;
+      const cv = this.game.atlasCanvas, ctx = cv.getContext('2d');
+      const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      this.tileColors = [];
+      const n = (cv.width / 16) * (cv.height / 16);
+      for (let i = 0; i < n; i++) {
+        let r = 0, g = 0, b = 0, c = 0;
+        const ox = (i % ATLAS_COLS) * 16, oy = Math.floor(i / ATLAS_COLS) * 16;
+        for (let y = 0; y < 16; y += 2) for (let x = 0; x < 16; x += 2) {
+          const j = ((oy + y) * cv.width + ox + x) * 4;
+          if (d[j + 3] < 50) continue;
+          r += d[j]; g += d[j + 1]; b += d[j + 2]; c++;
+        }
+        this.tileColors.push(c ? [r / c / 255, g / c / 255, b / c / 255] : [1, 1, 1]);
+      }
+    }
+    return this.tileColors[tile] || [1, 1, 1];
+  }
+
+  occupies(x, y, z) {
+    for (const e of this.list) {
+      if (!e.hittable || e instanceof Projectile) continue;
+      const hw = e.w / 2;
+      if (x + 1 > e.pos.x - hw && x < e.pos.x + hw && z + 1 > e.pos.z - hw && z < e.pos.z + hw && y + 1 > e.pos.y && y < e.pos.y + e.h) return true;
+    }
+    return false;
+  }
+
+  // Ray vs entity AABBs (also the active boss).
+  raycast(origin, dir, maxDist) {
+    let best = null, bestT = maxDist;
+    const test = (e, cx, cy, cz, hw, hh) => {
+      const inv = [1 / dir.x, 1 / dir.y, 1 / dir.z];
+      const mn = [cx - hw - origin.x, cy - origin.y, cz - hw - origin.z];
+      const mx = [cx + hw - origin.x, cy + hh - origin.y, cz + hw - origin.z];
+      let t0 = 0, t1 = bestT;
+      for (let a = 0; a < 3; a++) {
+        let ta = mn[a] * inv[a], tb = mx[a] * inv[a];
+        if (ta > tb) { const s = ta; ta = tb; tb = s; }
+        t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+        if (t0 > t1) return;
+      }
+      if (t0 < bestT) { bestT = t0; best = e; }
+    };
+    for (const e of this.list) {
+      if (!e.hittable || e.dead) continue;
+      const pad = e.deflectable ? 0.5 : 0.1;
+      test(e, e.pos.x, e.pos.y - (e.deflectable ? 0.3 : 0), e.pos.z, e.w / 2 + pad, e.h + pad * 2);
+    }
+    const boss = this.game.bosses.active;
+    if (boss && boss.hitboxes) for (const hb of boss.hitboxes()) test(boss, hb.x, hb.y, hb.z, hb.hw, hb.h);
+    return best;
+  }
+
+  // Pressing attack knocks back any glowing boss projectile close in front.
+  autoParry(eye, dir) {
+    let done = false;
+    for (const e of this.list) {
+      if (!e.deflectable || e.dead) continue;
+      tmp2.subVectors(e.pos, eye);
+      const d = tmp2.length();
+      if (d < 4.2 && tmp2.normalize().dot(dir) > 0.25) { e.deflect(this.game.bosses.active); done = true; }
+    }
+    return done;
+  }
+
+  playerHit(e, dmg, dir, via = 'melee') {
+    const g = this.game;
+    if (e.deflectable) { e.deflect(g.bosses.active); return; }
+    if (e.isBoss) { e.onPlayerHit(dmg, via); return; }
+    if (e.villager) { e.flinch(); return; }
+    e.damage(dmg, dir);
+    g.vibrate(12);
+  }
+
+  spawnVillagers(force = false) {
+    const g = this.game;
+    if (g.meta.dim !== 'overworld') return;
+    const p = g.player.pos;
+    for (const v of g.layout.villagesAround(p.x, p.z, 72)) {
+      if (this.villagesSpawned.has(v.id)) continue;
+      // only once the village chunk is loaded
+      const c = g.world.chunkAt(v.x, v.z);
+      if (!c || !c.data) continue;
+      this.villagesSpawned.add(v.id);
+      v.houses.forEach((h, i) => {
+        const vx = h.door.x + 0.5 + Math.sign(v.x - h.door.x) * 1.5, vz = h.door.z + 0.5 + Math.sign(v.z - h.door.z) * 1.5;
+        const id = v.id + ':' + i;
+        this.add(new Villager(g, id, vx, v.y + 1.05, vz, v));
+      });
+    }
+    void force;
+  }
+
+  update(dt) {
+    const g = this.game;
+    this.particles.update(dt);
+    this.spawnT -= dt;
+    if (this.spawnT <= 0) { this.spawnT = 1.5; this.trySpawn(); this.spawnVillagers(); }
+    for (const e of this.list) if (!e.dead) {
+      // freeze entities in unloaded chunks
+      const c = g.world.chunkAt(e.pos.x, e.pos.z);
+      if (!c || !c.data) continue;
+      e.update(dt);
+    }
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      const e = this.list[i];
+      if (e.dead) { e.remove(); this.list.splice(i, 1); if (e.villager) this.villagesSpawned.delete(e.village.id); }
+    }
+  }
+
+  render() { for (const e of this.list) e.sync(); }
+
+  trySpawn() {
+    const g = this.game;
+    const diff = g.meta.difficulty;
+    if (diff === 'peaceful') return;
+    if (g.bosses.active) return;
+    const hostile = this.list.filter((e) => e instanceof Mob && !e.bossMinion).length;
+    const cap = diff === 'hard' ? 12 : 8;
+    if (hostile >= cap) return;
+    const dim = g.meta.dim;
+    const night = dim === 'overworld' && isNight(g.meta.time);
+    const p = g.player.pos;
+    const a = Math.random() * Math.PI * 2, r = 18 + Math.random() * 18;
+    const x = Math.floor(p.x + Math.cos(a) * r), z = Math.floor(p.z + Math.sin(a) * r);
+    if (dim === 'overworld') {
+      // no spawns inside villages or the Trial Chamber
+      if (g.layout.villageNear(x, z)) return;
+      if (night) {
+        const y = g.world.topSolid(x, z);
+        if (y < 0 || g.world.getBlock(x, y, z) === B.water || g.world.getBlock(x, y, z) === B.leaves) return;
+        const roll = Math.random();
+        this.spawnMob(roll < 0.55 ? 'hollow' : roll < 0.8 ? 'skitter' : 'gloomshot', x + 0.5, y + 1.05, z + 0.5);
+      } else if (Math.random() < 0.25) {
+        // caves: dark, enclosed spaces below the surface
+        const y = Math.floor(p.y) + Math.floor((Math.random() - 0.5) * 12);
+        if (y < 4 || y > 60) return;
+        if (!IS_SOLID[g.world.getBlock(x, y - 1, z)] || g.world.getBlock(x, y, z) !== B.air || g.world.getBlock(x, y + 1, z) !== B.air) return;
+        if (g.world.skyExposed(x, y, z)) return;
+        if (hash3(1, x, y, z) < 0.5) this.spawnMob(Math.random() < 0.6 ? 'hollow' : 'skitter', x + 0.5, y + 0.05, z + 0.5);
+      }
+    } else if (dim === 'emberdeep' && Math.random() < 0.35) {
+      const y = g.world.groundBelow(x, Math.floor(p.y) + 10, z);
+      if (y > 30 && y < 100) this.spawnMob('fireSpirit', x + 0.5, y + 2, z + 0.5);
+    }
+  }
+}
+
+export { Projectile, ItemDrop, lambert };

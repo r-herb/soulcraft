@@ -1,0 +1,186 @@
+// Procedural item icons (16x16 pixel sprites), pixel hearts, and the SVG
+// glyphs used on HUD buttons.
+import { ITEMS } from '../player/items.js';
+import { BLOCKS, TILE } from '../world/blocks.js';
+import { drawBlockIcon, drawFlatTile } from '../engine/atlas.js';
+
+let atlasCanvas = null;
+const cache = new Map();
+export function setIconAtlas(canvas) { atlasCanvas = canvas; cache.clear(); }
+
+function px(ctx, x, y, c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
+function line(ctx, x0, y0, x1, y1, c, w = 1) {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+  for (let i = 0; i <= n; i++) {
+    const x = Math.round(x0 + (x1 - x0) * i / n), y = Math.round(y0 + (y1 - y0) * i / n);
+    ctx.fillStyle = c; ctx.fillRect(x, y, w, w);
+  }
+}
+function rect(ctx, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+function outline(ctx) {
+  // 1px dark outline around opaque pixels for readability
+  const d = ctx.getImageData(0, 0, 16, 16);
+  const out = ctx.createImageData(16, 16);
+  out.data.set(d.data);
+  const a = (x, y) => (x < 0 || y < 0 || x > 15 || y > 15 ? 0 : d.data[(y * 16 + x) * 4 + 3]);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (a(x, y)) continue;
+    if (a(x + 1, y) || a(x - 1, y) || a(x, y + 1) || a(x, y - 1)) {
+      const i = (y * 16 + x) * 4;
+      out.data[i] = 10; out.data[i + 1] = 8; out.data[i + 2] = 24; out.data[i + 3] = 200;
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+}
+
+const MAT = {
+  wood: ['#b08452', '#7a5530'], stone: ['#9a9ca3', '#62646b'], iron: ['#e6e9ee', '#9aa0a8'],
+  gold: ['#ffe08a', '#d8a22e'], emberite: ['#ff8a3d', '#b8401c'],
+};
+
+function sword(ctx, m) {
+  const [a, b] = MAT[m];
+  line(ctx, 4, 11, 12, 3, a, 2);
+  line(ctx, 5, 11, 12, 4, b);
+  px(ctx, 13, 2, a);
+  line(ctx, 2, 9, 6, 13, '#4d3421', 2);
+  line(ctx, 1, 13, 3, 11, '#6b4a2f', 2);
+  px(ctx, 1, 14, '#2b1d12');
+}
+function pick(ctx, m) {
+  const [a, b] = MAT[m];
+  line(ctx, 3, 13, 11, 5, '#7a5530', 2);
+  line(ctx, 3, 3, 13, 3, a, 2);
+  line(ctx, 3, 3, 1, 6, a, 2);
+  line(ctx, 13, 3, 14, 6, a, 2);
+  line(ctx, 4, 4, 12, 4, b);
+}
+function axe(ctx, m) {
+  const [a, b] = MAT[m];
+  line(ctx, 3, 13, 11, 5, '#7a5530', 2);
+  rect(ctx, 9, 2, 4, 5, a); rect(ctx, 12, 3, 2, 3, b); rect(ctx, 8, 4, 2, 2, b);
+}
+function shovel(ctx, m) {
+  const [a, b] = MAT[m];
+  line(ctx, 3, 13, 10, 6, '#7a5530', 2);
+  rect(ctx, 10, 2, 4, 4, a); rect(ctx, 9, 4, 2, 3, a); rect(ctx, 12, 3, 1, 2, b);
+}
+function ingot(ctx, a, b) {
+  rect(ctx, 3, 7, 11, 5, a); rect(ctx, 4, 6, 9, 1, a); rect(ctx, 3, 11, 11, 1, b); rect(ctx, 5, 7, 5, 1, '#ffffff66');
+}
+function gem(ctx, a, b) {
+  rect(ctx, 6, 3, 4, 10, a); rect(ctx, 4, 5, 8, 6, a); rect(ctx, 7, 4, 2, 3, '#ffffff'); rect(ctx, 5, 10, 6, 1, b); rect(ctx, 6, 12, 4, 1, b);
+}
+
+const DRAW = {
+  stick: (c) => line(c, 4, 13, 12, 3, '#8a6238', 2),
+  charcoal: (c) => { rect(c, 4, 5, 8, 7, '#2a2a30'); rect(c, 5, 4, 5, 1, '#3c3c44'); rect(c, 6, 6, 2, 2, '#55555e'); },
+  fiber: (c) => { line(c, 5, 14, 7, 3, '#6fbf4a'); line(c, 8, 14, 9, 4, '#4f9e3c'); line(c, 10, 14, 12, 5, '#6fbf4a'); },
+  iron_ingot: (c) => ingot(c, '#dfe3e8', '#9aa0a8'),
+  gold_ingot: (c) => ingot(c, '#ffd65c', '#c48f2e'),
+  emberite_ingot: (c) => ingot(c, '#ff8a3d', '#a8381a'),
+  emberite_shard: (c) => { line(c, 5, 12, 10, 3, '#ff8a3d', 2); line(c, 8, 12, 12, 6, '#ffb14a', 2); },
+  soul_crystal: (c) => gem(c, '#7ff3ff', '#1f9fb8'),
+  arrow: (c) => { line(c, 3, 13, 12, 4, '#8a6238'); rect(c, 11, 3, 3, 3, '#c9ccd2'); line(c, 2, 12, 4, 14, '#f0f0f0'); px(c, 3, 11, '#f0f0f0'); },
+  wind_charge: (c) => { rect(c, 4, 4, 8, 8, '#bff7ec'); rect(c, 5, 5, 6, 6, '#7fe3d2'); line(c, 6, 8, 9, 6, '#ffffff'); line(c, 7, 10, 10, 8, '#ffffff'); },
+  bone_dust: (c) => { rect(c, 4, 8, 8, 4, '#e8e2d0'); rect(c, 6, 6, 4, 2, '#f4efe0'); },
+  void_scale: (c) => { rect(c, 4, 4, 8, 8, '#6d45d6'); rect(c, 5, 5, 6, 6, '#9a6bff'); rect(c, 6, 6, 2, 2, '#d7b8ff'); },
+  shell_fragment: (c) => { rect(c, 3, 6, 10, 6, '#b6fbff'); rect(c, 4, 5, 8, 1, '#7ff3ff'); line(c, 5, 11, 8, 6, '#1f9fb8'); line(c, 8, 11, 11, 6, '#1f9fb8'); },
+  whirl_core: (c) => { rect(c, 4, 4, 8, 8, '#7fe3d2'); rect(c, 6, 6, 4, 4, '#ffffff'); },
+  ember_heart: (c) => heartShape(c, '#ff7a2e', '#ffd08a'),
+  storm_crown: (c) => { rect(c, 3, 8, 10, 4, '#f6c667'); px(c, 3, 6, '#f6c667'); px(c, 3, 7, '#f6c667'); rect(c, 7, 5, 2, 3, '#f6c667'); px(c, 12, 6, '#f6c667'); px(c, 12, 7, '#f6c667'); rect(c, 7, 9, 2, 2, '#7ff3ff'); },
+  void_lantern: (c) => { rect(c, 5, 4, 6, 9, '#3a2566'); rect(c, 6, 5, 4, 7, '#b98bff'); rect(c, 7, 6, 2, 4, '#ffffff'); rect(c, 7, 2, 2, 2, '#9aa0a8'); },
+  sunfruit: (c) => { rect(c, 4, 5, 8, 8, '#ff9a3c'); rect(c, 5, 4, 6, 10, '#ff9a3c'); rect(c, 6, 6, 2, 2, '#ffe08a'); rect(c, 8, 2, 1, 3, '#4d3421'); rect(c, 9, 2, 2, 1, '#58ad42'); },
+  bread: (c) => { rect(c, 2, 7, 12, 5, '#c98a3e'); rect(c, 3, 6, 10, 1, '#dea35a'); line(c, 5, 7, 6, 9, '#8a5a24'); line(c, 9, 7, 10, 9, '#8a5a24'); },
+  glow_stew: (c) => { rect(c, 3, 8, 10, 5, '#7a5530'); rect(c, 3, 7, 10, 2, '#7ff3ff'); px(c, 6, 7, '#ffffff'); px(c, 10, 8, '#b6fbff'); },
+  roast: (c) => { rect(c, 4, 5, 8, 7, '#a8452a'); rect(c, 5, 6, 3, 2, '#d8744a'); line(c, 11, 11, 14, 14, '#f0e6d0', 2); },
+  soul_heart: (c) => heartShape(c, '#7ff3ff', '#ffffff'),
+  wood_pickaxe: (c) => pick(c, 'wood'), stone_pickaxe: (c) => pick(c, 'stone'), iron_pickaxe: (c) => pick(c, 'iron'), emberite_pickaxe: (c) => pick(c, 'emberite'),
+  stone_axe: (c) => axe(c, 'stone'), stone_shovel: (c) => shovel(c, 'stone'),
+  wood_sword: (c) => sword(c, 'wood'), stone_sword: (c) => sword(c, 'stone'), iron_sword: (c) => sword(c, 'iron'),
+  gold_sword: (c) => sword(c, 'gold'), emberite_sword: (c) => sword(c, 'emberite'),
+  bow: (c) => { line(c, 4, 2, 11, 5, '#8a6238', 2); line(c, 11, 5, 12, 11, '#8a6238', 2); line(c, 12, 11, 5, 14, '#8a6238', 2); line(c, 4, 3, 5, 13, '#e8e8e8'); },
+  spear: (c) => { line(c, 2, 14, 11, 5, '#7a5530', 2); rect(c, 11, 2, 3, 3, '#dfe3e8'); rect(c, 12, 3, 2, 2, '#9aa0a8'); px(c, 14, 1, '#ffffff'); },
+};
+
+function heartShape(c, a, hi) {
+  const rows = ['.XX..XX.', 'XXXXXXXX', 'XXXXXXXX', 'XXXXXXXX', '.XXXXXX.', '..XXXX..', '...XX...'];
+  rows.forEach((r, y) => r.split('').forEach((ch, x) => { if (ch === 'X') rect(c, 2 + x * 1.5 | 0, 3 + y * 1.5 | 0, 2, 2, a); }));
+  rect(c, 4, 5, 2, 2, hi);
+}
+
+export function iconCanvas(key, size = 32) {
+  const ck = key + '@' + size;
+  if (cache.has(ck)) return cache.get(ck);
+  const cv = document.createElement('canvas');
+  cv.width = size; cv.height = size;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const def = ITEMS[key];
+  if (def && def.block !== undefined && atlasCanvas) {
+    const b = BLOCKS[def.block];
+    if (b.shape === 'cross' || b.shape === 'torch') drawFlatTile(ctx, atlasCanvas, b.tex.side, size);
+    else drawBlockIcon(ctx, atlasCanvas, b.tex, size);
+  } else if (DRAW[key]) {
+    const s = document.createElement('canvas');
+    s.width = 16; s.height = 16;
+    const sc = s.getContext('2d');
+    DRAW[key](sc);
+    outline(sc);
+    ctx.drawImage(s, 0, 0, size, size);
+  } else {
+    ctx.fillStyle = '#ff00ff'; ctx.fillRect(size / 4, size / 4, size / 2, size / 2);
+  }
+  cache.set(ck, cv);
+  return cv;
+}
+
+export function iconInto(el, key, size = 32) {
+  const src = iconCanvas(key, size);
+  const cv = document.createElement('canvas');
+  cv.width = size; cv.height = size;
+  cv.getContext('2d').drawImage(src, 0, 0);
+  el.appendChild(cv);
+  return cv;
+}
+
+export function iconDataURL(key, size = 32) { return iconCanvas(key, size).toDataURL(); }
+
+// Pixel heart / food sprites (full, half, empty) as data URLs.
+const spriteCache = {};
+export function statSprite(kind, state) {
+  const k = kind + state;
+  if (spriteCache[k]) return spriteCache[k];
+  const c = document.createElement('canvas');
+  c.width = 9; c.height = 9;
+  const x = c.getContext('2d');
+  const heart = ['.XX.XX...', 'XXXXXXX..', 'XXXXXXX..', '.XXXXX...', '..XXX....', '...X.....'];
+  const food = ['....XX...', '...XXXX..', '..XXXXX..', '..XXXX...', '.XXX.....', 'XX.......', 'X........'];
+  const shape = kind === 'heart' ? heart : food;
+  const full = kind === 'heart' ? (state.startsWith('soul') ? '#7ff3ff' : '#ff4d6d') : '#e0a24a';
+  const empty = '#1b1636';
+  shape.forEach((row, yy) => row.split('').forEach((ch, xx) => {
+    if (ch !== 'X') return;
+    let col = empty;
+    if (state === 'full' || state === 'soulfull') col = full;
+    else if ((state === 'half' || state === 'soulhalf') && xx < 4) col = full;
+    x.fillStyle = '#05040f'; x.fillRect(xx, yy + 1, 1, 1);
+    x.fillStyle = col; x.fillRect(xx, yy, 1, 1);
+  }));
+  if (state !== 'empty') { x.fillStyle = '#ffffffaa'; x.fillRect(1, 1, 1, 1); }
+  spriteCache[k] = c.toDataURL();
+  return spriteCache[k];
+}
+
+export const SVG = {
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+  fullscreen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  jump: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l8 9h-5v8H9v-8H4z"/></svg>',
+  attack: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h12l3 3-3 3H3l2-3zM9 11h3v10H9z"/></svg>',
+  use: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l9 5v10l-9 5-9-5V7z" opacity="0.9"/><path d="M12 12l9-5M12 12v10M12 12L3 7" stroke="#05040f" stroke-width="1.5" fill="none"/></svg>',
+  inv: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 5l14 14M19 5L5 19"/></svg>',
+  crystal: '<svg viewBox="0 0 12 12"><path d="M6 0l4 4-4 8-4-8z" fill="#7ff3ff"/><path d="M6 0l1 4-1 8" fill="#b6fbff"/></svg>',
+  phone: '<svg viewBox="0 0 64 64" fill="none" stroke="#7ff3ff" stroke-width="4"><rect x="18" y="6" width="28" height="52" rx="4"/><path d="M28 50h8"/></svg>',
+};
