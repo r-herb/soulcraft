@@ -1,7 +1,12 @@
 // Player accounts (created by the admin): sign-in, profile and cloud saves.
 // Local saves are namespaced per account, so a guest's or a sibling's
 // progress on the same device never mixes with someone else's account.
-import { loadWorld, saveWorld, loadProfile, saveProfile } from './db.js';
+import { loadWorld, saveWorld, deleteWorld, listWorlds, loadProfile, saveProfile } from './db.js';
+
+export const MAX_WORLDS = 6;
+export function newWorldId() { return Math.random().toString(36).slice(2, 10).padEnd(8, '0'); }
+// what the world list shows, stored next to each cloud save
+export function worldInfo(rec) { return { name: rec.name, day: rec.day, mode: rec.mode === 'quest' ? 'quest' : rec.creative ? 'creative' : 'survival' }; }
 
 export const account = {
   user: null,
@@ -36,14 +41,32 @@ export async function initAccount() {
     account.available = e.status === 401;
     account.user = null;
   }
-  if (account.user) await syncDown().catch((e) => console.warn('sync failed', e));
+  await migrateLocal('');
+  if (account.user) {
+    await migrateLocal(`u${account.user.id}:`);
+    await syncDown().catch((e) => console.warn('sync failed', e));
+  }
   return account.user;
 }
+
+// Older versions kept a single world in the "current" slot: give it an id
+// and move it into the world list.
+async function migrateLocal(prefix) {
+  const old = await loadWorld(prefix + 'current');
+  if (!old) return;
+  old.worldId = old.worldId || newWorldId();
+  await saveWorld(old, prefix + 'w-' + old.worldId, true);
+  await deleteWorld(prefix + 'current');
+}
+
+// This account's (or the guest's) worlds, newest first.
+export function localWorlds() { return listWorlds(slot('w-')); }
 
 export async function signIn(login, password, remember) {
   const r = await api('auth/login', { method: 'POST', body: { login, password, remember } });
   if (r.role !== 'user') { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); const e = new Error('admin_use_panel'); e.code = 'admin_use_panel'; throw e; }
   account.user = r.user;
+  await migrateLocal(`u${r.user.id}:`);
   await syncDown().catch((e) => console.warn('sync failed', e));
   changed();
   return r.user;
@@ -71,8 +94,16 @@ export function pushSave(base, data) {
   if (!account.user) return;
   clearTimeout(pending.get(base));
   pending.set(base, setTimeout(() => {
-    api('saves/' + base, { method: 'PUT', body: { data, savedAt: data.savedAt || Date.now() } }).catch((e) => console.warn('cloud save failed', e));
+    const info = base === 'profile' ? null : worldInfo(data);
+    api('saves/' + base, { method: 'PUT', body: { data, savedAt: data.savedAt || Date.now(), info } }).catch((e) => console.warn('cloud save failed', e));
   }, 800));
+}
+
+// Delete a world here and in the cloud.
+export async function removeWorld(base) {
+  clearTimeout(pending.get(base));
+  await deleteWorld(slot(base));
+  if (account.user) await api('saves/' + base, { method: 'DELETE' }).catch((e) => console.warn('cloud delete failed', e));
 }
 
 // On sign-in / start-up: for each slot keep whichever copy is newer.
@@ -80,10 +111,29 @@ async function syncDown() {
   const { saves } = await api('saves');
   const cloud = Object.fromEntries(saves.map((s) => [s.slot, s.savedAt]));
   const firstTime = !saves.length;
-  for (const base of ['current', 'quest']) {
+  // the single cloud world of older versions becomes a listed world
+  if (cloud.current) {
+    const r = await api('saves/current');
+    const rec = { ...r.data, savedAt: r.savedAt };
+    rec.worldId = rec.worldId || newWorldId();
+    await saveWorld(rec, slot('w-' + rec.worldId), true);
+    await api('saves/w-' + rec.worldId, { method: 'PUT', body: { data: rec, savedAt: rec.savedAt, info: worldInfo(rec) } });
+    await api('saves/current', { method: 'DELETE' });
+    delete cloud.current;
+    cloud['w-' + rec.worldId] = rec.savedAt;
+  }
+  // a brand-new account takes over the guest's progress on this device
+  if (firstTime) {
+    for (const w of await listWorlds('w-')) {
+      const rec = await loadWorld(w.slot);
+      if (rec && !(await loadWorld(slot(w.base)))) await saveWorld(rec, slot(w.base), true);
+    }
+  }
+  const bases = new Set(['quest', ...Object.keys(cloud).filter((k) => k.startsWith('w-')), ...(await localWorlds()).map((w) => w.base)]);
+  for (const base of bases) {
     const local = await loadWorld(slot(base));
     let src = local;
-    if (!local && firstTime) src = await loadWorld(base); // bring guest progress into a brand-new account
+    if (!local && firstTime && base === 'quest') src = await loadWorld(base);
     const localAt = src ? src.savedAt || 0 : 0;
     if (cloud[base] && cloud[base] > localAt) {
       const r = await api('saves/' + base);
@@ -91,7 +141,10 @@ async function syncDown() {
       await saveWorld(rec, slot(base), true);
     } else if (src) {
       if (src !== local) await saveWorld(src, slot(base), true);
-      if (!cloud[base] || localAt > cloud[base]) await api('saves/' + base, { method: 'PUT', body: { data: src, savedAt: localAt || Date.now() } });
+      if (!cloud[base] || localAt > cloud[base]) {
+        await api('saves/' + base, { method: 'PUT', body: { data: src, savedAt: localAt || Date.now(), info: worldInfo(src) } })
+          .catch((e) => { if (e.code !== 'too_many_worlds') throw e; });
+      }
     }
   }
   const lp = await loadProfile(slot('profile'));

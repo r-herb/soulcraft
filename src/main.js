@@ -8,7 +8,7 @@ import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
 import { Game } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
-import { initAccount, slot, storeProfile } from './save/account.js';
+import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS } from './save/account.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -32,7 +32,7 @@ async function boot() {
   input.sensitivity = settings().sensitivity;
 
   const app = {
-    game: null, profile: null, saveInfo: null, questInfo: null,
+    game: null, profile: null, saveInfo: null, questInfo: null, worlds: [],
     async startQuest() {
       ui.showLoading(t('loading.world'));
       await startGame(app.game.newQuestMeta());
@@ -44,29 +44,39 @@ async function boot() {
       await startGame(data);
     },
     async newGame(params) {
+      if (app.worlds.length >= MAX_WORLDS) { ui.toast(t('worlds.full', { n: MAX_WORLDS }), 'warn'); return; }
       ui.showLoading(t('loading.world'));
-      const meta = app.game.newMeta({ name: params.name, seed: seedFromString(params.seed), difficulty: params.difficulty });
+      const meta = app.game.newMeta({ name: params.name, seed: seedFromString(params.seed), difficulty: params.difficulty, creative: params.creative });
       await startGame(meta);
     },
-    async continueGame() {
+    // play a saved world (the most recent one when no slot is given)
+    async continueGame(base) {
       ui.showLoading(t('loading.world'));
-      const data = await loadWorld(slot('current'));
+      const b = base || (app.worlds[0] && app.worlds[0].base);
+      const data = b && await loadWorld(slot(b));
       if (!data) { ui.showTitle(); return; }
       await startGame(data);
+    },
+    async deleteWorld(base) {
+      await removeWorld(base);
+      await app.refreshInfo();
+    },
+    async refreshInfo() {
+      app.worlds = await localWorlds();
+      app.saveInfo = await readSaveInfo();
+      app.questInfo = await readQuestInfo();
     },
     // after signing in or out: switch to that account's saves and profile
     async reloadAccount() {
       app.profile = await loadProfile(slot('profile'));
       app.game.profile = app.profile;
       app.game.held.setSkin(app.profile.skin);
-      app.saveInfo = await readSaveInfo();
-      app.questInfo = await readQuestInfo();
+      await app.refreshInfo();
     },
     async quitToTitle() {
       const g = app.game;
       if (g.running) { await g.save(true); g.stop(); }
-      app.saveInfo = await readSaveInfo();
-      app.questInfo = await readQuestInfo();
+      await app.refreshInfo();
       ui.showTitle();
     },
   };
@@ -89,8 +99,7 @@ async function boot() {
   app.profile = await loadProfile(slot('profile'));
   app.game.profile = app.profile;
   app.game.held.setSkin(app.profile.skin);
-  app.saveInfo = await readSaveInfo();
-  app.questInfo = await readQuestInfo();
+  await app.refreshInfo();
   ui.setLoading(1, t('loading.ready'));
   if (!storageOk) ui.toast(t('error.save'), 'warn');
 
@@ -113,8 +122,8 @@ async function boot() {
   }
 
   async function readSaveInfo() {
-    const w = await loadWorld(slot('current'));
-    return w ? { name: w.name, day: w.day } : null;
+    const w = app.worlds[0];
+    return w ? { name: w.name, day: w.day, base: w.base, creative: w.creative } : null;
   }
 
   ui.showTitle();

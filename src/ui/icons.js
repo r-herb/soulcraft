@@ -179,6 +179,8 @@ export const SVG = {
   pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
   fullscreen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  fly: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4c-2 3-6 4-10 4 2 3 5 5 8 5l2 7 2-7c3 0 6-2 8-5-4 0-8-1-10-4z"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21l8-9h-5V4H9v8H4z"/></svg>',
   jump: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l8 9h-5v8H9v-8H4z"/></svg>',
   attack: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h12l3 3-3 3H3l2-3zM9 11h3v10H9z"/></svg>',
   use: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l9 5v10l-9 5-9-5V7z" opacity="0.9"/><path d="M12 12l9-5M12 12v10M12 12L3 7" stroke="#05040f" stroke-width="1.5" fill="none"/></svg>',

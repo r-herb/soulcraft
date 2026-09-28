@@ -35,7 +35,8 @@ export function inventory(args, ui) {
   const g = ui.game;
   const inv = g.inventory;
   let picked = null; // { from: 'slots'|'grid', i }
-  let filter = 'all';
+  // creative worlds open on a catalog of every block and item
+  let filter = g.creative ? 'catalog' : 'all';
   const node = el(`<div class="screen scrim" data-screen="inventory">
     <div class="panel inv-panel">
       ${head(esc(t('inv.title')))}
@@ -53,7 +54,7 @@ export function inventory(args, ui) {
         </div>
         <div class="col inv-recipes" style="min-height:0">
           <div class="row"><span class="section-label" style="flex:1" data-i18n="inv.recipes"></span>
-            <div class="seg" style="min-width:150px"><button data-f="all" class="on" data-i18n="inv.all"></button><button data-f="can" data-i18n="inv.craftable"></button></div></div>
+            <div class="seg" style="min-width:150px">${g.creative ? '<button data-f="catalog" class="on" data-i18n="inv.catalog"></button>' : ''}<button data-f="all" class="${g.creative ? '' : 'on'}" data-i18n="inv.all"></button><button data-f="can" data-i18n="inv.craftable"></button></div></div>
           <div class="recipe-list"></div>
         </div>
       </div>
@@ -113,6 +114,16 @@ export function inventory(args, ui) {
 
   const drawRecipes = () => {
     listEl.innerHTML = '';
+    if (filter === 'catalog') {
+      for (const it of Object.values(ITEMS)) {
+        if (it.currency || it.special === 'treasureMap') continue;
+        const s = slotEl({ item: it.key, count: 1 });
+        s.dataset.catalog = it.key;
+        s.addEventListener('click', () => { ui.click(); g.giveItem(it.key, maxStack(it.key)); setInfo(it.key); draw(); });
+        listEl.appendChild(s);
+      }
+      return;
+    }
     for (const rec of RECIPES) {
       const ok = canAfford(rec, { count: (k) => inv.count(k) + inv.grid.reduce((n, s) => n + (s && s.item === k ? s.count : 0), 0) }, g.profile.crystals);
       if (filter === 'can' && !ok) continue;

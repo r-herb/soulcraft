@@ -120,13 +120,31 @@ test('saves follow the player to another device, and "keep me signed in" survive
   await p1.waitForFunction(() => window.__sc.game.running && !document.querySelector('[data-screen="loading"]'), null, { timeout: 90_000 });
   await p1.evaluate(async () => { const g = window.__sc.game; g.meta.day = 7; g.inventory.add('gold_ingot', 5); g.profile.crystals = 42; await g.save(true); });
   await p1.waitForTimeout(1500); // debounced upload
+  // a second, creative world
+  await p1.evaluate(() => window.__sc.app.quitToTitle());
+  await p1.click('[data-screen="title"] [data-act="new"]');
+  await p1.fill('#nw-name', 'Sky Build');
+  await p1.click('[data-seg="mode"] [data-v="creative"]');
+  await p1.click('[data-act="create"]');
+  await p1.waitForFunction(() => window.__sc.game.running && !document.querySelector('[data-screen="loading"]'), null, { timeout: 90_000 });
+  await p1.evaluate(async () => { await window.__sc.game.save(true); });
+  await p1.waitForTimeout(1500);
+  // an old-style single cloud world ("current" slot) is picked up as a third world
+  await p1.evaluate(async () => {
+    const r = await fetch('/api/saves/current', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: { version: 1, name: 'Old World', seed: 5, day: 3, difficulty: 'normal', dim: 'overworld', time: 0.2, edits: {}, bosses: {}, stats: {} }, savedAt: 1000 }) });
+    if (!r.ok) throw new Error('put current ' + r.status);
+  });
   await ctx1.close();
   // device 2: fresh browser, sign in, continue
   const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const p2 = await ctx2.newPage();
   await gameSignIn(p2, '+37120000001', 'mia-new-2');
-  await expect(p2.locator('[data-act="continue"]')).toContainText('Cloud World');
-  await p2.click('[data-act="continue"]');
+  await expect(p2.locator('[data-act="continue"]')).toContainText('Sky Build');
+  await p2.click('[data-act="worlds"]');
+  await expect(p2.locator('.world-row')).toHaveCount(3);
+  await expect(p2.locator('.world-row', { hasText: 'Sky Build' })).toContainText('Creative');
+  await expect(p2.locator('.world-row', { hasText: 'Old World' })).toBeVisible();
+  await p2.locator('.world-row', { hasText: 'Cloud World' }).locator('[data-act="play"]').click();
   await p2.waitForFunction(() => window.__sc.game.running && !document.querySelector('[data-screen="loading"]'), null, { timeout: 90_000 });
   const st = await p2.evaluate(() => ({ day: window.__sc.game.meta.day, gold: window.__sc.game.inventory.count('gold_ingot'), crystals: window.__sc.game.profile.crystals }));
   expect(st).toEqual({ day: 7, gold: 5, crystals: 42 });

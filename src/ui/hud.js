@@ -53,6 +53,8 @@ export class Hud {
         <button class="act use" data-a="use" data-i18n-aria="hud.use">${SVG.use}</button>
         <button class="act attack" data-a="attack" data-i18n-aria="hud.attack">${SVG.attack}</button>
         <button class="act jump" data-a="jump" data-i18n-aria="hud.jump">${SVG.jump}</button>
+        <button class="act fly creative-only" data-a="fly" data-i18n-aria="hud.fly">${SVG.fly}</button>
+        <button class="act down creative-only" data-a="down" data-i18n-aria="hud.down">${SVG.down}</button>
       </div>
       <div class="tut-slot"></div>
       <div class="card-slot"></div>`;

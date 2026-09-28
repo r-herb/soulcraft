@@ -163,7 +163,7 @@ export class UI {
           <button class="btn primary" data-act="continue" ${save ? '' : 'disabled'}>
             <span><span data-i18n="title.continue"></span><span class="continue-meta">${save ? esc(save.name) + ' - ' + esc(t('hud.day', { n: save.day })) : esc(t('title.nosave'))}</span></span>
           </button>
-          <button class="btn violet" data-act="new" data-i18n="title.new"></button>
+          <div class="row"><button class="btn violet" style="flex:1" data-act="new" data-i18n="title.new"></button><button class="btn violet" style="flex:1" data-act="worlds" data-i18n="title.worlds"></button></div>
           <button class="btn gold" data-act="quest" data-i18n="title.quest"></button>
           <div class="row"><button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
         </div>
@@ -196,6 +196,7 @@ export class UI {
     node.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => { this.click(); setLang(b.dataset.lang); setSetting('lang', b.dataset.lang); }));
     node.querySelector('[data-act="continue"]').addEventListener('click', () => { this.click(); this.app.continueGame(); });
     node.querySelector('[data-act="new"]').addEventListener('click', () => { this.click(); this.open('newWorld'); });
+    node.querySelector('[data-act="worlds"]').addEventListener('click', () => { this.click(); this.open('worlds'); });
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
     node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
     const si = node.querySelector('[data-act="signin"]');
@@ -216,13 +217,23 @@ export class UI {
         <div class="panel-body col" style="gap:var(--sp-3)">
           <div class="field"><label for="nw-name" data-i18n="newworld.name"></label><input id="nw-name" class="input" maxlength="32" data-i18n-placeholder="newworld.namePlaceholder" autocomplete="off"></div>
           <div class="field"><label for="nw-seed" data-i18n="newworld.seed"></label><input id="nw-seed" class="input" maxlength="24" data-i18n-placeholder="newworld.seedPlaceholder" autocomplete="off"></div>
-          <div class="field"><span class="setting-label" data-i18n="newworld.difficulty"></span>
-            <div class="seg" data-seg="diff"><button data-v="peaceful" data-i18n="diff.peaceful"></button><button data-v="normal" class="on" data-i18n="diff.normal"></button><button data-v="hard" data-i18n="diff.hard"></button></div></div>
-          ${this.app.saveInfo ? '<p class="faint" data-i18n="newworld.overwrite"></p>' : ''}
+          <div class="nw-opts">
+            <div class="field"><span class="setting-label" data-i18n="newworld.mode"></span>
+              <div class="seg" data-seg="mode"><button data-v="survival" class="on" data-i18n="mode.survival"></button><button data-v="creative" data-i18n="mode.creative"></button></div></div>
+            <div class="field"><span class="setting-label" data-i18n="newworld.difficulty"></span>
+              <div class="seg" data-seg="diff"><button data-v="peaceful" data-i18n="diff.peaceful"></button><button data-v="normal" class="on" data-i18n="diff.normal"></button><button data-v="hard" data-i18n="diff.hard"></button></div></div>
+          </div>
+          <p class="faint" data-mode-hint>${esc(t('mode.survivalHint'))}</p>
           <button class="btn primary wide" data-act="create" data-i18n="newworld.create"></button>
         </div>
       </div></div>`);
-    let diff = 'normal';
+    let diff = 'normal', mode = 'survival';
+    node.querySelectorAll('[data-seg="mode"] button').forEach((b) => b.addEventListener('click', () => {
+      this.click(); mode = b.dataset.v;
+      node.querySelectorAll('[data-seg="mode"] button').forEach((x) => x.classList.toggle('on', x === b));
+      node.querySelector('[data-mode-hint]').textContent = t(mode === 'creative' ? 'mode.creativeHint' : 'mode.survivalHint');
+      node.querySelector('[data-seg="diff"]').closest('.field').classList.toggle('invisible', mode === 'creative');
+    }));
     node.querySelectorAll('[data-seg="diff"] button').forEach((b) => b.addEventListener('click', () => {
       this.click(); diff = b.dataset.v;
       node.querySelectorAll('[data-seg="diff"] button').forEach((x) => x.classList.toggle('on', x === b));
@@ -232,7 +243,59 @@ export class UI {
       this.click();
       const name = node.querySelector('#nw-name').value.trim() || t('newworld.defaultName');
       const seed = node.querySelector('#nw-seed').value.trim();
-      this.app.newGame({ name, seed, difficulty: diff });
+      this.app.newGame({ name, seed, difficulty: diff, creative: mode === 'creative' });
+    });
+    return node;
+  }
+
+  // ---------- world list ----------
+  screen_worlds() {
+    const worlds = this.app.worlds;
+    const max = 6;
+    const node = el(`<div class="screen solid" data-screen="worlds">
+      <div class="panel" style="width:min(620px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="worlds.title"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="row" style="justify-content:space-between"><span class="faint">${esc(t('worlds.count', { n: worlds.length, max }))}</span>
+          <button class="btn small primary" data-act="new" ${worlds.length >= max ? 'disabled' : ''} data-i18n="title.new"></button></div>
+        <div class="panel-body world-list">
+          ${worlds.length ? '' : `<p class="faint">${esc(t('worlds.none'))}</p>`}
+        </div>
+      </div></div>`);
+    const list = node.querySelector('.world-list');
+    const fmt = (ms) => { try { return new Date(ms).toLocaleDateString(getLang() === 'ru' ? 'ru-RU' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
+    for (const w of worlds) {
+      const row = el(`<div class="world-row" data-world="${esc(w.base)}">
+        <div class="wr-main"><b class="wr-name"></b>
+          <span class="wr-meta">${w.creative ? `<span class="badge gold">${esc(t('mode.creative'))}</span>` : ''}<span>${esc(t('hud.day', { n: w.day || 1 }))}</span><span>${esc(t('worlds.guardians', { n: w.bosses }))}</span><span class="faint">${esc(fmt(w.savedAt))}</span></span></div>
+        <button class="btn small primary" data-act="play" data-i18n="worlds.play"></button>
+        <button class="btn small ghost" data-act="delete" data-i18n-aria="worlds.delete">${SVG.close}</button>
+      </div>`);
+      row.querySelector('.wr-name').textContent = w.name || t('newworld.defaultName');
+      row.querySelector('[data-act="play"]').addEventListener('click', () => { this.click(); this.app.continueGame(w.base); });
+      row.querySelector('[data-act="delete"]').addEventListener('click', () => { this.click(); this.open('confirmDelete', { world: w }); });
+      list.appendChild(row);
+    }
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('[data-act="new"]').addEventListener('click', () => { this.click(); this.open('newWorld'); });
+    return node;
+  }
+
+  screen_confirmDelete(args) {
+    const w = args.world;
+    const node = el(`<div class="screen solid" data-screen="confirmDelete">
+      <div class="panel" style="width:min(440px,100%)">
+        <h2 class="panel-title" data-i18n="worlds.deleteTitle"></h2>
+        <p class="wr-q"></p>
+        <div class="row" style="justify-content:flex-end"><button class="btn" data-act="cancel" data-i18n="common.cancel"></button><button class="btn ember" data-act="ok" data-i18n="worlds.delete"></button></div>
+      </div></div>`);
+    node.querySelector('.wr-q').textContent = t('worlds.deleteQ', { name: w.name || t('newworld.defaultName') });
+    node.querySelector('[data-act="cancel"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('[data-act="ok"]').addEventListener('click', async () => {
+      this.click();
+      await this.app.deleteWorld(w.base);
+      this.toast(t('worlds.deleted'));
+      this.back();
     });
     return node;
   }

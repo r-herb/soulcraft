@@ -1,6 +1,6 @@
-// IndexedDB persistence: one saved world (the "Continue" slot) and a global
-// profile (soul crystals, unlocked skins). Every call is wrapped so a broken
-// or blocked database never crashes the game.
+// IndexedDB persistence: saved worlds (one record per slot) and a profile
+// (soul crystals, unlocked skins). Every call is wrapped so a broken or
+// blocked database never crashes the game.
 
 const DB_NAME = 'soulcraft';
 const DB_VERSION = 1;
@@ -68,6 +68,21 @@ export async function loadWorld(slot = 'current') {
   } catch (e) {
     console.warn('loadWorld failed', e);
     return null;
+  }
+}
+
+// Short summaries of every world saved under a slot prefix ("w-" for a
+// guest, "u7:w-" for an account), newest first.
+export async function listWorlds(prefix) {
+  try {
+    let all = await tx('worlds', 'readonly', (s) => (s ? s.getAll() : null));
+    if (!all) all = [...memory.worlds.values()];
+    return all.filter((r) => typeof r.id === 'string' && r.id.startsWith(prefix) && !r.id.slice(prefix.length).includes(':'))
+      .map((r) => ({ slot: r.id, base: r.id.slice(prefix.length - 2), id: r.worldId, name: r.name, day: r.day, creative: !!r.creative, savedAt: r.savedAt || 0, bosses: Object.values(r.bosses || {}).filter(Boolean).length }))
+      .sort((a, b) => b.savedAt - a.savedAt);
+  } catch (e) {
+    console.warn('listWorlds failed', e);
+    return [];
   }
 }
 

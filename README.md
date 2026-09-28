@@ -125,6 +125,18 @@ for real, in order, through the Soul Map.
 Control size, opacity, look sensitivity, auto-jump and vibration are all in
 Settings.
 
+## Worlds and creative mode
+
+Title screen > **Worlds** lists up to six worlds (newest first) with Play and
+Delete; **Continue** opens the most recent one. Signed-in players get every
+world in the cloud. **New World** asks for a mode:
+
+- **Survival**: gather, craft, survive the nights, earn soul crystals.
+- **Creative**: no damage or hunger, instant mining, endless blocks, and a
+  **Blocks** catalog in the inventory. Double-tap jump (or the wing button
+  on touch) to fly; jump rises, Shift/C (or the down button) descends.
+  Creative worlds give no soul crystals, so the shop stays fair.
+
 ## Accounts and the admin panel
 
 Playing needs no account: guests keep their worlds in the browser. Players

@@ -15,7 +15,7 @@ import { BossManager, BOSS_ORDER } from './bosses/bosses.js';
 import { HeldItem } from './player/held.js';
 import { settings } from './save/settings.js';
 import { saveWorld } from './save/db.js';
-import { slot, pushSave, storeProfile } from './save/account.js';
+import { slot, pushSave, storeProfile, newWorldId } from './save/account.js';
 import { t } from './i18n/index.js';
 import { setIconAtlas } from './ui/icons.js';
 import { QuestManager, newQuestState } from './quest/questManager.js';
@@ -171,9 +171,9 @@ export class Game {
   }
 
   // ---------- world lifecycle ----------
-  newMeta({ name, seed, difficulty }) {
+  newMeta({ name, seed, difficulty, creative = false }) {
     return {
-      version: 1, name, seed, difficulty,
+      version: 1, worldId: newWorldId(), name, seed, difficulty: creative ? 'peaceful' : difficulty, creative: !!creative,
       dim: 'overworld', time: 0.02, day: 1, playTime: 0,
       edits: {}, player: null, inventory: null,
       bosses: { voidDragon: false, shellKing: false, whirlwindKing: false, emberWarden: false, soulStorm: false },
@@ -192,15 +192,21 @@ export class Game {
   }
 
   get isQuest() { return !!(this.meta && this.meta.mode === 'quest'); }
+  // creative worlds: no damage or hunger, flying, instant mining, endless blocks, no crystals
+  get creative() { return !!(this.meta && this.meta.creative && !this.isQuest); }
+  // the save slot of the running world
+  get saveBase() { return this.isQuest ? 'quest' : 'w-' + this.meta.worldId; }
 
   async start(meta, onProgress = () => {}) {
     this.meta = meta;
+    if (meta.mode !== 'quest' && !meta.worldId) meta.worldId = newWorldId();
     this.quest = meta.mode === 'quest' ? new QuestManager(this) : null;
     this.layout = Layout.get(meta.seed);
     this.player = new Player();
     this.inventory = new Inventory(meta.inventory);
     this.inventory.onChange = () => this.ui.hud && this.ui.hud.refreshHotbar();
-    if (!meta.inventory) { if (this.quest) this.giveQuestKit(); else this.giveStarterKit(); }
+    if (!meta.inventory) { if (this.quest) this.giveQuestKit(); else if (this.creative) this.giveCreativeKit(); else this.giveStarterKit(); }
+    this.ui.hud && this.ui.hud.el.classList.toggle('creative', this.creative);
     // the Treasure Quest's blade follows the player into every normal world
     if (!this.quest && this.profile.rewards && this.profile.rewards.starfall && !meta.starfallGiven) { meta.starfallGiven = true; this.inventory.add('starfall_blade', 1); }
     const p = meta.player;
@@ -233,6 +239,12 @@ export class Game {
     this.inventory.add('arrow', 32);
     this.inventory.add('roast', 8);
     this.inventory.add('sunfruit', 6);
+  }
+
+  giveCreativeKit() {
+    for (const [k, n] of [['planks', 64], ['stone', 64], ['brick', 64], ['glass', 64], ['torch', 64], ['log', 64], ['ember_lamp', 64], ['wool', 64]]) {
+      if (ITEMS[k]) this.inventory.add(k, n);
+    }
   }
 
   giveStarterKit() {
@@ -338,7 +350,7 @@ export class Game {
     if (!this.meta || !this.player) return false;
     // return crafting grid contents so nothing is lost
     if (this.inventory.grid.some(Boolean)) this.inventory.returnGrid();
-    const base = this.isQuest ? 'quest' : 'current';
+    const base = this.saveBase;
     const rec = this.serialize();
     rec.savedAt = Date.now();
     const ok = await saveWorld(rec, slot(base), true);
@@ -377,6 +389,7 @@ export class Game {
     const pl = this.player;
     this.handlePressed(inp);
     if (this.paused) return;
+    if (this.creative) this.flyControl(inp);
     if (!this._movedOnce && (inp.move.x || inp.move.z)) { this._movedOnce = true; setTimeout(() => this.ui.tutorialDone('move'), 1500); }
     m.playTime += dt;
     if (m.dim === 'overworld') {
@@ -488,7 +501,7 @@ export class Game {
   breakTime(id) {
     const b = BLOCKS[id];
     if (!b || b.hardness < 0) return this.player.god ? 0.15 : Infinity;
-    if (this.player.god) return 0.05;
+    if (this.player.god || this.creative) return 0.05;
     const h = this.inventory.held;
     const def = h && ITEMS[h.item];
     const rightTool = def && def.tool && def.tool === b.tool;
@@ -529,6 +542,7 @@ export class Game {
     this.audio.sfx('break');
     this.vibrate(15);
     this.entities.burst(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5, b.tex ? b.tex.side : 0);
+    if (this.creative) { this.ui.tutorialDone('break'); return; }
     if (!canHarvest) { this.ui.toast(t('toast.needTool'), 'warn'); return; }
     const drop = blockDrop(hit.id);
     if (drop === 'soul_crystal') {
@@ -576,8 +590,9 @@ export class Game {
     }
     if (def && def.special === 'map' && fresh) { this.ui.openMap(); this.useCooldown = 0.3; return; }
     if (def && def.weapon === 'bow' && fresh) {
-      if (this.inventory.count('arrow') <= 0 && !this.player.god) { this.ui.toast(t('desc.bow'), 'warn'); return; }
-      if (!this.player.god) this.inventory.remove('arrow', 1);
+      const free = this.player.god || this.creative;
+      if (this.inventory.count('arrow') <= 0 && !free) { this.ui.toast(t('desc.bow'), 'warn'); return; }
+      if (!free) this.inventory.remove('arrow', 1);
       this.entities.shoot('arrow', this.player.eye, dir, 34, def.damage, 'player');
       this.audio.sfx('shoot'); this.held.swing();
       this.useCooldown = 0.7;
@@ -585,7 +600,7 @@ export class Game {
     }
     if (def && def.throwable && fresh) {
       const kind = def.throwable;
-      this.inventory.consumeHeld(1);
+      if (!this.creative) this.inventory.consumeHeld(1);
       this.entities.shoot(kind, this.player.eye, dir, kind === 'wind' ? 22 : 26, def.damage || 0, 'player');
       this.audio.sfx('throw'); this.held.swing();
       this.useCooldown = 0.5;
@@ -607,13 +622,29 @@ export class Game {
       if (nb.solid && (this.player.intersectsBlock(x, y, z) || this.entities.occupies(x, y, z))) return;
       if ((nb.shape === 'cross' || nb.shape === 'torch') && !BLOCKS[this.world.getBlock(x, y - 1, z)]?.solid) return;
       this.world.setBlock(x, y, z, def.block);
-      this.inventory.consumeHeld(1);
+      if (!this.creative) this.inventory.consumeHeld(1);
       this.meta.stats.placed++;
       this.audio.sfx('place');
       this.held.swing();
       this.vibrate(8);
       this.useCooldown = this.input.touchMode ? 0.28 : 0.2;
       this.ui.tutorialDone('place');
+    }
+  }
+
+  // Creative flight: double-tap jump (or the touch fly button) toggles it.
+  flyControl(inp) {
+    const p = this.player;
+    const now = performance.now();
+    let toggle = inp.pressed.has('fly');
+    if (inp.jump && !this._jumpWas) {
+      if (now - (this._jumpAt || 0) < 320) { toggle = true; this._jumpAt = 0; } else this._jumpAt = now;
+    }
+    this._jumpWas = inp.jump;
+    if (toggle) {
+      p.fly = !p.fly;
+      p.vel.y = 0;
+      this.ui.toast(t(p.fly ? 'toast.flyOn' : 'toast.flyOff'));
     }
   }
 
@@ -627,6 +658,7 @@ export class Game {
     const p = this.player;
     if (p.dead || amount <= 0) return false;
     if (p.god) return false;
+    if (this.creative && cause !== 'void') return false;
     if (p.invuln > 0 && cause !== 'magma' && cause !== 'void') return false;
     const diff = this.meta.difficulty;
     if (cause === 'mob' || cause === 'boss') amount = Math.ceil(amount * (diff === 'hard' ? 1.4 : diff === 'peaceful' ? 0.5 : 1));
@@ -699,6 +731,7 @@ export class Game {
   hunger(dt) {
     const p = this.player;
     if (p.dead) return;
+    if (this.creative) { p.food = 20; p.health = p.maxHealth; return; }
     if (this.quest) { p.food = 20; this._regenT = (this._regenT || 0) + dt; if (this._regenT > 2.5) { this._regenT = 0; if (p.health < p.maxHealth) p.health++; } return; }
     const drain = (p.moving ? 0.018 : 0.008) * (this.meta.difficulty === 'peaceful' ? 0.3 : 1);
     p.saturation -= drain * dt * 2.5;
@@ -712,6 +745,7 @@ export class Game {
   }
 
   addCrystals(n) {
+    if (this.creative) return;
     this.profile.crystals += n;
     this.profile.totalCrystals = (this.profile.totalCrystals || 0) + n;
     this.meta.stats.crystals += n;

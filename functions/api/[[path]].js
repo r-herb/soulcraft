@@ -23,8 +23,17 @@ import {
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures,
 } from '../../server/lib.js';
 
+// save slots: the profile, the Treasure Quest run, and up to MAX_WORLDS
+// worlds ("w-" + id); "current" is the single world from older versions
 const SLOTS = new Set(['current', 'quest', 'profile']);
+const validSlot = (s) => SLOTS.has(s) || /^w-[a-z0-9]{4,12}$/.test(s || '');
+const MAX_WORLDS = 6;
 const MAX_SAVE = 900000;
+function cleanInfo(info) {
+  if (!info || typeof info !== 'object') return null;
+  const out = { name: String(info.name || '').slice(0, 40), day: Math.max(1, Math.min(1e6, Number(info.day) || 1)), mode: ['survival', 'creative', 'quest'].includes(info.mode) ? info.mode : 'survival' };
+  return JSON.stringify(out);
+}
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -121,23 +130,32 @@ async function route(parts, method, request, env, secure) {
     if (s.role !== 'user') return err(403, 'forbidden');
     const uid = s.user.id;
     if (!b && method === 'GET') {
-      const { results } = await db.prepare('SELECT slot, saved_at, updated_at, length(data) AS size FROM saves WHERE user_id = ?').bind(uid).all();
-      return json({ saves: results.map((r) => ({ slot: r.slot, savedAt: r.saved_at, updatedAt: r.updated_at, size: r.size })) });
+      const { results } = await db.prepare('SELECT slot, saved_at, updated_at, length(data) AS size, info FROM saves WHERE user_id = ?').bind(uid).all();
+      return json({ saves: results.map((r) => ({ slot: r.slot, savedAt: r.saved_at, updatedAt: r.updated_at, size: r.size, info: r.info ? JSON.parse(r.info) : null })) });
     }
-    if (!SLOTS.has(b)) return err(400, 'bad_slot');
+    if (!validSlot(b)) return err(400, 'bad_slot');
+    if (method === 'DELETE') {
+      await db.prepare('DELETE FROM saves WHERE user_id = ? AND slot = ?').bind(uid, b).run();
+      return json({ ok: true });
+    }
     if (method === 'GET') {
       const r = await db.prepare('SELECT data, saved_at FROM saves WHERE user_id = ? AND slot = ?').bind(uid, b).first();
       if (!r) return err(404, 'no_save');
       return json({ slot: b, savedAt: r.saved_at, data: JSON.parse(r.data) });
     }
     if (method === 'PUT') {
-      const { data, savedAt } = await body(request);
+      const { data, savedAt, info } = await body(request);
       if (!data || typeof data !== 'object') return err(400, 'bad_data');
       const text = JSON.stringify(data);
       if (text.length > MAX_SAVE) return err(413, 'save_too_large');
       const at = Number(savedAt) || Date.now();
-      await db.prepare('INSERT INTO saves (user_id, slot, data, saved_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(user_id, slot) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at')
-        .bind(uid, b, text, at, Date.now()).run();
+      if (b.startsWith('w-')) {
+        const have = await db.prepare("SELECT slot FROM saves WHERE user_id = ? AND slot LIKE 'w-%'").bind(uid).all();
+        const slots = have.results.map((r) => r.slot);
+        if (!slots.includes(b) && slots.length >= MAX_WORLDS) return err(409, 'too_many_worlds');
+      }
+      await db.prepare('INSERT INTO saves (user_id, slot, data, saved_at, updated_at, info) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(user_id, slot) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at, updated_at = excluded.updated_at, info = excluded.info')
+        .bind(uid, b, text, at, Date.now(), cleanInfo(info)).run();
       return json({ ok: true, savedAt: at });
     }
   }
@@ -239,6 +257,6 @@ function summarize(slot, text) {
     if (slot === 'profile') return `${d.crystals || 0} crystals, skins: ${(d.skins || []).join(', ')}`;
     if (slot === 'quest') { const q = d.quest || {}; return `Treasure Quest: ${(q.solved || []).filter((i) => i > 0 && i <= 12).length}/12 levels${q.done ? ', complete' : ''}`; }
     const bosses = Object.values(d.bosses || {}).filter(Boolean).length;
-    return `"${d.name || 'World'}", day ${d.day || 1}, ${bosses}/5 guardians, ${Math.round((d.playTime || 0) / 60)} min played`;
+    return `"${d.name || 'World'}"${d.creative ? ' (creative)' : ''}, day ${d.day || 1}, ${bosses}/5 guardians, ${Math.round((d.playTime || 0) / 60)} min played`;
   } catch { return 'unreadable'; }
 }

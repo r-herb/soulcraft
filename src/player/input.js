@@ -151,6 +151,7 @@ export class Input {
         el.setPointerCapture?.(e.pointerId);
         el.classList.add('pressed');
         if (name === 'jump') this.jumpTouch = true;
+        else if (name === 'down') this.downTouch = true;
         else if (name === 'attack') { this.attackTouch = true; this.pressed.add('attack'); }
         else if (name === 'use') { this.useTouch = true; this.pressed.add('use'); }
         else this.pressed.add(name);
@@ -159,6 +160,7 @@ export class Input {
       const up = () => {
         el.classList.remove('pressed');
         if (name === 'jump') this.jumpTouch = false;
+        if (name === 'down') this.downTouch = false;
         if (name === 'attack') this.attackTouch = false;
         if (name === 'use') this.useTouch = false;
       };
@@ -185,6 +187,7 @@ export class Input {
       lookDX: this.lookDX,
       lookDY: this.lookDY,
       jump: k.has('Space') || !!this.jumpTouch,
+      down: k.has('ShiftLeft') || k.has('KeyC') || !!this.downTouch,
       sprint: keyboard ? (k.has('ShiftLeft') || k.has('ControlLeft')) : this.sprint,
       attack: this.attack || !!this.attackTouch,
       use: this.use || !!this.useTouch,
@@ -199,7 +202,7 @@ export class Input {
     this.keys.clear();
     this.move.x = this.move.z = 0;
     this.attack = this.use = false;
-    this.jumpTouch = this.attackTouch = this.useTouch = false;
+    this.jumpTouch = this.attackTouch = this.useTouch = this.downTouch = false;
     this.joy = null;
     this.lookPointers.clear();
     this.pressed = new Set();

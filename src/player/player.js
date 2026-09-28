@@ -84,7 +84,7 @@ export class Player {
     this.inMagma = feet === B.magma || body === B.magma;
 
     const sprint = inp.sprint && inp.move.z > 0.5;
-    let speed = sprint ? 5.9 : 4.4;
+    let speed = this.fly ? (sprint ? 12 : 8.5) : sprint ? 5.9 : 4.4;
     if (this.inWater) speed *= 0.55;
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
     const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
@@ -106,7 +106,8 @@ export class Player {
     this.knock.set(0, 0, 0);
 
     if (this.fly) {
-      this.vel.y = inp.jump ? 8 : (inp.pressed.has('down') ? -8 : 0);
+      this.vel.y = inp.jump ? 8 : inp.down ? -8 : 0;
+      this.fallStart = null;
     } else if (this.inWater || this.inMagma) {
       this.vel.y -= 10 * dt;
       this.vel.y = Math.max(this.vel.y, -3);
@@ -141,6 +142,8 @@ export class Player {
     }
     if (this.inWater) this.fallStart = null;
     this.onGround = o.onGround;
+    // flying down onto the ground lands
+    if (this.fly && o.onGround && inp.down) this.fly = false;
     if (o.onGround) this.coyote = 0.12;
     else if (this.coyote > 0) this.coyote -= dt;
     if (o.onGround && this.airLock > 0 && this.vel.y <= 0) this.airLock = 0;
