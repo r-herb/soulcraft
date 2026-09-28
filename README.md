@@ -32,6 +32,43 @@ The vault's chest gives the Treasure Hunter skin, the Starfall Blade and
 Levels have checkpoints, and falling just sends you back to the last one.
 With `?dev=1`, **Quest: skip level** jumps ahead one level.
 
+### Chapter 2: the Frozen Spire
+
+Once the first vault is open, a back door in it leads to eight more levels:
+
+1. Ice Slide: build up speed on the ice and jump the gaps
+2. Blink Bridge: pads that shine and fade in turn
+3. Updraft Tower: ride the frost vents up and step onto the walls
+4. Frost Plates: light all four plates before the first ones fade
+5. Frost Jets: pass each row of jets right after it fires
+6. Orb Race: collect six frost orbs against the clock
+7. Frost Den: frost spirits and monsters between ice pillars
+8. Frost Warden: the chapter boss (step out of the leap ring; while its
+   feet are frozen your hits count double)
+
+The crystal vault gives the Frost Monarch skin, the Frostbrand sword and
+300 soul crystals.
+
+## Play with friends
+
+Signed-in players can share a world with up to 3 friends. The owner opens
+the world from the pause menu (**Play with friends > Open to friends**) and
+gets a 6-character room code; friends choose **Join friend** on the title
+screen and type it.
+
+- The host's game is the authority: it saves the world (everyone's block
+  edits), runs the monsters and the time of day, and keeps each guest's
+  inventory and position in its save, so guests find their things again.
+- Guests build the same world from the seed plus the host's edits, see the
+  host's monsters, and send their hits to the host (a guest's kill drops
+  its loot for that guest). Daily tasks and soul crystals count for
+  everyone.
+- The world keeps going while a player is in a menu. Guardians and the
+  other realms stay closed while a room is open.
+- Rooms run in a small Worker (`mp/room.js`, one Durable Object per room)
+  that the Pages API reaches through the `ROOMS` binding after checking
+  the player's session, so only signed-in players get in.
+
 ## Performance
 
 Weak phones are limited by pixels (the GPU), not by JavaScript, so the
@@ -81,13 +118,13 @@ for real, in order, through the Soul Map.
 
 ## Known limitations
 
-- Single player only; there is no multiplayer or shared world.
+- Multiplayer is for up to 4 signed-in players, in the overworld only;
+  guardian fights and the other realms are single player.
 - Worlds are procedurally generated per seed, but only edits are saved, so
   a changed generator would reshape unedited terrain in old worlds.
 - Cloud saves keep one world, one quest run and the profile per account;
   the newest copy wins if two devices play offline at the same time.
-- There is no self-service sign-up or "forgot password": the admin creates
-  accounts and resets passwords in /admin.
+- There is no self-service sign-up: the admin creates accounts in /admin.
 - Portrait orientation is not supported on phones (the game asks to rotate).
 - Sound effects and music are synthesised in code, so they are simple.
 - On very weak devices the Auto quality mode trades sharpness for frame
@@ -95,16 +132,11 @@ for real, in order, through the Soul Map.
 
 ## Ideas for next steps
 
-- Co-op multiplayer through Cloudflare Durable Objects (one room per world).
-- More biomes and blocks (desert, snow, caves with ores and lava lakes).
-- Pets or tamed creatures that follow the player and help in fights.
-- Daily quests and seasonal events that reward soul crystals.
-- A creative mode with flying and unlimited blocks.
-- Several world slots per account, and sharing a world with a friend.
-- A second Treasure Quest chapter with new mechanics (moving platforms,
-  switches that change gravity).
-- Admin panel extras: activity charts, bulk user import, password reset
-  links by email.
+- Guardian fights with friends (a shared boss run by the host).
+- Text or emote chat in shared worlds.
+- More pets, and pets that learn new tricks.
+- A third Treasure Quest chapter.
+- Admin panel extras: bulk user import, per-player activity.
 
 ## Controls
 
@@ -200,7 +232,8 @@ npm test                          # smoke tests: mobile landscape (844x390, touc
 ```
 
 The accounts tests start `wrangler pages dev` with a throwaway local D1
-database (superadmin `admin` / `admin-pass-123`, local only).
+database (superadmin `admin` / `admin-pass-123`, local only), plus
+`wrangler dev` for the rooms Worker in `mp/`.
 
 What the tests cover:
 
@@ -219,6 +252,12 @@ What the tests cover:
 - `tests/quest.spec.js` (desktop): plays the Treasure Quest from the camp
   to the chest with an autopilot (`tests/questpilot.js`) that uses the normal
   controls, then checks that the rewards carry over into a normal world.
+- `tests/quest2.spec.js` (desktop): plays chapter 2 from the vault's back
+  door to the crystal vault, the Frost Warden included.
+- `tests/multiplayer.spec.js`: two players in two browsers share a world:
+  the room code, avatars, block edits both ways, a host monster killed by
+  the guest, a monster hurting the guest, the guest's saved things after
+  leaving and rejoining, a wrong code, and the host closing the room.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
   through the real Soul Map, from the Void Dragon to the Soul Storm and the
   victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries
@@ -241,7 +280,10 @@ This repository deploys itself with GitHub Actions and Cloudflare Pages
    as parallel jobs).
 2. Makes sure the D1 database **soulcraft** exists (`scripts/cloudflare-d1.mjs`
    writes its id into `wrangler.toml`), applies `migrations/`, and copies the
-   superadmin login into the Pages project secrets.
+   superadmin login into the Pages project secrets. It deploys the rooms
+   Worker **soulcraft-mp** from `mp/` and binds its Durable Object to the
+   Pages project as `ROOMS` (if the token cannot deploy Workers, the game
+   goes live without "Play with friends").
 3. If the tests pass, deploys that exact `dist/` plus `functions/` to the Cloudflare Pages
    project **soulcraft** with `cloudflare/wrangler-action` (the project is
    created with `wrangler pages project create soulcraft --production-branch main`
@@ -261,7 +303,7 @@ Set these under Settings > Secrets and variables > Actions:
 | Secret | Value |
 |---|---|
 | `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account that holds the `8nomads.com` zone |
-| `CLOUDFLARE_API_TOKEN` | A custom API token with **Account > Cloudflare Pages > Edit**, **Account > D1 > Edit**, **Zone > DNS > Edit** and **Zone > Zone > Read** (zone: 8nomads.com) |
+| `CLOUDFLARE_API_TOKEN` | A custom API token with **Account > Cloudflare Pages > Edit**, **Account > D1 > Edit**, **Account > Workers Scripts > Edit** (for the multiplayer rooms Worker), **Zone > DNS > Edit** and **Zone > Zone > Read** (zone: 8nomads.com) |
 | `SUPERADMIN_LOGIN` | The admin panel username |
 | `SUPERADMIN_PASSWORD` | The admin panel password |
 | `RESEND_API_KEY` | Optional. A [Resend](https://resend.com) API key with full access, for password reset emails. The deploy registers `soulcraft.8nomads.com` as the sending domain and adds its DKIM/SPF records in Cloudflare. |
@@ -291,8 +333,11 @@ src/ui/              tokens.css, styles.css, screens, HUD, panels, icons, dev pa
 src/i18n/            en.json, ru.json, t() helper
 src/audio/           Web Audio sound effects and generative music
 src/save/            IndexedDB saves, settings, account + cloud sync
+src/net/             play with friends: room connection, other players, host monsters
+src/quest/           Treasure Quest manager, daily tasks and events
 src/admin/           the /admin panel (admin.html)
-functions/api/       accounts API (Cloudflare Pages Function)
+functions/api/       accounts and rooms API (Cloudflare Pages Function)
+mp/                  the rooms Worker (Durable Objects) for multiplayer
 server/              API helpers: hashing, sessions, validation
 migrations/          D1 schema
 public/              manifest, icons, fonts, _headers
@@ -330,3 +375,10 @@ tests/               Playwright tests
 входят по email или телефону и паролю: сохранения хранятся в облаке и
 переходят на другие устройства, есть профиль с фото и смена пароля. Панель
 администратора: https://soulcraft.8nomads.com/admin (на английском).
+
+**Игра с друзьями:** до 4 игроков с аккаунтами в одном мире. Хозяин мира
+открывает его в меню паузы («Игра с друзьями») и получает код комнаты из 6
+знаков, друзья вводят его на главном экране («К другу»).
+
+**Поиск сокровищ, глава 2:** после первой сокровищницы задняя дверь ведёт в
+Ледяной шпиль: 8 новых уровней и Ледяной страж.

@@ -124,8 +124,42 @@ jobs:
             test-results
           retention-days: 7
 
+  # Plays chapter 2 of the Treasure Quest (the Frozen Spire).
+  quest2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Treasure Quest chapter 2 playthrough
+        run: npx playwright test tests/quest2.spec.js --project=desktop
+        env:
+          CI: "1"
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: quest2-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
   deploy:
-    needs: [test, bosses, quest]
+    needs: [test, bosses, quest, quest2]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -193,6 +227,19 @@ jobs:
           fi
           printf '%s' "$RESEND_API_KEY" | npx wrangler pages secret put RESEND_API_KEY --project-name soulcraft
           node scripts/resend-domain.mjs
+
+      # Multiplayer rooms: the soulcraft-mp Worker (one Durable Object per
+      # room), bound to the Pages project as ROOMS. It needs the API token
+      # permission "Account > Workers Scripts > Edit"; without it the game
+      # simply runs without "Play with friends".
+      - name: Multiplayer rooms Worker (Durable Objects)
+        run: |
+          if (cd mp && npx wrangler deploy); then
+            printf '\n[[durable_objects.bindings]]\nname = "ROOMS"\nclass_name = "Room"\nscript_name = "soulcraft-mp"\n' >> wrangler.toml
+            echo "Rooms Worker deployed and bound to Pages as ROOMS"
+          else
+            echo "::warning::Could not deploy the multiplayer Worker. Add the API token permission Account > Workers Scripts > Edit at https://dash.cloudflare.com/profile/api-tokens - Play with friends stays off until then."
+          fi
 
       # Runs from the repo root, so functions/ (the /api) and wrangler.toml
       # (the D1 binding) go up with the static build.

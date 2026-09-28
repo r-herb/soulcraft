@@ -210,6 +210,14 @@ const painters = {
       else p.set(x, y, shade(hex(p.r() < 0.35 ? '#1f5a3a' : '#2a6e46'), 0.85 + p.r() * 0.25));
     }
   },
+  frost_brick: (p) => { p.bricks('#9cc4dc', '#5f89a6', 8, 4); p.speckle('#e6f6ff', 5); },
+  blink_on: (p) => { p.noise(['#b98bff', '#c9a2ff', '#a678f0']); p.border('#6d45d6'); for (let i = 4; i < 12; i++) { p.set(i, 4, hex('#f0e6ff')); p.set(i, 11, hex('#f0e6ff')); p.set(4, i, hex('#f0e6ff')); p.set(11, i, hex('#f0e6ff')); } },
+  blink_off: (p) => { p.clear(); for (let i = 0; i < 16; i += 2) { p.set(i, 0, hex('#b98bff'), 150); p.set(i, 15, hex('#b98bff'), 150); p.set(0, i, hex('#b98bff'), 150); p.set(15, i, hex('#b98bff'), 150); } },
+  plate_off: (p) => { p.noise(['#5f89a6', '#6f99b6']); p.border('#3a5a78'); for (let i = 4; i < 12; i++) for (let j = 4; j < 12; j++) p.set(i, j, hex('#8aa9c0')); },
+  plate_on: (p) => { p.noise(['#5f89a6', '#6f99b6']); p.border('#3a5a78'); for (let i = 3; i < 13; i++) for (let j = 3; j < 13; j++) p.set(i, j, hex(p.glow ? '#dffcff' : '#9af6ff')); },
+  jet: (p) => { painters.frost_brick(p); for (const [x, y] of [[4, 4], [11, 4], [4, 11], [11, 11], [7, 7], [8, 8]]) { p.set(x, y, hex('#1f3a5a')); p.set(x + 1, y, hex('#1f3a5a')); } },
+  jet_lit: (p) => { painters.frost_brick(p); for (const [x, y] of [[4, 4], [11, 4], [4, 11], [11, 11], [7, 7], [8, 8]]) { p.set(x, y, hex('#e6fbff')); p.set(x + 1, y, hex('#9af6ff')); } },
+  vent: (p) => { p.noise(['#3a5a78', '#2e4a66']); for (let i = 1; i < 15; i += 3) for (let j = 1; j < 15; j++) p.set(i, j, hex('#bff7ec')); p.border('#1f3a5a'); },
   glow_crystal: (p) => {
     p.clear();
     const cs = [p.glow ? '#b6fbff' : '#8feaff', '#5fd0f0', '#c9a2ff', '#ffffff'].map(hex);

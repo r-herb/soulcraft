@@ -378,3 +378,12 @@ body.touch .desktop-only { display: none !important; }
 @media (max-height: 420px) { .title-screen .event-banner { font-size: var(--fs-xs); padding: 4px var(--sp-2); } }
 .linkish { background: none; border: 0; color: var(--c-soul-300); text-decoration: underline; font: inherit; font-size: var(--fs-sm); cursor: pointer; padding: 4px; align-self: center; min-height: 32px; }
 .form-ok { margin: 0; color: var(--c-ok); font-size: var(--fs-sm); min-height: 1em; }
+
+/* ---------- play with friends ---------- */
+.room-code-box { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3); border-radius: var(--r-md); background: rgba(127, 243, 255, 0.08); border: 2px solid rgba(127, 243, 255, 0.3); }
+.room-code { flex: 1; font-family: var(--font-display); font-size: var(--fs-xl); letter-spacing: 0.18em; color: var(--c-soul-400); user-select: all; }
+.room-players { display: flex; flex-direction: column; gap: var(--sp-2); }
+.room-player { display: flex; align-items: center; gap: var(--sp-2); min-height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-sm); background: var(--surface-slot); border: 2px solid var(--border-slot); }
+.room-player .rp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-input { text-transform: uppercase; letter-spacing: 0.3em; font-size: var(--fs-lg); text-align: center; }
+.room-chip { color: var(--c-soul-400); font-size: var(--fs-xs); margin-left: var(--sp-2); letter-spacing: 0.06em; }

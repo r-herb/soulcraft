@@ -493,12 +493,14 @@ export function treasureMap(args, ui) {
 export function questComplete(args, ui) {
   const g = ui.game;
   const st = g.meta.quest;
+  const ch2 = args.chapter === 2;
+  const skin = ch2 ? 'frost_monarch' : 'treasure', sword = ch2 ? 'frostbrand' : 'starfall_blade';
   const mins = Math.floor(g.meta.playTime / 60), secs = Math.floor(g.meta.playTime % 60);
   const node = el(`<div class="screen victory" data-screen="questComplete">
     <div class="panel" style="width:min(560px,100%);text-align:center">
-      <h1 class="logo" style="font-size:clamp(16px,3.6vw,28px)" data-i18n="quest.complete"></h1>
-      <p class="dim" data-i18n="quest.completeBody"></p>
-      <div class="reward-row"><div class="rw rw-skin"><canvas></canvas><span data-i18n="skin.treasure"></span></div><div class="rw rw-blade"></div><div class="rw"><span class="crystal-ico" style="width:28px;height:28px"></span><span>+250</span></div></div>
+      <h1 class="logo" style="font-size:clamp(16px,3.6vw,28px)" data-i18n="${ch2 ? 'quest.complete2' : 'quest.complete'}"></h1>
+      <p class="dim" data-i18n="${ch2 ? 'quest.completeBody2' : 'quest.completeBody'}"></p>
+      <div class="reward-row"><div class="rw rw-skin"><canvas></canvas><span data-i18n="skin.${skin}"></span></div><div class="rw rw-blade"></div><div class="rw"><span class="crystal-ico" style="width:28px;height:28px"></span><span>+${ch2 ? 300 : 250}</span></div></div>
       <div class="stats-grid">
         <div><span data-i18n="victory.time"></span><b>${mins}:${String(secs).padStart(2, '0')}</b></div>
         <div><span data-i18n="quest.falls"></span><b>${st.falls}</b></div>
@@ -507,10 +509,10 @@ export function questComplete(args, ui) {
       </div>
       <div class="row" style="justify-content:center"><button class="btn primary" data-act="continue" data-i18n="victory.continue"></button><button class="btn" data-act="title" data-i18n="victory.title_screen"></button></div>
     </div></div>`);
-  drawSkinPortrait(node.querySelector('.rw-skin canvas'), 'treasure');
+  drawSkinPortrait(node.querySelector('.rw-skin canvas'), skin);
   const blade = node.querySelector('.rw-blade');
-  iconInto(blade, 'starfall_blade', 64);
-  const nm = document.createElement('span'); nm.textContent = t('item.starfall_blade'); blade.appendChild(nm);
+  iconInto(blade, sword, 64);
+  const nm = document.createElement('span'); nm.textContent = t('item.' + sword); blade.appendChild(nm);
   node.querySelector('[data-act="continue"]').addEventListener('click', () => { ui.click(); ui.closeAll(); });
   node.querySelector('[data-act="title"]').addEventListener('click', () => { ui.click(); ui.app.quitToTitle(); });
   return node;

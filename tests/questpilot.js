@@ -58,7 +58,11 @@ export function installPilot() {
     const moved = pilot.lastPos ? Math.hypot(p.pos.x - pilot.lastPos.x, p.pos.z - pilot.lastPos.z) : 1;
     pilot.lastPos = { x: p.pos.x, z: p.pos.z };
     pilot.stuckT = moved < 0.01 ? pilot.stuckT + 1 : 0;
-    if (pilot.stuckT > 25 && p.onGround) { pilot.jumpHold = 4; pilot.stuckT = 0; }
+    if (pilot.stuckT > 25 && p.onGround) { pilot.jumpHold = 4; pilot.stuckT = 0; pilot.stuckN = (pilot.stuckN || 0) + 1; }
+    if (moved > 0.05) pilot.stuckN = 0;
+    // still blocked after jumping (a wall or pillar): sidestep around it
+    if (pilot.stuckN >= 2) { pilot.sideT = 18; pilot.side = Math.random() < 0.5 ? -1 : 1; pilot.stuckN = 0; }
+    if (pilot.sideT > 0) { pilot.sideT--; input.move.x = pilot.side; input.move.z = 0.3; }
   }, 40);
 
   // Walk to a point; resolves when reached.
@@ -126,7 +130,12 @@ export function installPilot() {
       const boss = g.bosses.active;
       const mobs = g.entities.list.filter((e) => e.questMob && !e.dead);
       if (pred()) { clearInterval(timer); pilot.target = null; resolve(true); return; }
-      if (Date.now() - t0 > maxMs) { clearInterval(timer); reject(new Error('fight timeout')); return; }
+      if (Date.now() - t0 > maxMs) {
+        clearInterval(timer);
+        const p = g.player.pos, f = (v) => `${v.x.toFixed(1)},${v.y.toFixed(1)},${v.z.toFixed(1)}`;
+        reject(new Error(`fight timeout at ${f(p)}; left: ${mobs.map((m) => `${m.type}@${f(m.pos)}`).join(' ')}`));
+        return;
+      }
       let tx, ty, tz;
       if (boss) { const c = boss.center(); tx = c.x; ty = c.y; tz = c.z; }
       else if (mobs.length) {

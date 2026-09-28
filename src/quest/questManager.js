@@ -2,14 +2,15 @@
 // levers, memory tiles, crumbling bridges, jump pads, keys, monsters, the
 // final boss and the treasure chest.
 import * as THREE from 'three';
-import { LEVELS, F, SPACING, levelAt, QUEST_SEED, LEVEL_COUNT } from '../world/quest.js';
+import { LEVELS, F, SPACING, levelAt, QUEST_SEED, LEVEL_COUNT, CH2_FIRST, CH2_LAST, CH2_VAULT, CH2_COUNT } from '../world/quest.js';
 import { B, BLOCKS } from '../world/blocks.js';
 import { t } from '../i18n/index.js';
 import { HoardGolem } from '../bosses/hoardGolem.js';
+import { FrostWarden } from '../bosses/frostWarden.js';
 import { storeProfile } from '../save/account.js';
 
 export function newQuestState() {
-  return { checkpoint: 0, solved: [0], hasMap: false, keys: [false, false, false], falls: 0, done: false, rewarded: false, started: 0 };
+  return { checkpoint: 0, solved: [0], hasMap: false, keys: [false, false, false], falls: 0, done: false, rewarded: false, started: 0, done2: false, rewarded2: false };
 }
 
 export class QuestManager {
@@ -33,6 +34,12 @@ export class QuestManager {
     this.patrolsSpawned = false;
     this.plankGiven = false;
     this.last = -1;
+    // chapter 2
+    this.blinkT = 0; this.blinkOn = [];
+    this.jetT = 0; this.jetState = [];
+    this.plates = null;
+    this.race = null; this.orbDrops = [];
+    this.bossLevel = 12;
   }
 
   genExtra() { return { solved: this.state.solved.slice() }; }
@@ -48,7 +55,11 @@ export class QuestManager {
   setBlocks(x0, y0, z0, x1, y1, z1, id) {
     for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) this.world.setBlock(x, y, z, id, false);
   }
-  openGate(i) { const o = LEVELS[i].ox; this.setBlocks(o + 52, F + 1, -2, o + 52, F + 4, 2, B.air); }
+  openGate(i) {
+    const o = LEVELS[i].ox;
+    if (i === 13) { this.setBlocks(o + 19, F + 1, -2, o + 19, F + 4, 2, B.air); return; } // the vault's back door
+    this.setBlocks(o + 52, F + 1, -2, o + 52, F + 4, 2, B.air);
+  }
   underFeet() { const p = this.player.pos; return { x: Math.floor(p.x), y: Math.floor(p.y - 0.05), z: Math.floor(p.z) }; }
 
   solve(i, silent = false) {
@@ -77,6 +88,8 @@ export class QuestManager {
       g.save(true);
     }
     if (cur !== this.last) { this.enterLevel(cur); this.last = cur; }
+    // players who finished chapter 1 before chapter 2 existed: open the door
+    if (st.rewarded && !this.solved(13)) this.solve(13, true);
     // falling off the course or into magma: back to the checkpoint
     if (p.pos.y < F - 12 || p.inMagma) {
       st.falls++;
@@ -92,6 +105,8 @@ export class QuestManager {
       case 'memory': this.updateMemory(L, dt); break;
       case 'build': this.updateBuild(L); break;
       case 'boss': this.updateBoss(L); break;
+      case 'plates': this.updatePlates(L, dt); break;
+      case 'orbs': this.updateOrbs(L, dt); break;
       default: break;
     }
     // crumbling blocks respawn wherever the player is
@@ -101,7 +116,7 @@ export class QuestManager {
   enterLevel(i) {
     const L = LEVELS[i];
     if (!L) return;
-    if (L.kind === 'boss' && !this.solved(i)) this.game.ui.tutorial('questBoss');
+    if (L.kind === 'boss' && !this.solved(i)) this.game.ui.tutorial(i === CH2_LAST ? 'questBoss2' : 'questBoss');
   }
 
   toCheckpoint(msg) {
@@ -119,11 +134,15 @@ export class QuestManager {
   // Called after death or a fall: undo half-finished level state.
   onRespawn() {
     for (const e of this.game.entities.list) if (e.questMob) e.dead = true;
-    if (this.den) { for (const m of this.den.mobs) m.dead = true; this.den = null; const g = LEVELS[4].entryGate; this.setBlocks(g[0], g[1], g[2], g[3], g[4], g[5], B.air); }
+    if (this.den) { for (const m of this.den.mobs) m.dead = true; const g = LEVELS[this.den.level].entryGate; this.setBlocks(g[0], g[1], g[2], g[3], g[4], g[5], B.air); this.den = null; }
     if (this.memory) this.resetMemory();
-    const bl = LEVELS[12];
-    if (!this.solved(12)) this.setBlocks(bl.entryGate[0], bl.entryGate[1], bl.entryGate[2], bl.entryGate[3], bl.entryGate[4], bl.entryGate[5], B.air);
+    for (const i of [12, CH2_LAST]) {
+      const bl = LEVELS[i];
+      if (!this.solved(i)) this.setBlocks(bl.entryGate[0], bl.entryGate[1], bl.entryGate[2], bl.entryGate[3], bl.entryGate[4], bl.entryGate[5], B.air);
+    }
     this.patrolsSpawned = false;
+    if (this.race) this.resetRace(false);
+    if (this.plates) this.resetPlates();
   }
 
   // ---------- level kinds ----------
@@ -162,7 +181,123 @@ export class QuestManager {
         if (!this.crumbles.has(k)) this.crumbles.set(k, { x: f.x, y: f.y, z: f.z, t: 0.45, state: 'shaking' });
       }
     }
+    if (L.blinks) this.updateBlinks(L, dt);
+    if (L.vents) this.updateVents(L, dt);
+    if (L.jets) this.updateJets(L, dt);
     if (!this.solved(L.i) && p.pos.x >= L.reachX && p.onGround) this.solve(L.i);
+  }
+
+  // ---------- chapter 2 mechanics ----------
+  // Blink bridges: each pad is solid for a while, then fades out.
+  blinkIsOn(L, b, t = this.blinkT) { return ((t + b.phase) % L.blinkPeriod) < L.blinkOn; }
+  updateBlinks(L, dt) {
+    this.blinkT += dt;
+    L.blinks.forEach((b, k) => {
+      const on = this.blinkIsOn(L, b);
+      if (this.blinkOn[k] === on) return;
+      this.blinkOn[k] = on;
+      this.setBlocks(b.x0, F, b.z0, b.x1, F, b.z1, on ? B.blink_on : B.blink_off);
+      if (Math.abs(this.player.pos.x - b.x0) < 12) this.game.audio.sfx(on ? 'pickup' : 'click');
+    });
+  }
+
+  // Updrafts: standing in a vent's column lifts the player up to its top.
+  inVent(L, x, y, z) { return L.vents.find((v) => x >= v.x0 && x < v.x1 + 1 && z >= v.z0 && z < v.z1 + 1 && y >= F + 0.5 && y < v.top + 1.5); }
+  updateVents(L, dt) {
+    const p = this.player;
+    const v = this.inVent(L, p.pos.x, p.pos.y, p.pos.z);
+    if (v) {
+      const want = p.pos.y < v.top ? 9 : 0.5;
+      p.vel.y += (want - p.vel.y) * Math.min(1, 8 * dt);
+      p.fallStart = null;
+      p.onGround = false;
+    }
+    if (Math.random() < dt * 30) {
+      const w = L.vents[Math.floor(Math.random() * L.vents.length)];
+      this.game.entities.particles.drift(w.x0 + Math.random() * 2, F + 1 + Math.random() * 3, w.z0 + Math.random() * 3, 0.75, 0.97, 0.93, 0, 6 + Math.random() * 3, 0, 2.2);
+    }
+  }
+
+  // Frost jets: rows of floor vents glow, then blast upward for a moment.
+  jetPhase(L, r, t = this.jetT) { return (t + r.phase) % L.jetPeriod; }
+  updateJets(L, dt) {
+    this.jetT += dt;
+    const p = this.player;
+    L.jets.forEach((r, k) => {
+      const ph = this.jetPhase(L, r);
+      const state = ph < 1.4 ? 'off' : ph < 2 ? 'warn' : 'fire';
+      if (this.jetState[k] !== state) {
+        this.jetState[k] = state;
+        this.setBlocks(r.x, F, L.z0, r.x, F, L.z1, state === 'off' ? B.jet : B.jet_lit);
+        if (state === 'fire' && Math.abs(p.pos.x - r.x) < 14) this.game.audio.sfx('wind');
+      }
+      if (state === 'fire') {
+        if (Math.random() < dt * 40) this.game.entities.particles.drift(r.x + Math.random(), F + 1, L.z0 + Math.random() * (L.z1 - L.z0 + 1), 0.9, 1, 1, 0, 9, 0, 0.5);
+        if (Math.abs(p.pos.x - (r.x + 0.5)) < 0.8 && p.pos.y < F + 4 && !p.dead && !(p.invuln > 0)) {
+          this.game.damagePlayer(3, 'mob', t('quest.jet'), new THREE.Vector3(-1, 0, 0));
+        }
+      }
+    });
+  }
+
+  // Frost plates: stepping on one lights it for a while; light all four at once.
+  resetPlates() {
+    const L = LEVELS[17];
+    for (const pl of L.plates) this.world.setBlock(pl.x, F, pl.z, B.plate_off, false);
+    this.plates = null;
+  }
+  updatePlates(L, dt) {
+    if (this.solved(L.i)) return;
+    if (!this.plates) this.plates = L.plates.map(() => 0);
+    const p = this.player, fx = Math.floor(p.pos.x), fz = Math.floor(p.pos.z);
+    L.plates.forEach((pl, k) => {
+      if (p.onGround && fx === pl.x && fz === pl.z && Math.floor(p.pos.y - 0.05) === F) {
+        if (this.plates[k] <= 0) { this.world.setBlock(pl.x, F, pl.z, B.plate_on, false); this.game.audio.sfx('pickup'); }
+        this.plates[k] = L.plateTime;
+      } else if (this.plates[k] > 0) {
+        this.plates[k] -= dt;
+        if (this.plates[k] <= 0) { this.world.setBlock(pl.x, F, pl.z, B.plate_off, false); this.game.audio.sfx('warn'); }
+      }
+    });
+    if (this.plates.every((v) => v > 0)) { this.plates = null; this.solve(L.i); }
+  }
+
+  // Orb race: collect every frost orb before the time runs out.
+  resetRace(toast = true) {
+    const g = this.game;
+    g.inventory.remove('frost_orb', g.inventory.count('frost_orb'));
+    for (const d of this.orbDrops) if (d) d.dead = true;
+    this.orbDrops = [];
+    this.race = null;
+    if (toast) { g.ui.toast(t('quest.raceLost'), 'warn'); g.audio.sfx('warn'); }
+  }
+  updateOrbs(L, dt) {
+    const g = this.game, p = this.player;
+    if (this.solved(L.i)) return;
+    if (!this.race) {
+      if (p.pos.x < L.startX) return;
+      this.race = { t: L.raceTime, got: L.orbs.map(() => false) };
+      g.ui.toast(t('quest.raceGo', { s: L.raceTime }), 'soul');
+    }
+    const r = this.race;
+    r.t -= dt;
+    L.orbs.forEach((o, i) => {
+      if (r.got[i]) return;
+      const d = this.orbDrops[i];
+      if (d && d.dead) { if (d.count <= 0) { r.got[i] = true; g.audio.sfx('crystal'); } this.orbDrops[i] = null; return; }
+      if (!d) {
+        const c = this.world.chunkAt(o.x, o.z);
+        if (!c || !c.data) return;
+        const drop = g.entities.dropItem('frost_orb', 1, new THREE.Vector3(o.x, o.y, o.z), new THREE.Vector3());
+        drop.life = 1e9; drop.pickDelay = 0; drop.gravity = 0;
+        this.orbDrops[i] = drop;
+      }
+    });
+    if (r.got.every(Boolean)) {
+      g.inventory.remove('frost_orb', g.inventory.count('frost_orb'));
+      this.race = null;
+      this.solve(L.i);
+    } else if (r.t <= 0) this.resetRace(true);
   }
 
   updateTraps(L, dt) {
@@ -221,7 +356,7 @@ export class QuestManager {
       const gt = L.entryGate;
       this.setBlocks(gt[0], gt[1], gt[2], gt[3], gt[4], gt[5], B.quest_gate);
       const mobs = L.spawns.map(([type, x, z]) => { const m = this.game.entities.spawnMob(type, x + 0.5, F + 1.05, z + 0.5); m.noDrops = true; m.questMob = true; return m; });
-      this.den = { mobs, total: mobs.length };
+      this.den = { mobs, total: mobs.length, level: L.i };
       this.game.audio.sfx('roar');
       this.game.ui.toast(t('quest.denClosed'), 'warn');
     }
@@ -247,7 +382,7 @@ export class QuestManager {
       if (this.levers.every(Boolean)) this.solve(L.i);
       return true;
     }
-    if (id === B.treasure_chest) { this.openChest(); return true; }
+    if (id === B.treasure_chest) { if (this.current() === CH2_VAULT) this.openChest2(); else this.openChest(); return true; }
     return id === B.lever_off || id === B.lever_on;
   }
 
@@ -364,16 +499,17 @@ export class QuestManager {
     if (Math.hypot(p.pos.x - a.x, p.pos.z - a.z) < a.r - 3 && p.onGround) {
       const gt = L.entryGate;
       this.setBlocks(gt[0], gt[1], gt[2], gt[3], gt[4], gt[5], B.quest_gate);
-      g.bosses.startCustom(new HoardGolem(g, a));
+      this.bossLevel = L.i;
+      g.bosses.startCustom(L.boss === 'frostWarden' ? new FrostWarden(g, a) : new HoardGolem(g, a));
     }
   }
 
   onBossDefeated() {
-    const L = LEVELS[12];
+    const L = LEVELS[this.bossLevel];
     const gt = L.entryGate;
     this.setBlocks(gt[0], gt[1], gt[2], gt[3], gt[4], gt[5], B.air);
-    this.solve(12);
-    this.game.ui.toast(t('quest.vaultOpen'), 'soul');
+    this.solve(L.i);
+    this.game.ui.toast(t(L.i === CH2_LAST ? 'quest.vault2Open' : 'quest.vaultOpen'), 'soul');
   }
 
   async openChest() {
@@ -394,19 +530,49 @@ export class QuestManager {
     g.audio.sfx('victory');
     const c = LEVELS[13].chest;
     g.entities.particles.emit(c.x + 0.5, c.y + 1, c.z + 0.5, 1, 0.85, 0.3, 90, 7, 1.6);
+    this.solve(13, true); // the back door to chapter 2
     await g.save(true);
     setTimeout(() => { if (g.running) g.ui.open('questComplete'); }, 1200);
+  }
+
+  async openChest2() {
+    const g = this.game, st = this.state;
+    if (st.done2 && st.rewarded2) { g.ui.open('questComplete', { chapter: 2 }); return; }
+    st.done2 = true;
+    const prof = g.profile;
+    if (!st.rewarded2) {
+      st.rewarded2 = true;
+      if (!prof.skins.includes('frost_monarch')) prof.skins.push('frost_monarch');
+      prof.skin = 'frost_monarch';
+      prof.rewards = { ...(prof.rewards || {}), frostbrand: true };
+      g.held.setSkin('frost_monarch');
+      g.giveItem('frostbrand', 1);
+      g.addCrystals(300);
+      await storeProfile(prof);
+    }
+    g.audio.sfx('victory');
+    const c = LEVELS[CH2_VAULT].chest;
+    g.entities.particles.emit(c.x + 0.5, c.y + 1, c.z + 0.5, 0.7, 0.95, 1, 90, 7, 1.6);
+    await g.save(true);
+    setTimeout(() => { if (g.running) g.ui.open('questComplete', { chapter: 2 }); }, 1200);
   }
 
   // HUD objective: [title, detail]
   objective() {
     const st = this.state;
     const cur = this.current();
-    if (st.done) return [t('quest.name'), t('quest.obj.done')];
+    if (st.done2 && cur >= CH2_FIRST) return [t('quest.ch2'), t('quest.obj.done2')];
+    if (st.done && cur <= 13) return [t('quest.name'), t('quest.obj.toCh2')];
     const L = LEVELS[cur];
-    const head = cur === 0 ? t('quest.lvl.0') : cur <= LEVEL_COUNT ? t('quest.levelOf', { n: cur, total: LEVEL_COUNT }) + ' · ' + t('quest.lvl.' + cur) : t('quest.lvl.13');
+    let head;
+    if (cur === 0) head = t('quest.lvl.0');
+    else if (cur <= LEVEL_COUNT) head = t('quest.levelOf', { n: cur, total: LEVEL_COUNT }) + ' · ' + t('quest.lvl.' + cur);
+    else if (cur >= CH2_FIRST && cur <= CH2_LAST) head = t('quest.ch2Short') + ' · ' + t('quest.levelOf', { n: cur - CH2_FIRST + 1, total: CH2_COUNT }) + ' · ' + t('quest.lvl.' + cur);
+    else head = t('quest.lvl.' + cur);
     let detail = t('quest.obj.' + cur);
-    if (this.solved(cur) && cur > 0 && cur < 13) detail = t('quest.obj.gateOpen');
+    if (this.solved(cur) && cur > 0 && cur !== 13 && cur < CH2_VAULT) detail = t('quest.obj.gateOpen');
+    else if (L.kind === 'plates' && this.plates) detail += ` (${this.plates.filter((v) => v > 0).length}/4)`;
+    else if (L.kind === 'orbs' && this.race) detail += ` (${this.race.got.filter(Boolean).length}/${this.race.got.length} · ${Math.max(0, Math.ceil(this.race.t))} s)`;
     else if (L.kind === 'den' && this.den) detail += ` (${this.den.mobs.filter((m) => m.dead).length}/${this.den.total})`;
     else if (L.kind === 'keys') detail += ` (${st.keys.filter(Boolean).length}/3)`;
     else if (L.kind === 'memory' && this.memory && this.memory.phase === 'input') detail = t('quest.yourTurn') + ` (${this.memory.input}/${this.memory.seq.length})`;
@@ -415,14 +581,17 @@ export class QuestManager {
   }
 
   progress() { return Math.min(LEVEL_COUNT, this.state.solved.filter((i) => i > 0 && i <= LEVEL_COUNT).length); }
+  progress2() { return this.state.solved.filter((i) => i >= CH2_FIRST && i <= CH2_LAST).length; }
 
   // dev: solve the current level and jump to the next one
   devSkip() {
     const cur = this.current();
     if (cur === 1) { this.state.hasMap = true; }
     if (cur === 7) this.state.keys = [true, true, true];
-    for (let i = 0; i <= Math.min(cur, 12); i++) if (!this.solved(i)) this.solve(i, true);
-    const next = Math.min(13, cur + 1);
+    if (cur === 13) { this.state.done = true; this.state.rewarded = true; }
+    for (let i = 0; i <= Math.min(cur, CH2_LAST); i++) if (!this.solved(i)) this.solve(i, true);
+    if (this.race) this.resetRace(false);
+    const next = Math.min(CH2_VAULT, cur + 1);
     this.state.checkpoint = next;
     if (this.game.bosses.active) this.game.bosses.clearActive();
     this.toCheckpoint();

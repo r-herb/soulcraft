@@ -19,6 +19,8 @@ export const TILES = [
   'chest_top', 'gold_brick',
   // biomes and caves
   'sandstone_top', 'sandstone_side', 'cactus_top', 'cactus_side', 'dry_bush', 'ice', 'pine_leaves', 'glow_crystal',
+  // Treasure Quest chapter 2
+  'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent', 'frost_brick',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -116,6 +118,15 @@ const LIST = [
   def(64, 'dry_bush', { tex: 'dry_bush', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, replaceable: true, drop: 'stick' }),
   def(65, 'ice', { tex: 'ice', hardness: 0.5, tool: 'pick', drop: 'none' }),
   def(66, 'pine_leaves', { tex: 'pine_leaves', layer: 1, opaque: false, hardness: 0.2, drop: 'none' }),
+  // Treasure Quest chapter 2 (the quest world does not allow breaking)
+  def(68, 'blink_on', { tex: 'blink_on', hardness: -1, light: 10 }),
+  def(69, 'blink_off', { tex: 'blink_off', layer: 1, solid: false, opaque: false, hardness: -1 }),
+  def(70, 'plate_off', { tex: { top: 'plate_off', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1 }),
+  def(71, 'plate_on', { tex: { top: 'plate_on', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1, light: 12 }),
+  def(72, 'jet', { tex: { top: 'jet', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1 }),
+  def(73, 'jet_lit', { tex: { top: 'jet_lit', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1, light: 11 }),
+  def(74, 'vent', { tex: { top: 'vent', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1, light: 6 }),
+  def(75, 'frost_brick', { tex: 'frost_brick', hardness: 2, tool: 'pick', tier: 1 }),
   def(67, 'glow_crystal', { tex: 'glow_crystal', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0.8, light: 12 }),
 ];
 

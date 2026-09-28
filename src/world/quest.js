@@ -329,7 +329,175 @@ exitTunnel(1);
   box(o + 12, F + 6, 0, o + 12, F + 6, 0, B.soul_block);
 }
 
+// =================== Chapter 2: the Frozen Spire ===================
+// Behind the vault a door opens once the first treasure is claimed, and a
+// snowy path leads on to eight more levels, a new guardian and a vault.
+export const CH2_FIRST = 14, CH2_LAST = 21, CH2_VAULT = 22;
+{
+  const o = ox(13);
+  box(o + 19, F + 1, -2, o + 19, F + 4, 2, B.quest_gate, 13); // the vault's back door
+  box(o + 20, F - 2, -2, o + 49, F, 2, B.frost_brick);
+  box(o + 20, F, -2, o + 49, F, 2, B.snow);
+  for (let x = o + 24; x < o + 50; x += 8) { box(x, F + 1, -3, x, F + 2, -3, B.frost_brick); box(x, F + 3, -3, x, F + 3, -3, B.glow_crystal); }
+  exitTunnel(13, true);
+}
+
+// ---------- level 14: ice slide ----------
+{
+  const o = ox(14);
+  const gaps = [[o + 17, o + 18], [o + 28, o + 29], [o + 39, o + 40]];
+  level(14, { kind: 'reach', reachX: o + 47, gaps });
+  entry(14);
+  let x = o + 6;
+  for (const [g0, g1] of [...gaps, [o + 50, o + 50]]) {
+    box(x, F - 2, -2, g0 - 1, F - 1, 2, B.frost_brick);
+    box(x, F, -2, g0 - 1, F, 2, B.ice);
+    box(x, F + 1, -3, g0 - 1, F + 1, -3, B.frost_brick); box(x, F + 1, 3, g0 - 1, F + 1, 3, B.frost_brick);
+    x = g1 + 1;
+  }
+  exitTunnel(14);
+}
+
+// ---------- level 15: blink bridge ----------
+{
+  const o = ox(15);
+  const anchors = [[o + 6, o + 9], [o + 13, o + 14], [o + 19, o + 20], [o + 25, o + 26], [o + 32, o + 33], [o + 39, o + 40], [o + 47, o + 49]];
+  const pads = [[o + 10, o + 12], [o + 15, o + 18], [o + 21, o + 24], [o + 27, o + 31], [o + 34, o + 38], [o + 41, o + 46]];
+  const phases = [0, 1.3, 2.6, 0.7, 2.0, 3.3];
+  const blinks = pads.map(([x0, x1], k) => ({ x0, x1, z0: -1, z1: 1, phase: phases[k] }));
+  level(15, { kind: 'reach', reachX: o + 47, blinks, blinkPeriod: 4, blinkOn: 2.6 });
+  entry(15);
+  for (const [a, b] of anchors) box(a, F - 1, -1, b, F, 1, B.frost_brick);
+  for (const bl of blinks) box(bl.x0, F, bl.z0, bl.x1, F, bl.z1, B.blink_on);
+  for (const [a] of anchors.slice(1, -1)) box(a, F + 1, 1, a, F + 1, 1, B.glow_crystal);
+  exitTunnel(15);
+}
+
+// ---------- level 16: updraft tower ----------
+{
+  const o = ox(16);
+  const vents = [{ x0: o + 16, x1: o + 17, z0: -1, z1: 1, top: F + 14 }, { x0: o + 31, x1: o + 32, z0: -1, z1: 1, top: F + 20 }];
+  level(16, { kind: 'reach', reachX: o + 47, vents });
+  entry(16);
+  box(o + 6, F - 2, -3, o + 49, F, 3, B.frost_brick);
+  box(o + 6, F + 1, -4, o + 49, F + 22, -4, B.frost_brick);
+  box(o + 6, F + 1, 4, o + 49, F + 22, 4, B.frost_brick);
+  // two walls to fly over, each with a pool to land in behind it
+  box(o + 18, F + 1, -3, o + 19, F + 10, 3, B.frost_brick);
+  box(o + 20, F - 3, -3, o + 25, F, 3, B.water);
+  box(o + 33, F + 1, -3, o + 34, F + 16, 3, B.frost_brick);
+  box(o + 35, F - 3, -3, o + 40, F, 3, B.water);
+  for (const v of vents) box(v.x0, F, v.z0, v.x1, F, v.z1, B.vent);
+  for (let y = F + 4; y < F + 22; y += 6) { box(o + 10, y, -4, o + 10, y, -4, B.glow_crystal); box(o + 26, y, 4, o + 26, y, 4, B.glow_crystal); }
+  box(o + 6, F + 1, -2, o + 6, F + 4, 2, B.air);
+  box(o + 49, F + 1, -2, o + 49, F + 4, 2, B.air);
+  exitTunnel(16);
+}
+
+// ---------- level 17: frost plates ----------
+{
+  const o = ox(17);
+  const plates = [{ x: o + 10, z: -8 }, { x: o + 10, z: 8 }, { x: o + 44, z: 8 }, { x: o + 44, z: -8 }];
+  level(17, { kind: 'plates', plates, plateTime: 20 });
+  entry(17);
+  box(o + 6, F - 2, -10, o + 49, F, 10, B.frost_brick);
+  box(o + 6, F, -10, o + 49, F, 10, B.snow);
+  walls(o, -10, 10, 5);
+  for (let x = o + 6; x <= o + 49; x++) for (const z of [-10, 10]) if (x % 6 === 0) box(x, F + 5, z, x, F + 5, z, B.glow_crystal);
+  // low walls to run around
+  box(o + 16, F + 1, -10, o + 16, F + 2, -3, B.frost_brick); box(o + 16, F + 1, 3, o + 16, F + 2, 10, B.frost_brick);
+  box(o + 27, F + 1, -6, o + 28, F + 2, 6, B.frost_brick);
+  box(o + 38, F + 1, -10, o + 38, F + 2, -3, B.frost_brick); box(o + 38, F + 1, 3, o + 38, F + 2, 10, B.frost_brick);
+  for (const pl of plates) box(pl.x, F, pl.z, pl.x, F, pl.z, B.plate_off);
+  exitTunnel(17);
+}
+
+// ---------- level 18: frost jets ----------
+{
+  const o = ox(18);
+  const rows = [o + 12, o + 18, o + 24, o + 30, o + 36, o + 42].map((x, k) => ({ x, phase: k * 0.5 }));
+  level(18, { kind: 'reach', reachX: o + 47, jets: rows, jetPeriod: 3, z0: -3, z1: 3 });
+  entry(18);
+  box(o + 6, F - 2, -3, o + 49, F, 3, B.frost_brick);
+  box(o + 6, F + 1, -4, o + 49, F + 4, -4, B.frost_brick);
+  box(o + 6, F + 1, 4, o + 49, F + 4, 4, B.frost_brick);
+  for (const r of rows) box(r.x, F, -3, r.x, F, 3, B.jet);
+  for (let x = o + 9; x < o + 49; x += 6) box(x, F + 4, 4, x, F + 4, 4, B.lamp_on);
+  exitTunnel(18);
+}
+
+// ---------- level 19: orb race ----------
+{
+  const o = ox(19);
+  const orbs = [
+    { x: o + 14.5, y: F + 1.4, z: -8.5 }, { x: o + 20.5, y: F + 4.4, z: 7.5 }, { x: o + 28.5, y: F + 1.4, z: 0.5 },
+    { x: o + 34.5, y: F + 5.4, z: -7.5 }, { x: o + 41.5, y: F + 1.4, z: 9.5 }, { x: o + 45.5, y: F + 1.4, z: -2.5 },
+  ];
+  level(19, { kind: 'orbs', orbs, raceTime: 75, startX: o + 8 });
+  entry(19);
+  box(o + 6, F - 2, -12, o + 49, F, 12, B.frost_brick);
+  box(o + 6, F, -12, o + 49, F, 12, B.snow);
+  walls(o, -12, 12, 4);
+  box(o + 24, F, -3, o + 32, F, 3, B.ice); // a slippery patch in the middle
+  // a pillar with steps (orb 2) and a taller one (orb 4)
+  box(o + 20, F + 1, 7, o + 21, F + 3, 8, B.frost_brick);
+  for (let s = 0; s < 3; s++) box(o + 17 + s, F + 1, 7, o + 17 + s, F + 1 + s, 7, B.frost_brick);
+  box(o + 34, F + 1, -8, o + 35, F + 4, -7, B.frost_brick);
+  for (let s = 0; s < 4; s++) box(o + 30 + s, F + 1, -7, o + 30 + s, F + 1 + s, -7, B.frost_brick);
+  for (const [tx, tz] of [[o + 12, 6], [o + 40, -5], [o + 26, 10]]) { box(tx, F + 1, tz, tx, F + 5, tz, B.log); box(tx - 1, F + 4, tz - 1, tx + 1, F + 7, tz + 1, B.pine_leaves); box(tx, F + 4, tz, tx, F + 6, tz, B.log); }
+  exitTunnel(19);
+}
+
+// ---------- level 20: frost den ----------
+{
+  const o = ox(20);
+  level(20, {
+    kind: 'den', enterX: o + 10,
+    entryGate: [o + 6, F + 1, -2, o + 6, F + 4, 2],
+    spawns: [['frostSpirit', o + 36, -6], ['frostSpirit', o + 40, 6], ['frostSpirit', o + 44, 0], ['hollow', o + 38, 0], ['skitter', o + 32, 5], ['skitter', o + 32, -5]],
+  });
+  entry(20);
+  box(o + 6, F - 2, -10, o + 49, F, 10, B.frost_brick);
+  box(o + 6, F, -10, o + 49, F, 10, B.snow);
+  walls(o, -10, 10, 5);
+  for (const [px, pz] of [[o + 18, -5], [o + 18, 5], [o + 30, -5], [o + 30, 5]]) box(px, F + 1, pz, px + 1, F + 3, pz + 1, B.ice);
+  for (let x = o + 10; x < o + 49; x += 8) { box(x, F + 5, -10, x, F + 5, -10, B.glow_crystal); box(x, F + 5, 10, x, F + 5, 10, B.glow_crystal); }
+  exitTunnel(20);
+}
+
+// ---------- level 21: the Frost Warden ----------
+{
+  const o = ox(21);
+  const cx = o + 28, r = 16;
+  level(21, { kind: 'boss', boss: 'frostWarden', arena: { x: cx, y: F, z: 0, r, dim: 'quest' }, entryGate: [o + 11, F + 1, -2, o + 11, F + 4, 2] });
+  entry(21);
+  box(o + 6, F - 2, -2, o + 12, F, 2, B.frost_brick);
+  for (let x = cx - r - 1; x <= cx + r + 1; x++) for (let z = -r - 1; z <= r + 1; z++) {
+    const d = Math.hypot(x - cx, z);
+    if (d <= r + 0.5) box(x, F - 2, z, x, F, z, Math.floor(d) % 5 === 0 ? B.ice : B.frost_brick);
+    else if (d <= r + 1.5) { box(x, F - 2, z, x, F + 5, z, B.frost_brick); if ((x + z) % 7 === 0) box(x, F + 6, z, x, F + 6, z, B.glow_crystal); }
+  }
+  box(o + 11, F + 1, -2, o + 12, F + 4, 2, B.air); // entrance
+  box(o + 44, F + 1, -2, o + 49, F + 4, 2, B.air); // exit
+  box(o + 44, F - 2, -2, o + 49, F, 2, B.frost_brick);
+  exitTunnel(21);
+}
+
+// ---------- level 22: the crystal vault ----------
+{
+  const o = ox(22);
+  level(22, { kind: 'vault', chest: { x: o + 12, y: F + 1, z: 0 } });
+  entry(22);
+  box(o + 6, F - 2, -7, o + 19, F, 7, B.frost_brick);
+  box(o + 6, F + 1, -7, o + 19, F + 6, -7, B.frost_brick); box(o + 6, F + 1, 7, o + 19, F + 6, 7, B.frost_brick);
+  box(o + 19, F + 1, -7, o + 19, F + 6, 7, B.frost_brick); box(o + 6, F + 7, -7, o + 19, F + 7, 7, B.soul_glass);
+  box(o + 6, F + 1, -6, o + 6, F + 6, 6, B.frost_brick); box(o + 6, F + 1, -2, o + 6, F + 4, 2, B.air);
+  box(o + 12, F + 1, 0, o + 12, F + 1, 0, B.treasure_chest);
+  for (const [x, z] of [[o + 9, -5], [o + 15, -5], [o + 9, 5], [o + 15, 5]]) { box(x, F + 1, z, x, F + 1, z, B.soul_block); box(x, F + 2, z, x, F + 2, z, B.glow_crystal); }
+}
+
 export const LEVEL_COUNT = 12; // playable levels before the vault (1..12)
+export const CH2_COUNT = CH2_LAST - CH2_FIRST + 1; // 8
 export const QUEST_BOXES = boxes;
 export const QUEST_SPAWN = LEVELS[0].spawn;
 

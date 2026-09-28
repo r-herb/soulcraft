@@ -36,7 +36,7 @@ export class Hud {
       <div class="hud-top-left">
         <div class="bar-row hearts"></div>
         <div class="bar-row foods"></div>
-        <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span></div>
+        <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span><span class="stat-chip room-chip hidden" data-i18n-title="mp.roomChip"></span></div>
       </div>
       <div class="hud-top-right">
         <span class="fps hidden"></span>
@@ -66,6 +66,7 @@ export class Hud {
     this.hurt = q('.hurt-flash'); this.water = q('.underwater'); this.magma = q('.inmagma');
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
     this.questObj = q('.quest-obj');
+    this.roomChip = q('.room-chip');
     const buttons = {};
     this.el.querySelectorAll('[data-a]').forEach((b) => { buttons[b.dataset.a] = b; });
     input.attachTouch({ lookZone: q('.look-zone'), joyZone: q('.joy-zone'), joyBase: q('.joy-base'), joyKnob: q('.joy-knob'), buttons });
@@ -225,6 +226,14 @@ export class Hud {
     this.cardSlot.querySelector('.tc-sub').textContent = sub || '';
     clearTimeout(this.cardT);
     this.cardT = setTimeout(() => { this.cardSlot.innerHTML = ''; }, 3500);
+  }
+
+  // shared world: room code and player count
+  refreshRoom(net) {
+    const c = this.roomChip;
+    if (!c) return;
+    c.classList.toggle('hidden', !net);
+    if (net) c.textContent = `${net.code} · ${net.count}/4`;
   }
 
   showTutorial(text, onDone) {

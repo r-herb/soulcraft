@@ -5,6 +5,9 @@
 //   GET  /api/me                                              current user
 //   PATCH /api/me               {name, email, phone, avatar}
 //   POST /api/me/password       {current, next}
+//   POST /api/mp/room           {world}  open a multiplayer room, returns {code}
+//   GET  /api/mp/ws/:code       WebSocket into a room (forwarded to the ROOMS
+//                               Durable Object of the soulcraft-mp Worker)
 //   GET  /api/saves             list of slots (no data)
 //   GET  /api/saves/:slot       one save
 //   PUT  /api/saves/:slot       {data, savedAt}
@@ -35,6 +38,9 @@ const SLOTS = new Set(['current', 'quest', 'profile']);
 const validSlot = (s) => SLOTS.has(s) || /^w-[a-z0-9]{4,12}$/.test(s || '');
 const MAX_WORLDS = 6;
 const MAX_SAVE = 900000;
+// room codes: 6 characters without the easily confused 0/O and 1/I
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const roomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (n) => CODE_CHARS[n % CODE_CHARS.length]).join('');
 function cleanInfo(info) {
   if (!info || typeof info !== 'object') return null;
   const out = { name: String(info.name || '').slice(0, 40), day: Math.max(1, Math.min(1e6, Number(info.day) || 1)), mode: ['survival', 'creative', 'quest'].includes(info.mode) ? info.mode : 'survival' };
@@ -148,14 +154,14 @@ async function route(parts, method, request, env, secure) {
   }
 
   // guests get a plain 200 here, so the game's start-up check logs no error
-  if (!s && a === 'me' && !b && method === 'GET') return json({ role: null, user: null });
+  if (!s && a === 'me' && !b && method === 'GET') return json({ role: null, user: null, mp: !!env.ROOMS });
   if (!s) return err(401, 'not_signed_in');
 
   // ---------- me ----------
   if (a === 'me' && !b && method === 'GET') {
     if (s.role === 'superadmin') return json({ role: 'superadmin', user: { id: 0, name: 'Superadmin' } });
     await noteActive(db, s.user.id);
-    return json({ role: 'user', user: publicUser(s.user) });
+    return json({ role: 'user', user: publicUser(s.user), mp: !!env.ROOMS });
   }
   if (a === 'me' && !b && method === 'PATCH') {
     if (s.role !== 'user') return err(403, 'forbidden');
@@ -172,6 +178,35 @@ async function route(parts, method, request, env, secure) {
     // sign out other devices, keep this one
     await db.prepare('DELETE FROM sessions WHERE user_id = ? AND role = ? AND token_hash != ?').bind(s.user.id, 'user', s.tokenHash).run();
     return json({ ok: true });
+  }
+
+  // ---------- multiplayer rooms ----------
+  if (a === 'mp') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    if (!env.ROOMS) return err(503, 'mp_unavailable', 'Multiplayer is not set up yet.');
+    const room = (code) => env.ROOMS.get(env.ROOMS.idFromName(code));
+    if (b === 'room' && !c && method === 'POST') {
+      const { world } = await body(request);
+      for (let i = 0; i < 5; i++) {
+        const code = roomCode();
+        const r = await room(code).fetch('https://room/create', { method: 'POST', body: JSON.stringify({ host: s.user.id, name: String(world || '').slice(0, 40) }) });
+        if (r.ok) return json({ code });
+      }
+      return err(503, 'no_code');
+    }
+    if (b === 'ws' && c && method === 'GET') {
+      const code = String(c).toUpperCase();
+      if (!/^[A-Z0-9]{6}$/.test(code)) return err(400, 'bad_code');
+      if ((request.headers.get('upgrade') || '').toLowerCase() !== 'websocket') return err(426, 'websocket_required');
+      // no cross-site WebSocket hijacking: the page must be ours
+      const origin = request.headers.get('origin');
+      if (origin && origin !== new URL(request.url).origin) return err(403, 'bad_origin');
+      const h = new Headers(request.headers);
+      h.set('X-User-Id', String(s.user.id));
+      h.set('X-User-Name', s.user.name);
+      return room(code).fetch(new Request(request.url, { headers: h }));
+    }
+    return err(404, 'not_found');
   }
 
   // ---------- saves ----------

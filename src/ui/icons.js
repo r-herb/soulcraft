@@ -102,6 +102,8 @@ const DRAW = {
   bow: (c) => { line(c, 4, 2, 11, 5, '#8a6238', 2); line(c, 11, 5, 12, 11, '#8a6238', 2); line(c, 12, 11, 5, 14, '#8a6238', 2); line(c, 4, 3, 5, 13, '#e8e8e8'); },
   treasure_map: (c) => { rect(c, 2, 3, 12, 10, '#e8d5a0'); rect(c, 2, 3, 12, 1, '#c9a86a'); rect(c, 2, 12, 12, 1, '#c9a86a'); line(c, 4, 10, 7, 7, '#8a5a2a'); line(c, 7, 7, 9, 9, '#8a5a2a'); line(c, 10, 5, 12, 7, '#d24a24'); line(c, 12, 5, 10, 7, '#d24a24'); },
   golden_key: (c) => { rect(c, 3, 3, 5, 5, '#ffd65c'); rect(c, 4, 4, 3, 3, '#8a6a24'); line(c, 7, 7, 13, 13, '#ffd65c', 2); rect(c, 11, 12, 2, 2, '#ffd65c'); rect(c, 12, 10, 2, 2, '#ffd65c'); },
+  frost_orb: (c) => { rect(c, 5, 4, 6, 8, '#9af6ff'); rect(c, 4, 5, 8, 6, '#9af6ff'); rect(c, 6, 5, 3, 3, '#ffffff'); rect(c, 9, 9, 2, 2, '#5fb8e0'); },
+  frostbrand: (c) => { line(c, 4, 11, 13, 2, '#e6fbff', 2); line(c, 5, 11, 13, 3, '#9af6ff'); px(c, 14, 1, '#ffffff'); px(c, 9, 5, '#ffffff'); px(c, 11, 4, '#bfe6f5'); line(c, 2, 9, 6, 13, '#6aa9c8', 2); line(c, 1, 13, 3, 11, '#1f3a5a', 2); px(c, 1, 14, '#9af6ff'); },
   starfall_blade: (c) => { line(c, 4, 11, 13, 2, '#b6fbff', 2); line(c, 5, 11, 13, 3, '#7ff3ff'); px(c, 14, 1, '#ffffff'); px(c, 10, 3, '#ffffff'); px(c, 12, 6, '#fff08a'); line(c, 2, 9, 6, 13, '#f6c667', 2); line(c, 1, 13, 3, 11, '#6d45d6', 2); px(c, 1, 14, '#b98bff'); },
   spear: (c) => { line(c, 2, 14, 11, 5, '#7a5530', 2); rect(c, 11, 2, 3, 3, '#dfe3e8'); rect(c, 12, 3, 2, 2, '#9aa0a8'); px(c, 14, 1, '#ffffff'); },
 };

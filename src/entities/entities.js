@@ -293,6 +293,7 @@ const MOB_DEFS = {
   gloomshot: { hp: 18, speed: 3, dmg: 3, reach: 14, name: 'mob.gloomshot', burns: true, ranged: true, drops: [['arrow', 0.9], ['bone_dust', 0.5]] },
   soulMinion: { hp: 8, speed: 4.2, dmg: 2, reach: 1.4, name: 'mob.soulMinion', flying: true, drops: [] , w: 0.7, h: 0.7 },
   fireSpirit: { hp: 10, speed: 4.4, dmg: 4, reach: 1.4, name: 'mob.fireSpirit', flying: true, drops: [['charcoal', 0.6]], w: 0.7, h: 0.8 },
+  frostSpirit: { hp: 12, speed: 4.6, dmg: 3, reach: 1.4, name: 'mob.frostSpirit', flying: true, drops: [], w: 0.7, h: 0.8 },
   whirlwind: { hp: 999, speed: 2.6, dmg: 1, reach: 1.6, name: 'mob.whirlwind', hazard: true, drops: [], w: 1.4, h: 3 },
   mimic: { hp: 12, speed: 5, dmg: 2, reach: 1.4, name: 'mob.mimic', drops: [], w: 1.1, h: 0.7 },
 };
@@ -311,6 +312,7 @@ export class Mob extends Entity {
     this.name = t(d.name);
     this.nameKey = d.name;
     this.hittable = type !== 'whirlwind';
+    this.isMob = true;
     this.build();
     if (d.flying) this.gravity = 0;
   }
@@ -340,13 +342,14 @@ export class Mob extends Entity {
         this.object.add(leg);
         this.legs.push(leg);
       }
-    } else if (tp === 'soulMinion' || tp === 'fireSpirit') {
-      const fire = tp === 'fireSpirit';
-      const col = fire ? '#ff7a2e' : '#7ff3ff';
-      const b = box(0.6, 0.6, 0.6, col, faceTexture('ghost', col, fire ? '#5a1a0a' : '#1f2a6b'), { emissive: fire ? 0x8a2a00 : 0x1f7c8c });
+    } else if (tp === 'soulMinion' || tp === 'fireSpirit' || tp === 'frostSpirit') {
+      const fire = tp === 'fireSpirit', frost = tp === 'frostSpirit';
+      const col = fire ? '#ff7a2e' : frost ? '#e6fbff' : '#7ff3ff';
+      const glow = fire ? 0x8a2a00 : frost ? 0x3a7aa0 : 0x1f7c8c;
+      const b = box(0.6, 0.6, 0.6, col, faceTexture('ghost', col, fire ? '#5a1a0a' : '#1f2a6b'), { emissive: glow });
       b.position.y = 0.35;
       this.object.add(b);
-      const tail = box(0.35, 0.35, 0.35, col, null, { emissive: fire ? 0x8a2a00 : 0x1f7c8c, transparent: true, opacity: 0.6 });
+      const tail = box(0.35, 0.35, 0.35, col, null, { emissive: glow, transparent: true, opacity: 0.6 });
       tail.position.set(0, -0.2, -0.3);
       b.add(tail);
       this.bodyMesh = b;
@@ -362,10 +365,13 @@ export class Mob extends Entity {
     }
   }
   update(dt) {
-    const g = this.game, p = g.player, d = this.def;
+    const g = this.game, d = this.def;
+    // multiplayer: monsters go for the nearest player (the host runs them)
+    const p = g.net && g.net.isHost ? g.net.mobTarget(this.pos) : g.player;
     this.hurtT -= dt;
     this.attackT -= dt;
     this.phase += dt * 6;
+    if (this.netProxy) { this.follow(dt); this.animate(dt); return; }
     if (this.life !== undefined) { this.life -= dt; if (this.life <= 0) { this.dead = true; this.poof(); return; } }
     // a pet that bit this mob draws its attention for a while (melee mobs)
     this.petAggroT = (this.petAggroT || 0) - dt;
@@ -409,17 +415,24 @@ export class Mob extends Entity {
         const to = new THREE.Vector3(p.pos.x, p.pos.y + 1.3, p.pos.z);
         const dir = to.sub(from); const len = dir.length(); dir.normalize(); dir.y += len * 0.012;
         g.entities.shoot('arrow', from, dir.normalize(), 22, d.dmg, 'mob', this.name);
+        if (g.net && g.net.isHost) g.net.sendProj('arrow', from, dir, 22, d.dmg, this.nameKey);
         g.audio.sfx('shoot');
       } else if (!d.ranged && dist < d.reach && Math.abs(dy + (d.flying ? 1 : 0)) < 2) {
         this.attackT = d.hazard ? 0.6 : 1.0;
         tmp2.set(dx, 0, dz).normalize();
         if (pet) pet.damage(d.dmg);
+        else if (p.remote) g.net.hurt(p, d.dmg, this.nameKey, tmp2);
         else if (d.hazard) { p.knock.set(tmp2.x * 9, 10, tmp2.z * 9); g.damagePlayer(d.dmg, 'mob', this.name); }
         else g.damagePlayer(d.dmg, 'mob', this.name, tmp2);
         if (this.rig) this.rig.armR.rotation.x = -2;
       }
     }
-    // animation
+    this.animate(dt);
+    // despawn far away
+    if (dist > 80) this.dead = true;
+  }
+  animate(dt) {
+    const g = this.game;
     const moving = Math.hypot(this.vel.x, this.vel.z);
     if (this.rig) { animateWalk(this.rig, this.phase, Math.min(1, moving / 3)); if (this.type === 'hollow') { this.rig.armL.rotation.x = -1.3 + Math.sin(this.phase) * 0.1; this.rig.armR.rotation.x += (-1.3 - this.rig.armR.rotation.x) * 0.2; } }
     if (this.legs) this.legs.forEach((l, i) => { l.rotation.y = Math.sin(this.phase * 2 + i) * 0.4 * Math.min(1, moving); });
@@ -427,11 +440,33 @@ export class Mob extends Entity {
     if (this.rings) this.rings.forEach((r, i) => { r.rotation.z += dt * (4 + i); r.position.x = Math.sin(this.phase + i) * 0.1; });
     if (this.type === 'fireSpirit' && Math.random() < dt * 8) g.entities.particles.emit(this.pos.x, this.pos.y + 0.4, this.pos.z, 1, 0.55, 0.15, 1, 1, 0.5, false);
     if (this.type === 'whirlwind' && Math.random() < dt * 20) g.entities.particles.emit(this.pos.x, this.pos.y + Math.random() * 3, this.pos.z, 0.8, 0.97, 0.93, 1, 3, 0.4, false);
-    // despawn far away
-    if (dist > 80) this.dead = true;
+  }
+  // A guest's copy of a host monster glides to the positions the host sends.
+  follow(dt) {
+    const to = this.netTarget;
+    if (!to) return;
+    const k = Math.min(1, dt * 10);
+    const px = this.pos.x, pz = this.pos.z;
+    if (Math.hypot(to.x - px, to.z - pz) > 8) this.pos.set(to.x, to.y, to.z);
+    else { this.pos.x += (to.x - px) * k; this.pos.y += (to.y - this.pos.y) * k; this.pos.z += (to.z - pz) * k; }
+    this.vel.set((this.pos.x - px) / Math.max(dt, 1e-3), 0, (this.pos.z - pz) / Math.max(dt, 1e-3));
+    let dy = to.yaw - this.yaw;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    this.yaw += dy * k;
+    // the host stopped sending it
+    if ((this.netAge || 0) > 3) this.dead = true;
   }
   damage(amount, dir) {
     if (this.def.hazard) return false;
+    if (this.netProxy) {
+      // a guest's hit goes to the host, which runs the monster
+      if (this.dead || !this.game.net) return false;
+      this.hurtT = 0.3;
+      this.game.audio.sfx('hit');
+      this.game.net.hitMob(this, amount, dir);
+      return true;
+    }
     const ok = super.damage(amount, dir);
     if (ok) this.game.audio.sfx('hit');
     return ok;
@@ -441,7 +476,13 @@ export class Mob extends Entity {
     const g = this.game;
     g.audio.sfx('mobdie');
     this.poof();
-    if (this.noDrops) return;
+    if (g.net && g.net.isHost) g.net.mobDied(this, this.killedBy);
+    // a guest's kill is rewarded on the guest's side
+    if (this.noDrops || this.killedBy) return;
+    this.reward();
+  }
+  reward() {
+    const g = this.game;
     g.meta.stats.kills++;
     g.daily.note('kill');
     for (const [item, chance] of this.def.drops) if (Math.random() < chance) g.entities.dropItem(item, 1 + (Math.random() < 0.3 ? 1 : 0), this.pos.clone().setY(this.pos.y + 0.5));
@@ -611,12 +652,13 @@ export class EntityManager {
     const diff = g.meta.difficulty;
     if (diff === 'peaceful') return;
     if (g.bosses.active || g.meta.dim === 'quest') return;
+    if (g.net && !g.net.isHost) return; // the host's monsters come over the network
     const hostile = this.list.filter((e) => e instanceof Mob && !e.bossMinion).length;
-    const cap = diff === 'hard' ? 12 : 8;
+    const cap = (diff === 'hard' ? 12 : 8) + (g.net ? g.net.players.size * 3 : 0);
     if (hostile >= cap) return;
     const dim = g.meta.dim;
     const night = dim === 'overworld' && isNight(g.meta.time);
-    const p = g.player.pos;
+    const p = g.net ? g.net.spawnCentre() : g.player.pos;
     const a = Math.random() * Math.PI * 2, r = 18 + Math.random() * 18;
     const x = Math.floor(p.x + Math.cos(a) * r), z = Math.floor(p.z + Math.sin(a) * r);
     if (dim === 'overworld') {

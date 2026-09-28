@@ -213,6 +213,7 @@ export class Game {
     this.ui.hud && this.ui.hud.el.classList.toggle('creative', this.creative);
     // the Treasure Quest's blade follows the player into every normal world
     if (!this.quest && this.profile.rewards && this.profile.rewards.starfall && !meta.starfallGiven) { meta.starfallGiven = true; this.inventory.add('starfall_blade', 1); }
+    if (!this.quest && this.profile.rewards && this.profile.rewards.frostbrand && !meta.frostbrandGiven) { meta.frostbrandGiven = true; this.inventory.add('frostbrand', 1); }
     const p = meta.player;
     if (p) {
       this.player.pos.set(p.x, p.y, p.z);
@@ -267,7 +268,10 @@ export class Game {
     if (!this.meta.edits[dim]) this.meta.edits[dim] = {};
     this.world = new World({ scene: this.scene, pool: this.pool, materials: this.materials, seed: this.meta.seed, dim, edits: this.meta.edits[dim] });
     if (this.quest) { this.world.genExtra = () => this.quest.genExtra(); this.quest.reset(); }
-    this.world.onBlockChange = (x, y, z, prev, id) => this.entities.onBlockChange(x, y, z, prev, id);
+    this.world.onBlockChange = (x, y, z, prev, id) => {
+      this.entities.onBlockChange(x, y, z, prev, id);
+      if (this.net) this.net.blockChanged(x, y, z, id);
+    };
     const rd = this.viewDistance();
     const need = (2 * Math.min(rd, 2) + 1) ** 2;
     const t0 = performance.now();
@@ -301,7 +305,12 @@ export class Game {
 
   bossName(id) { return t('boss.' + id); }
 
+  // atlas tile of a block's side (for break particles)
+  blockTile(id) { const b = BLOCKS[id]; return b && b.tex ? b.tex.side : 0; }
+
   async travel(dim, where) {
+    // a shared world stays in the overworld
+    if (this.net) { this.ui.toast(t('mp.noTravel'), 'warn'); return; }
     this.ui.showLoading(t('toast.travel', { name: t('realm.' + (where === 'chamber' ? 'chamber' : dim)) }));
     this.paused = true;
     this.audio.sfx('portal');
@@ -329,6 +338,7 @@ export class Game {
   }
 
   stop() {
+    if (this.net) this.net.leave();
     this.running = false;
     this.paused = true;
     if (this.raf) cancelAnimationFrame(this.raf);
@@ -350,8 +360,17 @@ export class Game {
     };
   }
 
+  // a guest in someone else's world: the host keeps the guest's things
+  get isGuest() { return !!(this.meta && this.meta.guest); }
+
   async save(silent = false) {
     if (!this.meta || !this.player) return false;
+    if (this.isGuest) {
+      if (this.net) this.net.sendGuestSave();
+      await storeProfile(this.profile);
+      if (!silent) this.ui.toast(t('mp.savedByHost'), 'ok');
+      return true;
+    }
     // return crafting grid contents so nothing is lost
     if (this.inventory.grid.some(Boolean)) this.inventory.returnGrid();
     const base = this.saveBase;
@@ -383,9 +402,22 @@ export class Game {
       this.update(dt, inp);
     } else if (this.running && this.world) {
       this.world.update(this.player.pos.x, this.player.pos.z, this.viewDistance(), { gen: 2, mesh: 1 });
+      // a shared world goes on while this player is in a menu
+      if (this.net) this.netTick(dt);
     }
     if (this.world) this.render(dt);
     this.adaptQuality();
+  }
+
+  // Paused in a shared world: time, monsters and the other players go on.
+  netTick(dt) {
+    const m = this.meta;
+    if (this.net.isHost && m.dim === 'overworld') {
+      m.time += dt / DAY_SECONDS;
+      if (m.time >= 1) { m.time -= 1; m.day++; }
+    }
+    this.entities.update(dt);
+    this.net.update(dt);
   }
 
   update(dt, inp) {
@@ -424,6 +456,7 @@ export class Game {
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
     this.eventTick(dt);
     this.bosses.update(dt);
+    if (this.net) this.net.update(dt);
     if (this.quest) this.quest.update(dt);
     // footsteps
     if (pl.moving) { this.stepT -= dt; if (this.stepT <= 0) { this.audio.sfx('step'); this.stepT = 0.38; } }

@@ -11,6 +11,7 @@ export function worldInfo(rec) { return { name: rec.name, day: rec.day, mode: re
 export const account = {
   user: null,
   available: false, // false when the API is not deployed (e.g. local preview)
+  mp: false, // multiplayer rooms are set up on the server
   listeners: new Set(),
 };
 
@@ -36,6 +37,7 @@ export async function initAccount() {
     const r = await api('me');
     account.available = 'role' in r; // an HTML fallback page means no API here
     account.user = r.role === 'user' ? r.user : null;
+    account.mp = !!r.mp;
   } catch (e) {
     // 401 = API up, just not signed in (older API); anything else = no API here
     account.available = e.status === 401;

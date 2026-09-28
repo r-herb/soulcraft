@@ -40,7 +40,7 @@ export class HeldItem {
     this.sleeveMat.color.set(c.shirt);
   }
 
-  swing() { if (this.swingT <= 0) this.swingT = 0.25; }
+  swing() { if (this.swingT <= 0) { this.swingT = 0.25; this.swings = ((this.swings || 0) + 1) % 1000; } }
 
   update(dt) {
     const inv = this.game.inventory;

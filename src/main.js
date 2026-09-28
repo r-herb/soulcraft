@@ -12,6 +12,7 @@ import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS }
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
+import { Net, createRoom } from './net/net.js';
 
 function hasWebGL() {
   try {
@@ -73,6 +74,55 @@ async function boot() {
       app.game.held.setSkin(app.profile.skin);
       await app.refreshInfo();
     },
+    // ---------- multiplayer ----------
+    // Open the running world to friends; resolves with the room code.
+    async openRoom() {
+      const g = app.game;
+      if (g.net) return g.net.code;
+      const code = await createRoom(g.meta.name);
+      const net = new Net(app, code, 'host');
+      await net.connect();
+      net.attach(g);
+      return code;
+    },
+    closeRoom() { const g = app.game; if (g.net && g.net.isHost) g.net.leave(); },
+    kick(id) { const g = app.game; if (g.net && g.net.isHost) g.net.send({ t: 'kick', to: id }); },
+    // Join a friend's world by its room code.
+    async joinRoom(code) {
+      ui.showLoading(t('mp.joining'));
+      const net = new Net(app, code, 'guest');
+      try {
+        const edits = {};
+        net.collect = edits;
+        await net.connect();
+        const w = await net.waitFor('welcome');
+        await net.waitFor('ready', 90_000);
+        net.collect = null;
+        const meta = app.game.newMeta({ name: w.world.name, seed: w.world.seed, difficulty: w.world.difficulty, creative: w.world.creative });
+        Object.assign(meta, { worldId: 'mp-' + code, guest: true, time: w.world.time, day: w.world.day, edits: { overworld: edits }, starfallGiven: true, frostbrandGiven: true });
+        if (w.you && w.you.player) { meta.player = w.you.player; meta.inventory = w.you.inventory || null; }
+        net.game = app.game;
+        app.game.net = net;
+        await startGame(meta);
+        if (!app.game.running) throw Object.assign(new Error('start'), { code: 'network' });
+        net.attach(app.game);
+        ui.toast(t('mp.welcome', { name: w.world.name }), 'ok');
+      } catch (e) {
+        console.warn('join failed', e && e.code);
+        net.leave();
+        if (app.game.running) app.game.stop();
+        ui.showTitle();
+        ui.open('join', { code, error: e.code || 'network' });
+      }
+    },
+    // the host left or the connection dropped: back to the title
+    async guestEnded(key) {
+      const g = app.game;
+      if (g.running) g.stop();
+      await app.refreshInfo();
+      ui.showTitle();
+      ui.toast(t(key), 'warn');
+    },
     async quitToTitle() {
       const g = app.game;
       if (g.running) { await g.save(true); g.stop(); }
@@ -118,7 +168,7 @@ async function boot() {
   async function readQuestInfo() {
     const q = await loadWorld(slot('quest'));
     if (!q || !q.quest) return null;
-    return { progress: q.quest.solved.filter((i) => i > 0 && i <= 12).length, done: q.quest.done };
+    return { progress: q.quest.solved.filter((i) => i > 0 && i <= 12).length, done: q.quest.done, progress2: q.quest.solved.filter((i) => i >= 14 && i <= 21).length, done2: !!q.quest.done2 };
   }
 
   async function readSaveInfo() {

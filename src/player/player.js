@@ -95,7 +95,9 @@ export class Player {
       // launched (jump pads): keep the flight, ignore steering
       this.airLock -= dt;
     } else {
-      const accel = this.onGround ? 14 : this.inWater ? 6 : steering ? 4 : 0.6;
+      // ice: little grip, so the player slides and keeps momentum
+      const icy = this.onGround && world.getBlock(this.pos.x, this.pos.y - 0.05, this.pos.z) === B.ice;
+      const accel = this.onGround ? (icy ? 1.8 : 14) : this.inWater ? 6 : steering ? 4 : 0.6;
       const k = Math.min(1, accel * dt);
       this.vel.x += (wx - this.vel.x) * k;
       this.vel.z += (wz - this.vel.z) * k;

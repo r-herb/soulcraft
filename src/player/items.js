@@ -5,7 +5,8 @@ export const ITEMS = {};
 
 const NOT_ITEMS = new Set(['air', 'water', 'magma', 'coreite', 'chamber_brick', 'chamber_lamp', 'void_crystal', 'vault',
   'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on', 'lamp_off', 'lamp_on',
-  'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest']);
+  'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
+  'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent']);
 for (const b of BLOCKS) {
   if (!b || NOT_ITEMS.has(b.key)) continue;
   ITEMS[b.key] = { key: b.key, block: b.id, stack: 64, kind: 'block' };
@@ -55,6 +56,8 @@ tool('spear', { weapon: 'spear', damage: 7, throwable: 'spear' });
 item('treasure_map', { stack: 1, special: 'treasureMap' });
 item('golden_key', { stack: 3, questKey: true });
 tool('starfall_blade', { weapon: 'sword', damage: 12, emberBonus: 6, legendary: true });
+item('frost_orb', { stack: 8, questKey: true });
+tool('frostbrand', { weapon: 'sword', damage: 14, emberBonus: 8, legendary: true });
 
 export function itemDef(key) { return ITEMS[key]; }
 export function maxStack(key) { return ITEMS[key] ? ITEMS[key].stack : 64; }

@@ -1,0 +1,14 @@
+# Multiplayer rooms (Durable Objects). Deployed as its own Worker; the Pages
+# project binds its Room class as ROOMS (see the deploy workflow).
+name = "soulcraft-mp"
+main = "room.js"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

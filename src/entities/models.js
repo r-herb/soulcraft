@@ -103,6 +103,8 @@ export const SKINS = [
   { id: 'storm', price: 500, c: { skin: '#8a6a52', hair: '#f0f7fa', shirt: '#231f57', shirt2: '#44d6e8', pants: '#0e0c2b', eye: '#7ff3ff', accent: '#f6c667' } },
   // earned only by finishing the Treasure Quest
   { id: 'treasure', price: -1, quest: true, c: { skin: '#e0ac86', hair: '#fff08a', shirt: '#f6c667', shirt2: '#7ff3ff', pants: '#6d45d6', eye: '#b6fbff', accent: '#ffffff' } },
+  // earned by finishing chapter 2 of the Treasure Quest
+  { id: 'frost_monarch', price: -1, quest: true, c: { skin: '#f0d8c8', hair: '#ffffff', shirt: '#6aa9c8', shirt2: '#e6fbff', pants: '#1f3a5a', eye: '#9af6ff', accent: '#b98bff' } },
 ];
 export function skinColors(id) { return (SKINS.find((s) => s.id === id) || SKINS[0]).c; }
 

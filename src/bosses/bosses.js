@@ -94,6 +94,8 @@ export class BossManager {
       const d = Math.hypot(p.x - a.x, p.z - a.z);
       if (d > TRIGGER[id]) continue;
       if (id === 'whirlwindKing' && p.y > CHAMBER.ceil) continue;
+      // guardians fight one player at a time: not in a shared world
+      if (g.net) { if (!this.mpWarned) { this.mpWarned = true; g.ui.toast(t('mp.noBoss'), 'warn'); setTimeout(() => { this.mpWarned = false; }, 20000); } break; }
       this.start(id);
       break;
     }

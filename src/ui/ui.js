@@ -167,7 +167,7 @@ export class UI {
             <span><span data-i18n="title.continue"></span><span class="continue-meta">${save ? esc(save.name) + ' - ' + esc(t('hud.day', { n: save.day })) : esc(t('title.nosave'))}</span></span>
           </button>
           <div class="row"><button class="btn violet" style="flex:1" data-act="new" data-i18n="title.new"></button><button class="btn violet" style="flex:1" data-act="worlds" data-i18n="title.worlds"></button></div>
-          <button class="btn gold" data-act="quest" data-i18n="title.quest"></button>
+          ${account.mp ? `<div class="row"><button class="btn gold" style="flex:1" data-act="quest" data-i18n="title.quest"></button><button class="btn" style="flex:1" data-act="join" data-i18n="title.join"></button></div>` : '<button class="btn gold" data-act="quest" data-i18n="title.quest"></button>'}
           <div class="row"><button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
         </div>
       </div>
@@ -202,6 +202,8 @@ export class UI {
     node.querySelector('[data-act="worlds"]').addEventListener('click', () => { this.click(); this.open('worlds'); });
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
     node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
+    const jn = node.querySelector('[data-act="join"]');
+    if (jn) jn.addEventListener('click', () => { this.click(); this.open('join'); });
     const si = node.querySelector('[data-act="signin"]');
     if (si) si.addEventListener('click', () => { this.click(); this.open('signin'); });
     const pr = node.querySelector('[data-act="profile"]');
@@ -314,7 +316,7 @@ export class UI {
         <div class="panel-body col" style="gap:var(--sp-3)">
           <p class="dim" style="margin:0" data-i18n="quest.intro"></p>
           <div class="row quest-rewards"><span class="faint" data-i18n="quest.rewards"></span></div>
-          ${info ? `<p class="faint" style="margin:0">${esc(info.done ? t('quest.obj.done') : t('quest.progress', { n: info.progress, total: 12 }))}</p>` : ''}
+          ${info ? `<p class="faint" style="margin:0">${esc(info.done2 ? t('quest.obj.done2') : info.done ? t('quest.obj.done') + ' ' + t('quest.chapter2', { n: info.progress2 }) : t('quest.progress', { n: info.progress, total: 12 }))}</p>` : ''}
           <div class="row">
             ${info ? '<button class="btn primary" style="flex:1" data-act="continue" data-i18n="title.continue"></button>' : ''}
             <button class="btn ${info ? '' : 'primary'} gold" style="flex:1" data-act="start" data-i18n="${info ? 'quest.restart' : 'quest.start'}"></button>
@@ -580,17 +582,105 @@ export class UI {
           <div class="row"><button class="btn" style="flex:1" data-act="map" data-i18n="pause.map"></button><button class="btn" style="flex:1" data-act="shop" data-i18n="pause.shop"></button></div>
           <div class="row"><button class="btn" style="flex:1" data-act="settings" data-i18n="pause.settings"></button><button class="btn" style="flex:1" data-act="save" data-i18n="pause.save"></button></div>
           ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
-          <button class="btn ember" data-act="quit" data-i18n="pause.quit"></button>
+          ${account.user && account.mp && !this.game.isQuest ? `<button class="btn violet" data-act="room"><span data-i18n="mp.title"></span>${this.game.net ? `<span class="dot">${this.game.net.count}</span>` : ''}</button>` : ''}
+          <button class="btn ember" data-act="quit" data-i18n="${this.game.isGuest ? 'mp.leave' : 'pause.quit'}"></button>
         </div>
       </div></div>`);
     const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(); }); };
     on('daily', () => this.open('daily'));
+    on('room', () => this.open('room'));
     on('resume', () => this.closeAll());
     on('map', () => this.open('map'));
     on('shop', () => this.open('shop'));
     on('settings', () => this.open('settings'));
     on('save', () => this.game.save());
     on('quit', () => this.app.quitToTitle());
+    return node;
+  }
+
+  // ---------- multiplayer ----------
+  mpError(code) {
+    const k = { no_room: 'mp.err.noRoom', host_offline: 'mp.err.noRoom', room_full: 'mp.err.full', kicked: 'mp.err.kicked', mp_unavailable: 'mp.err.unavailable', not_signed_in: 'mp.signInFirst', bad_code: 'mp.err.badCode', overworld: 'mp.err.overworld', boss: 'mp.err.boss' }[code];
+    return t(k || 'mp.err.network');
+  }
+
+  screen_room(args) {
+    const g = this.game, net = g.net;
+    const node = el(`<div class="screen scrim" data-screen="room">
+      <div class="panel" style="width:min(460px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="mp.title"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body col" style="gap:var(--sp-3)">
+          ${net ? `<div class="room-code-box"><span class="faint" data-i18n="mp.code"></span><b class="room-code" data-room-code>${esc(net.code)}</b><button class="btn small" data-act="copy" data-i18n="mp.copy"></button></div>
+          <p class="faint" style="margin:0">${esc(t(net.isHost ? 'mp.shareHint' : 'mp.guestHint'))}</p>
+          <div class="room-players"></div>
+          <button class="btn ember" data-act="${net.isHost ? 'close' : 'leave'}" data-i18n="${net.isHost ? 'mp.close' : 'mp.leave'}"></button>`
+    : `<p style="margin:0" data-i18n="mp.openHelp"></p>
+          <p class="form-error" role="alert">${args.error ? esc(this.mpError(args.error)) : ''}</p>
+          <button class="btn primary wide" data-act="open" data-i18n="mp.open"></button>`}
+        </div>
+      </div></div>`);
+    const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(b); }); };
+    on('back', () => this.back());
+    on('open', async (b) => {
+      if (g.meta.dim !== 'overworld') { this.open('room', { error: 'overworld' }, true); return; }
+      if (g.bosses.active) { this.open('room', { error: 'boss' }, true); return; }
+      b.disabled = true; b.textContent = t('mp.opening');
+      try { await this.app.openRoom(); this.open('room', {}, true); } catch (e) { this.open('room', { error: e.code || 'network' }, true); }
+    });
+    on('close', () => { this.app.closeRoom(); this.toast(t('mp.closed')); this.open('room', {}, true); });
+    on('leave', () => this.app.quitToTitle());
+    on('copy', () => {
+      try { navigator.clipboard.writeText(net.code).then(() => this.toast(t('mp.copied'), 'ok'), () => {}); } catch { /* no clipboard */ }
+    });
+    const list = node.querySelector('.room-players');
+    if (net && list) {
+      const rows = [[net.me, account.user ? account.user.name : t('mp.player'), true]];
+      for (const [id, name] of net.names) if (id !== net.me) rows.push([id, name, false]);
+      for (const [id, name, me] of rows) {
+        const row = el(`<div class="room-player"><span class="rp-name"></span>${id === net.hostId ? `<span class="badge gold">${esc(t('mp.host'))}</span>` : ''}${me ? `<span class="faint">${esc(t('mp.you'))}</span>` : ''}${net.isHost && !me ? `<button class="btn small ghost" data-kick="${esc(id)}" data-i18n="mp.kick"></button>` : ''}</div>`);
+        row.querySelector('.rp-name').textContent = name;
+        const k = row.querySelector('[data-kick]');
+        if (k) k.addEventListener('click', () => { this.click(); this.app.kick(id); });
+        list.appendChild(row);
+      }
+      list.appendChild(el(`<span class="faint">${esc(t('mp.count', { n: net.count, max: 4 }))}</span>`));
+    }
+    return node;
+  }
+
+  screen_join(args) {
+    const signed = !!account.user;
+    const node = el(`<div class="screen solid" data-screen="join">
+      <div class="panel" style="width:min(460px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="mp.joinTitle"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        ${signed ? `<form class="panel-body col" style="gap:var(--sp-3)" novalidate>
+          <p style="margin:0" data-i18n="mp.joinHelp"></p>
+          <div class="field"><label for="mp-code" data-i18n="mp.code"></label><input id="mp-code" class="input room-input" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
+          <p class="form-error" role="alert">${args.error ? esc(this.mpError(args.error)) : ''}</p>
+          <button class="btn primary wide" type="submit" data-act="join" data-i18n="mp.join"></button>
+        </form>` : `<div class="panel-body col" style="gap:var(--sp-3)">
+          <p style="margin:0" data-i18n="mp.signInFirst"></p>
+          <button class="btn primary wide" data-act="signin" data-i18n="acct.signIn"></button>
+        </div>`}
+      </div></div>`);
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    const si = node.querySelector('[data-act="signin"]');
+    if (si) si.addEventListener('click', () => { this.click(); this.open('signin'); });
+    const form = node.querySelector('form');
+    if (form) {
+      const inp = node.querySelector('#mp-code');
+      inp.value = args.code || '';
+      inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+      form.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        this.click();
+        const code = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!/^[A-Z0-9]{6}$/.test(code)) { node.querySelector('.form-error').textContent = this.mpError('bad_code'); return; }
+        this.app.joinRoom(code);
+      });
+    }
     return node;
   }
 
