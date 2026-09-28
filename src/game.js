@@ -12,6 +12,7 @@ import { BLOCKS, B, SHAPE } from './world/blocks.js';
 import { Layout, DIM_SPAWNS, BOSS_SPAWNS, ARENAS, CHAMBER } from './world/structures.js';
 import { EntityManager } from './entities/entities.js';
 import { Pet, PET } from './entities/pets.js';
+import { DailyTracker, currentEvent } from './quest/daily.js';
 import { BossManager, BOSS_ORDER } from './bosses/bosses.js';
 import { HeldItem } from './player/held.js';
 import { settings } from './save/settings.js';
@@ -84,6 +85,8 @@ export class Game {
     this.scene.add(this.ambient, this.sunLight);
     this.held = new HeldItem(this);
     this.entities = new EntityManager(this);
+    this.daily = new DailyTracker(this);
+    this.event = currentEvent();
     this.bosses = new BossManager(this);
     window.addEventListener('resize', () => this.resize());
     this.resize();
@@ -396,7 +399,7 @@ export class Game {
     if (m.dim === 'overworld') {
       const before = m.time;
       m.time += dt / DAY_SECONDS;
-      if (m.time >= 1) { m.time -= 1; m.day++; this.ui.toast(t('toast.dayBegins', { n: m.day })); this.entities.onNewDay(); }
+      if (m.time >= 1) { m.time -= 1; m.day++; this.ui.toast(t('toast.dayBegins', { n: m.day })); this.entities.onNewDay(); if (!pl.dead) this.daily.note('night'); }
       if (!isNight(before) && isNight(m.time)) {
         this.ui.toast(t('toast.nightFalls'), 'warn');
         this.ui.tutorial('night');
@@ -418,6 +421,8 @@ export class Game {
     this.interact(dt, inp);
     this.entities.update(dt);
     this.petTick(dt);
+    if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
+    this.eventTick(dt);
     this.bosses.update(dt);
     if (this.quest) this.quest.update(dt);
     // footsteps
@@ -541,6 +546,8 @@ export class Game {
     const canHarvest = !b.tier || (def && def.tool === 'pick' && def.tier >= b.tier) || this.player.god;
     this.world.setBlock(hit.x, hit.y, hit.z, B.air);
     this.meta.stats.broken++;
+    this.daily.note('break');
+    if (b.key.endsWith('_ore')) this.daily.note('ore');
     this.audio.sfx('break');
     this.vibrate(15);
     this.entities.burst(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5, b.tex ? b.tex.side : 0);
@@ -577,6 +584,7 @@ export class Game {
       this.player.saturation = Math.min(this.player.food, this.player.saturation + def.food * 0.6);
       this.player.health = Math.min(this.player.maxHealth, this.player.health + Math.ceil(def.food / 2));
       this.inventory.consumeHeld(1);
+      this.daily.note('eat');
       this.audio.sfx('eat');
       this.useCooldown = 0.4;
       return;
@@ -626,11 +634,26 @@ export class Game {
       this.world.setBlock(x, y, z, def.block);
       if (!this.creative) this.inventory.consumeHeld(1);
       this.meta.stats.placed++;
+      this.daily.note('place');
       this.audio.sfx('place');
       this.held.swing();
       this.vibrate(8);
       this.useCooldown = this.input.touchMode ? 0.28 : 0.2;
       this.ui.tutorialDone('place');
+    }
+  }
+
+  // Seasonal event touches: drifting snow, petals or embers around the player.
+  eventTick(dt) {
+    const ev = this.event;
+    if (!ev || this.meta.dim !== 'overworld' || this.isQuest) return;
+    this._evAcc = (this._evAcc || 0) + dt * (this.mobile ? 14 : 28);
+    const p = this.player.pos, [r, g, b] = ev.particles;
+    while (this._evAcc >= 1) {
+      this._evAcc -= 1;
+      const x = p.x + (Math.random() - 0.5) * 24, z = p.z + (Math.random() - 0.5) * 24, y = p.y + 4 + Math.random() * 8;
+      if (ev.id === 'harvest') this.entities.particles.drift(x, p.y + Math.random() * 3, z, r, g, b, (Math.random() - 0.5) * 0.4, 0.4 + Math.random() * 0.4, (Math.random() - 0.5) * 0.4, 5);
+      else this.entities.particles.drift(x, y, z, r, g, b, (Math.random() - 0.5) * (ev.id === 'bloom' ? 1.2 : 0.4), -(0.8 + Math.random() * 0.8), (Math.random() - 0.5) * 0.6, 7);
     }
   }
 

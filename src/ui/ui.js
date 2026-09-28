@@ -6,6 +6,7 @@ import { settings, setSetting } from '../save/settings.js';
 import { SVG } from './icons.js';
 import { Hud } from './hud.js';
 import * as panels from './panels.js';
+import { currentEvent } from '../quest/daily.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
 
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
@@ -158,6 +159,7 @@ export class UI {
           <canvas class="logo-mark" width="16" height="16"></canvas>
           <h1 class="logo" data-i18n="app.title"></h1>
           <p class="tagline" data-i18n="app.tagline"></p>
+          ${currentEvent() ? `<div class="event-banner ev-${currentEvent().id}" data-event="${currentEvent().id}"><b>${esc(t('event.' + currentEvent().id))}</b><span>${esc(t('event.' + currentEvent().id + '.desc'))}</span></div>` : ''}
         </div>
         <div class="title-menu">
           <button class="btn primary" data-act="continue" ${save ? '' : 'disabled'}>
@@ -247,6 +249,8 @@ export class UI {
     });
     return node;
   }
+
+  screen_daily(args) { return panels.dailyPanel(args, this); }
 
   // ---------- world list ----------
   screen_worlds() {
@@ -512,10 +516,12 @@ export class UI {
           <button class="btn primary" data-act="resume" data-i18n="pause.resume"></button>
           <div class="row"><button class="btn" style="flex:1" data-act="map" data-i18n="pause.map"></button><button class="btn" style="flex:1" data-act="shop" data-i18n="pause.shop"></button></div>
           <div class="row"><button class="btn" style="flex:1" data-act="settings" data-i18n="pause.settings"></button><button class="btn" style="flex:1" data-act="save" data-i18n="pause.save"></button></div>
+          ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
           <button class="btn ember" data-act="quit" data-i18n="pause.quit"></button>
         </div>
       </div></div>`);
-    const on = (a, fn) => node.querySelector(`[data-act="${a}"]`).addEventListener('click', () => { this.click(); fn(); });
+    const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(); }); };
+    on('daily', () => this.open('daily'));
     on('resume', () => this.closeAll());
     on('map', () => this.open('map'));
     on('shop', () => this.open('shop'));

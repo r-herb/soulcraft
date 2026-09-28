@@ -7,6 +7,7 @@ import { RECIPES, matchRecipe, canAfford, recipeNeeds } from '../player/crafting
 import { ITEMS, maxStack } from '../player/items.js';
 import { SKINS, drawSkinPortrait } from '../entities/models.js';
 import { PETS, drawPetPortrait } from '../entities/pets.js';
+import { daily, taskLabel, rewardFor, ALL_BONUS, currentEvent, dayKey } from '../quest/daily.js';
 import { storeProfile } from '../save/account.js';
 import { BOSS_ORDER } from '../bosses/bosses.js';
 import { ARENAS } from '../world/structures.js';
@@ -154,6 +155,7 @@ export function inventory(args, ui) {
     g.giveItem(rec.out, rec.count);
     if (rec.out === 'void_lantern') { g.meta.hasLantern = true; ui.tutorialDone('map'); }
     g.audio.sfx('craft');
+    g.daily.note('craft');
     ui.toast(t('toast.crafted', { item: itemName(rec.out) }), 'ok');
     // keep crafting the same thing quickly: refill if possible
     if (!inv.grid.some(Boolean) && canAfford(rec, inv, g.profile.crystals)) inv.autofill(rec);
@@ -199,13 +201,54 @@ export function trade(args, ui) {
       const b = row.querySelector('button');
       b.textContent = t('trade.do');
       b.addEventListener('click', () => {
-        if (v.trade(o)) { ui.toast(t('toast.traded', { name: v.name }), 'ok'); draw(); }
+        if (v.trade(o)) { g.daily.note('trade'); ui.toast(t('toast.traded', { name: v.name }), 'ok'); draw(); }
         else ui.toast(t('trade.cant'), 'warn');
       });
       list.appendChild(row);
     });
   };
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.closeAll(); });
+  draw();
+  // Frostfall: each day the first villager you talk to has a gift
+  if (g.event && g.event.id === 'frost' && !g.creative && g.profile.giftDay !== dayKey()) {
+    g.profile.giftDay = dayKey();
+    g.giveItem(Math.random() < 0.5 ? 'roast' : 'glow_stew', 2);
+    g.addCrystals(5);
+    setTimeout(() => ui.toast(t('event.frost.gift', { name: v.name }), 'soul'), 300);
+  }
+  return node;
+}
+
+// ---------------- Daily tasks ----------------
+export function dailyPanel(args, ui) {
+  const g = ui.game;
+  const ev = currentEvent();
+  const node = el(`<div class="screen scrim" data-screen="daily">
+    <div class="panel" style="width:min(560px,100%)">
+      ${head(esc(t('daily.title')))}
+      ${ev ? `<div class="event-banner ev-${ev.id}"><b>${esc(t('event.' + ev.id))}</b><span>${esc(t('event.' + ev.id + '.desc'))}</span></div>` : ''}
+      <p class="faint" style="margin:0">${esc(t('daily.hint', { n: ALL_BONUS }))}</p>
+      <div class="panel-body daily-list"></div>
+    </div></div>`);
+  const list = node.querySelector('.daily-list');
+  const draw = () => {
+    const d = daily(g.profile);
+    list.innerHTML = '';
+    d.tasks.forEach((task, i) => {
+      const done = task.n >= task.goal;
+      const row = el(`<div class="daily-row ${task.claimed ? 'claimed' : done ? 'done' : ''}" data-task="${task.id}">
+        <div class="dr-main"><b></b><div class="dr-bar"><i style="width:${Math.round(100 * task.n / task.goal)}%"></i></div><span class="faint">${task.n} / ${task.goal}</span></div>
+        <button class="btn small ${done && !task.claimed ? 'primary' : ''}" ${done && !task.claimed ? '' : 'disabled'}>${task.claimed ? '&#10003;' : `<span class="crystal-ico"></span>${rewardFor(task, ev)}`}</button>
+      </div>`);
+      row.querySelector('b').textContent = taskLabel(task);
+      row.querySelector('button').addEventListener('click', async () => {
+        const n = g.daily.claim(i);
+        if (n) { ui.toast(t('daily.claimed', { n }), 'soul'); await storeProfile(g.profile); draw(); }
+      });
+      list.appendChild(row);
+    });
+  };
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
   draw();
   return node;
 }

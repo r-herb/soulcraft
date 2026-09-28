@@ -126,6 +126,14 @@ class Particles {
       this.life[i] = life * (0.6 + Math.random() * 0.6) * (gravity ? 1 : -1);
     }
   }
+  // One slow particle with its own velocity (snow, petals, embers).
+  drift(x, y, z, r, g, b, vx, vy, vz, life = 4) {
+    const i = this.i; this.i = (this.i + 1) % this.max;
+    this.pos[i * 3] = x; this.pos[i * 3 + 1] = y; this.pos[i * 3 + 2] = z;
+    this.vel[i * 3] = vx; this.vel[i * 3 + 1] = vy; this.vel[i * 3 + 2] = vz;
+    this.col[i * 3] = r; this.col[i * 3 + 1] = g; this.col[i * 3 + 2] = b;
+    this.life[i] = -life;
+  }
   update(dt) {
     for (let i = 0; i < this.max; i++) {
       let l = this.life[i];
@@ -435,8 +443,9 @@ export class Mob extends Entity {
     this.poof();
     if (this.noDrops) return;
     g.meta.stats.kills++;
+    g.daily.note('kill');
     for (const [item, chance] of this.def.drops) if (Math.random() < chance) g.entities.dropItem(item, 1 + (Math.random() < 0.3 ? 1 : 0), this.pos.clone().setY(this.pos.y + 0.5));
-    if (Math.random() < 0.08) g.addCrystals(1);
+    if (Math.random() < (g.event && g.event.id === 'harvest' ? 0.24 : 0.08)) g.addCrystals(1);
   }
   poof() { this.game.entities.particles.emit(this.pos.x, this.pos.y + this.h / 2, this.pos.z, 0.8, 0.8, 0.9, 16, 3, 0.7); }
 }
