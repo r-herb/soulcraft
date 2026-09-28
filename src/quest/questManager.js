@@ -49,6 +49,12 @@ export class QuestManager {
   // Current level = where the player stands on the course.
   current() { return levelAt(this.player.pos.x); }
 
+  // falls and deaths per level (the admin's statistics show where players struggle)
+  noteFail(level = this.current()) {
+    const f = this.state.fails || (this.state.fails = {});
+    f[level] = (f[level] || 0) + 1;
+  }
+
   respawnPoint() { return LEVELS[this.state.checkpoint].spawn; }
 
   // ---------- helpers ----------
@@ -93,6 +99,7 @@ export class QuestManager {
     // falling off the course or into magma: back to the checkpoint
     if (p.pos.y < F - 12 || p.inMagma) {
       st.falls++;
+      this.noteFail(cur);
       if (p.inMagma) g.damagePlayer(4, 'magma');
       if (!p.dead) this.toCheckpoint(t(p.inMagma ? 'quest.burned' : 'quest.fell'));
       return;

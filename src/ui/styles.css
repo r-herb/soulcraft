@@ -49,6 +49,8 @@ button { font-family: var(--font-body); touch-action: manipulation; }
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   padding: calc(var(--sp-3) + var(--safe-t)) calc(var(--sp-4) + var(--safe-r)) calc(var(--sp-3) + var(--safe-b)) calc(var(--sp-4) + var(--safe-l));
   z-index: 20; animation: fadeIn var(--t-med) ease-out;
+  /* short landscape phones: a tall panel scrolls instead of being cut off */
+  overflow-y: auto; align-items: safe center;
 }
 .screen.scrim { background: var(--surface-scrim); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 .screen.solid { background: var(--bg-page); }
@@ -387,3 +389,4 @@ body.touch .desktop-only { display: none !important; }
 .room-player .rp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .room-input { text-transform: uppercase; letter-spacing: 0.3em; font-size: var(--fs-lg); text-align: center; }
 .room-chip { color: var(--c-soul-400); font-size: var(--fs-xs); margin-left: var(--sp-2); letter-spacing: 0.06em; }
+.fb-text { resize: vertical; min-height: 96px; font-family: var(--font-body); line-height: 1.4; }

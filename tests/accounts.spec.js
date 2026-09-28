@@ -6,6 +6,9 @@ const ADMIN = { login: 'admin', password: 'admin-pass-123' };
 // 1x1 PNG
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', 'base64');
 
+// SHOTS=dir saves screenshots of these screens for a visual check
+const shot = async (page, name) => { if (!process.env.SHOTS) return; await page.waitForTimeout(600); await page.screenshot({ path: `${process.env.SHOTS}/${name}.png`, fullPage: true }); };
+
 async function adminSignIn(page) {
   await page.goto('/admin');
   await page.fill('#a-login', ADMIN.login);
@@ -218,15 +221,60 @@ test('a player resets a forgotten password with the emailed link', async ({ page
 test('the admin sees statistics', async ({ page }) => {
   await adminSignIn(page);
   await page.click('[data-nav="stats"]');
-  await expect(page.locator('.stat-tile')).toHaveCount(6);
+  await expect(page.locator('.stat-tiles').first().locator('.stat-tile')).toHaveCount(6);
   const tile = (label) => page.locator('.stat-tile').filter({ has: page.locator('.st-label', { hasText: new RegExp('^' + label + '$') }) }).locator('.st-value');
   await expect(tile('Players')).toHaveText('2'); // Mia and Teo
   await expect(tile('Worlds in the cloud')).toHaveText('3');
-  await expect(page.locator('.chart .bar')).toHaveCount(1); // both were active today
-  await page.locator('.chart .hit').last().hover();
-  await expect(page.locator('.chart .tip')).toContainText('2 active players');
-  await page.click('[data-act="table"]');
-  await expect(page.locator('.chart-table tbody tr')).toHaveCount(14);
+  await expect(page.locator('.chart').first().locator('.bar')).toHaveCount(1); // both were active today
+  await page.locator('.chart').first().locator('.hit').last().hover();
+  await expect(page.locator('.chart').first().locator('.tip')).toContainText('2 active players');
+  await page.locator('[data-act="table"]').first().click();
+  await expect(page.locator('.chart-table').first().locator('tbody tr')).toHaveCount(14);
   await expect(page.locator('.top-list li')).toHaveCount(2);
 });
 
+test('a player sends an idea from the pause menu and the admin reads it', async ({ page }) => {
+  await gameSignIn(page, 'teo', 'teo-pass-1');
+  await page.click('[data-act="new"]');
+  await page.fill('#nw-seed', 'feedback');
+  await page.click('[data-act="create"]');
+  await page.waitForFunction(() => window.__sc && window.__sc.game.running && !document.querySelector('[data-screen="loading"]'), null, { timeout: 90_000 });
+  // a death is counted by its cause (for the statistics), then saved
+  await page.evaluate(async () => { const g = window.__sc.game; g.damagePlayer(999, 'fall'); await g.respawn(); window.__sc.ui.closeAll(); await g.save(true); });
+  if (process.env.SHOTS) await page.setViewportSize({ width: 844, height: 390 });
+  await page.evaluate(() => window.__sc.ui.openPause());
+  await shot(page, 'pause-phone');
+  if (process.env.SHOTS) { await page.setViewportSize({ width: 780, height: 360 }); await shot(page, 'pause-short'); await page.setViewportSize({ width: 844, height: 390 }); }
+  await page.click('[data-screen="pause"] [data-act="feedback"]');
+  await page.click('[data-screen="feedback"] [data-v="bug"]');
+  await page.click('[data-screen="feedback"] [data-act="send"]');
+  await expect(page.locator('[data-screen="feedback"] .form-error')).toHaveText('Write a few words first.');
+  await page.fill('#fb-text', 'The pig ran into the lava <b>twice</b>');
+  await shot(page, 'feedback-phone');
+  if (process.env.SHOTS) await page.setViewportSize({ width: 1280, height: 720 });
+  await page.click('[data-screen="feedback"] [data-act="send"]');
+  await expect(page.locator('.toast', { hasText: 'Thanks! The admin will read it.' })).toBeVisible();
+  await expect(page.locator('[data-screen="feedback"]')).toHaveCount(0);
+
+  await adminSignIn(page);
+  await expect(page.locator('[data-fb-badge]')).toHaveText('1');
+  await page.click('[data-nav="feedback"]');
+  const item = page.locator('.fb-item').first();
+  await expect(item.locator('.fb-body')).toHaveText('The pig ran into the lava <b>twice</b>'); // shown as text, not HTML
+  await expect(item.locator('.badge')).toHaveText('Problem');
+  await expect(item).toContainText('Teo');
+  await expect(item.locator('.fb-ctx')).toContainText('survival');
+  await shot(page, 'admin-feedback');
+  await item.locator('[data-a="done"]').click();
+  await expect(page.locator('.fb-item.done')).toHaveCount(1);
+  await expect(page.locator('[data-fb-badge]')).toBeHidden();
+
+  // the statistics page shows how the game is played
+  await page.click('[data-nav="stats"]');
+  await expect(page.locator('[data-insights] .stat-tile')).toHaveCount(3);
+  await expect(page.locator('[data-chart="quest"] .hit')).toHaveCount(20);
+  await expect(page.locator('.cause-list')).toContainText('Falls');
+  await expect(page.locator('.insights-table tbody tr', { hasText: 'Teo' })).toContainText('@teo');
+  await page.locator('[data-chart="quest"] .hit').first().hover();
+  await shot(page, 'admin-insights');
+});

@@ -4,6 +4,7 @@ import '../ui/tokens.css';
 import '../ui/styles.css';
 import './admin.css';
 import { resizeAvatar } from '../save/account.js';
+import EN from '../i18n/en.json';
 
 const root = document.getElementById('admin');
 // the game's stylesheet locks page scrolling; the admin page needs it
@@ -62,14 +63,22 @@ function renderLogin(message = '') {
 }
 
 // ---------- navigation ----------
+let fbNew = 0; // unread ideas and problem reports (shown on the Feedback tab)
 function topBar(active) {
+  const tab = (id, label) => `<button class="${active === id ? 'on' : ''}" data-nav="${id}">${label}</button>`;
   return `<div class="admin-top"><h1>Soulcraft Admin</h1>
-    <nav class="admin-tabs"><button class="${active === 'users' ? 'on' : ''}" data-nav="users">Users</button><button class="${active === 'stats' ? 'on' : ''}" data-nav="stats">Statistics</button></nav>
+    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}</nav>
     <a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>`;
+}
+function setFbBadge(n) {
+  fbNew = n;
+  const b = root.querySelector('[data-fb-badge]');
+  if (b) { b.textContent = n; b.classList.toggle('hidden', !n); }
 }
 function bindTopBar() {
   root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
-  root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => (b.dataset.nav === 'stats' ? renderStats() : renderUsers())));
+  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback() };
+  root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => pages[b.dataset.nav]()));
 }
 
 // ---------- statistics ----------
@@ -79,6 +88,7 @@ async function renderStats() {
   let s;
   try { s = await api('admin/stats'); } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
   root.querySelector('.loading').remove();
+  setFbBadge(s.feedbackNew || 0);
   const tile = (label, value, sub = '') => `<div class="stat-tile"><span class="st-label">${esc(label)}</span><b class="st-value">${esc(value)}</b>${sub ? `<span class="st-sub">${esc(sub)}</span>` : ''}</div>`;
   const pct = (a, b) => (b ? Math.round((100 * a) / b) + '%' : '-');
   root.querySelector('.admin-wrap').insertAdjacentHTML('beforeend', `
@@ -101,16 +111,108 @@ async function renderStats() {
     </div>
     <div class="admin-card"><p style="margin:0">Password reset by email: <b>${s.email ? 'ready' : 'not set up'}</b>${s.email ? '' : ' (add the RESEND_API_KEY secret in GitHub; until then reset passwords here)'}</p></div>`);
   drawBars(root.querySelector('.chart'), s.daily);
-  root.querySelector('[data-act="table"]').addEventListener('click', (e) => {
-    const tb = root.querySelector('.chart-table');
-    tb.classList.toggle('hidden');
-    e.target.textContent = tb.classList.contains('hidden') ? 'Show table' : 'Hide table';
+  bindTableToggles();
+  await renderInsights(tile);
+}
+
+function bindTableToggles() {
+  root.querySelectorAll('[data-act="table"]:not([data-bound])').forEach((btn) => {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      const tb = btn.closest('.admin-card').querySelector('.chart-table');
+      tb.classList.toggle('hidden');
+      btn.textContent = tb.classList.contains('hidden') ? 'Show table' : 'Hide table';
+    });
+  });
+}
+
+// ---------- game insights (from the cloud saves) ----------
+const CAUSES = { mob: 'Monsters', fall: 'Falls', magma: 'Magma', cactus: 'Cactus', void: 'The void', boss: 'Guardians', generic: 'Hunger and other' };
+const levelName = (n) => EN['quest.lvl.' + n] || 'Level ' + n;
+const levelLabel = (n) => (n >= 14 ? '2.' + (n - 13) : String(n));
+const hours = (sec) => { const m = Math.round((sec || 0) / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
+const nf = (n) => Number(n || 0).toLocaleString('en-GB');
+
+async function renderInsights(tile) {
+  const wrap = root.querySelector('.admin-wrap');
+  let g;
+  try { g = await api('admin/insights'); } catch (e) { toast(e.message, true); return; }
+  const T = g.totals;
+  const cleared = Object.fromEntries(g.quest.map((q) => [q.level, q.n]));
+  const fails = Object.fromEntries(g.fails.map((f) => [f.level, f.n]));
+  const levels = [...Array.from({ length: 12 }, (_, i) => i + 1), ...Array.from({ length: 8 }, (_, i) => i + 14)];
+  const quest = levels.map((l) => ({ level: l, n: cleared[l] || 0, fails: fails[l] || 0 }));
+  const maxCause = Math.max(1, ...g.causes.map((c) => c.n));
+  wrap.insertAdjacentHTML('beforeend', `
+    <h2 class="section-title">How the game is played</h2>
+    <div class="stat-tiles" data-insights>
+      ${tile('Time played', hours(T.playSeconds), 'all players, all worlds')}
+      ${tile('Blocks placed', nf(T.placed), `${nf(T.broken)} broken`)}
+      ${tile('Monsters defeated', nf(T.kills), `${nf(T.deaths)} player deaths`)}
+    </div>
+    <div class="admin-card">
+      <div class="chart-head"><h2>Treasure Quest: players who cleared each level</h2><span class="faint">${g.questStarted} started; 1-12 chapter 1, 2.1-2.8 chapter 2</span><button class="btn small ghost" data-act="table">Show table</button></div>
+      <div class="chart" data-chart="quest" role="img" aria-label="Players who cleared each Treasure Quest level"></div>
+      <table class="chart-table hidden"><thead><tr><th>Level</th><th>Name</th><th>Cleared by</th><th>Falls and deaths</th></tr></thead><tbody>${quest.map((q) => `<tr><td>${levelLabel(q.level)}</td><td>${esc(levelName(q.level))}</td><td>${q.n}</td><td>${q.fails}</td></tr>`).join('')}</tbody></table>
+      <p class="faint" style="margin:var(--sp-2) 0 0">Where the bars drop, players stop. Many falls and deaths on a level mean it may be too hard.</p>
+    </div>
+    <div class="admin-card">
+      <h2>What ends a life</h2>
+      ${g.causes.length ? `<ul class="cause-list">${g.causes.map((c) => `<li><span>${esc(CAUSES[c.cause] || c.cause)}</span><i style="width:${Math.max(4, Math.round((100 * c.n) / maxCause))}%"></i><b>${c.n}</b></li>`).join('')}</ul>` : '<p class="empty">No deaths recorded yet.</p>'}
+    </div>
+    <div class="admin-card">
+      <h2>Players</h2>
+      <div class="table-scroll"><table class="users insights-table"><thead><tr><th>Player</th><th>Last active</th><th>Played</th><th>Worlds</th><th>Blocks placed</th><th>Monsters</th><th>Deaths</th><th>Treasure Quest</th><th>Guardians</th><th>Pet</th></tr></thead>
+      <tbody>${g.players.map((p) => `<tr><td><b>${esc(p.name)}</b>${p.username ? `<div class="faint">@${esc(p.username)}</div>` : ''}</td><td>${esc(p.lastDay || '-')}</td><td>${hours(p.play)}</td><td>${p.worlds}</td><td>${nf(p.placed)}</td><td>${nf(p.kills)}</td><td>${nf(p.deaths)}</td><td>${p.ch1 == null ? '-' : `${p.ch1}/12${p.ch2 ? ` · ${p.ch2}/8` : ''}`}</td><td>${p.guardians == null ? '-' : `${p.guardians}/5`}</td><td>${esc(p.pet || '-')}</td></tr>`).join('') || '<tr><td colspan="10" class="empty">No players yet.</td></tr>'}</tbody></table></div>
+      <p class="faint" style="margin:var(--sp-2) 0 0">From the cloud saves (updated when players save). Causes of death and quest falls are counted from 28 September 2026.</p>
+    </div>`);
+  drawBars(root.querySelector('[data-chart="quest"]'), quest, {
+    label: (d) => levelLabel(d.level), every: 1,
+    tip: (d) => `<b>${d.n}</b> player${d.n === 1 ? '' : 's'} cleared<br><span>${esc(levelLabel(d.level))}: ${esc(levelName(d.level))}</span>${d.fails ? `<br><span>${d.fails} falls and deaths</span>` : ''}`,
+  });
+  bindTableToggles();
+}
+
+// ---------- ideas and problem reports ----------
+async function renderFeedback() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('feedback')}<div class="admin-card"><div class="chart-head"><h2>Ideas and problems</h2><span class="faint">sent from the game's pause menu</span></div><div class="fb-list"><p class="empty">Loading...</p></div></div></div>`;
+  bindTopBar();
+  let list;
+  try { list = (await api('admin/feedback')).feedback; } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  setFbBadge(list.filter((f) => !f.done).length);
+  const box = root.querySelector('.fb-list');
+  if (!list.length) { box.innerHTML = '<p class="empty">No messages yet. Players send them with "Ideas and problems" in the pause menu.</p>'; return; }
+  const ctxLine = (c) => {
+    if (!c) return '';
+    const parts = [c.device, c.screen, c.mode && `${c.mode}${c.level ? ' level ' + c.level : ''}${c.day ? ', day ' + c.day : ''}`, c.fps && `${c.fps} fps`, c.room && `room ${c.room}`, c.lang, c.v && `v${c.v}`].filter(Boolean);
+    return parts.join(' · ');
+  };
+  box.innerHTML = list.map((f) => `
+    <div class="fb-item ${f.done ? 'done' : ''}" data-id="${f.id}">
+      <div class="fb-meta"><span class="badge ${f.kind === 'bug' ? 'off' : ''}">${f.kind === 'bug' ? 'Problem' : 'Idea'}</span><b>${esc(f.name || 'Guest')}</b><span class="faint">${esc(fmt(f.createdAt))}</span></div>
+      <p class="fb-body"></p>
+      <p class="faint fb-ctx">${esc(ctxLine(f.ctx))}</p>
+      ${f.ctx && f.ctx.errors && f.ctx.errors.length ? `<details class="fb-errors"><summary class="faint">Recent errors (${f.ctx.errors.length})</summary><pre>${esc(f.ctx.errors.join('\n'))}</pre></details>` : ''}
+      <div class="acts"><button class="btn" data-a="done">${f.done ? 'Mark as new' : 'Mark as done'}</button><button class="btn ember" data-a="del">Delete</button></div>
+    </div>`).join('');
+  box.querySelectorAll('.fb-item').forEach((el) => {
+    const f = list.find((x) => x.id === Number(el.dataset.id));
+    el.querySelector('.fb-body').textContent = f.text;
+    el.querySelector('[data-a="done"]').addEventListener('click', async () => {
+      try { await api('admin/feedback/' + f.id, { method: 'PATCH', body: { done: !f.done } }); renderFeedback(); } catch (e) { toast(e.message, true); }
+    });
+    el.querySelector('[data-a="del"]').addEventListener('click', () => confirmDialog('Delete this message?', 'It cannot be undone.', async () => {
+      await api('admin/feedback/' + f.id, { method: 'DELETE' }); toast('Message deleted'); renderFeedback();
+    }));
   });
 }
 
 // A single-series bar chart: thin bars anchored to the baseline, a
 // recessive grid, and a tooltip on hover or tap.
-function drawBars(el, data) {
+function drawBars(el, data, opts = {}) {
+  const label = opts.label || ((d) => d.day.slice(5).replace('-', '.'));
+  const tipHtml = opts.tip || ((d) => `<b>${d.n}</b> active player${d.n === 1 ? '' : 's'}<br><span>${esc(new Date(d.day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}</span>`);
+  const every = opts.every || 2;
   const W = 720, H = 220, L = 34, R = 8, T = 12, B = 28;
   const max = Math.max(1, ...data.map((d) => d.n));
   const step = max <= 5 ? 1 : Math.ceil(max / 4);
@@ -124,7 +226,7 @@ function drawBars(el, data) {
     const cx = L + bw * i + bw / 2, h = y(0) - y(d.n);
     const r = Math.min(4, h / 2);
     if (d.n > 0) svg += `<path class="bar" d="M${cx - barW / 2},${y(0)} v${-(h - r)} q0,${-r} ${r},${-r} h${barW - 2 * r} q${r},0 ${r},${r} v${h - r} z"/>`;
-    if (i % 2 === (data.length - 1) % 2) svg += `<text x="${cx}" y="${H - 8}" class="tick" text-anchor="middle">${d.day.slice(5).replace('-', '.')}</text>`;
+    if (i % every === (data.length - 1) % every) svg += `<text x="${cx}" y="${H - 8}" class="tick" text-anchor="middle">${esc(label(d))}</text>`;
     svg += `<rect class="hit" x="${cx - bw / 2}" y="${T}" width="${bw}" height="${H - T - B}" data-i="${i}"/>`;
   });
   svg += '</svg><div class="tip hidden"></div>';
@@ -134,7 +236,7 @@ function drawBars(el, data) {
     const i = Number(e.target.dataset.i);
     if (Number.isNaN(i)) return;
     const d = data[i];
-    tip.innerHTML = `<b>${d.n}</b> active player${d.n === 1 ? '' : 's'}<br><span>${esc(new Date(d.day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}</span>`;
+    tip.innerHTML = tipHtml(d);
     tip.classList.remove('hidden');
     const box = el.getBoundingClientRect(), r = e.target.getBoundingClientRect();
     tip.style.left = Math.min(box.width - 140, Math.max(0, r.left - box.left + r.width / 2 - 60)) + 'px';
@@ -163,6 +265,7 @@ async function renderUsers() {
   let t;
   root.querySelector('[data-act="search"]').addEventListener('input', (e) => { query = e.target.value; clearTimeout(t); t = setTimeout(loadUsers, 250); });
   await loadUsers();
+  api('admin/stats').then((st) => setFbBadge(st.feedbackNew || 0)).catch(() => {});
 }
 
 async function loadUsers() {

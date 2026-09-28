@@ -591,5 +591,16 @@
   "mp.err.boss": "Finish the guardian fight first.",
   "mp.err.network": "Could not connect. Check the internet and try again.",
   "toast.pickBlock": "Choose a block in the hotbar to place it",
-  "toast.pickBlockDesktop": "Choose a block first (keys 1-9 or the mouse wheel), then right-click to place it"
+  "toast.pickBlockDesktop": "Choose a block first (keys 1-9 or the mouse wheel), then right-click to place it",
+  "fb.button": "Ideas & bugs",
+  "fb.title": "Ideas and problems",
+  "fb.idea": "Idea",
+  "fb.bug": "Problem",
+  "fb.placeholderIdea": "What would you like to add or change?",
+  "fb.placeholderBug": "What went wrong? What were you doing?",
+  "fb.note": "The admin reads every message. The game version and your device go along, to help fix problems.",
+  "fb.send": "Send",
+  "fb.sent": "Thanks! The admin will read it.",
+  "fb.empty": "Write a few words first.",
+  "fb.err": "Could not send. Try again later."
 }

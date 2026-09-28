@@ -1,5 +1,5 @@
 /* Admin panel: same tokens as the game, a calmer layout for real work. */
-body.admin { overflow: auto; touch-action: auto; -webkit-user-select: text; user-select: text; height: auto; min-height: 100%; background: var(--bg-page); }
+body.admin { overflow: auto; touch-action: auto; -webkit-user-select: text; user-select: text; height: auto; min-height: 100vh; background: var(--bg-page); }
 .admin-wrap { max-width: 1100px; margin: 0 auto; padding: calc(var(--sp-4) + var(--safe-t)) calc(var(--sp-4) + var(--safe-r)) var(--sp-6) calc(var(--sp-4) + var(--safe-l)); display: flex; flex-direction: column; gap: var(--sp-4); }
 .admin-top { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .admin-top h1 { font-family: var(--font-display); font-size: var(--fs-display-md); color: var(--c-soul-300); margin: 0; flex: 1; text-shadow: var(--text-shadow); }
@@ -63,3 +63,19 @@ dialog.admin-dlg form { display: flex; flex-direction: column; gap: var(--sp-3);
 .top-list li { display: flex; align-items: center; gap: var(--sp-2); }
 .top-list .num { margin-left: auto; font-variant-numeric: tabular-nums; }
 .top-list .av { width: 28px; height: 28px; }
+.tab-badge { display: inline-block; min-width: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; background: var(--c-ember-500); color: var(--c-ink); font-size: var(--fs-xs); line-height: 18px; text-align: center; }
+.section-title { margin: var(--sp-3) 0 0; font-size: var(--fs-lg); color: var(--c-soul-300); }
+.cause-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: max-content 1fr max-content; gap: var(--sp-2) var(--sp-3); align-items: center; }
+.cause-list li { display: contents; }
+.cause-list i { display: block; height: 10px; border-radius: 0 4px 4px 0; background: #1c98ab; }
+.cause-list b { font-variant-numeric: tabular-nums; }
+.table-scroll { overflow-x: auto; }
+.insights-table td, .insights-table th { white-space: nowrap; }
+.fb-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+.fb-item { padding: var(--sp-3); border: 2px solid var(--border-panel); border-radius: var(--r-sm); background: var(--c-night-800); display: flex; flex-direction: column; gap: var(--sp-2); }
+.fb-item.done { opacity: 0.6; }
+.fb-meta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.fb-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-md); }
+.fb-ctx { margin: 0; font-size: var(--fs-xs); }
+.fb-errors pre { margin: var(--sp-1) 0 0; white-space: pre-wrap; font-size: var(--fs-xs); color: var(--c-text-dim); }
+.fb-item .acts { display: flex; gap: var(--sp-2); }

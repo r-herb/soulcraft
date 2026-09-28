@@ -189,6 +189,17 @@ world in the cloud. **New World** asks for a mode:
   gift), each with its own particles. `?event=bloom|harvest|frost` forces
   one for testing.
 
+## Ideas, problems and game statistics
+
+- **Ideas & bugs** in the pause menu sends a short message (an idea or a
+  problem) with the game version, device, screen, world mode, frame rate
+  and the last few errors. The admin reads them in the **Feedback** tab of
+  /admin, marks them done or deletes them.
+- The **Statistics** tab also shows how the game is played, read from the
+  cloud saves: time played, blocks placed and broken, monsters defeated,
+  which Treasure Quest levels players clear (and how often they fall or die
+  on each), what ends a life, and a table per player.
+
 ## Accounts and the admin panel
 
 Playing needs no account: guests keep their worlds in the browser. Players

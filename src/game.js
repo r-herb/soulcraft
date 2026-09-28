@@ -758,6 +758,10 @@ export class Game {
     const p = this.player;
     p.dead = true;
     this.meta.stats.deaths++;
+    // what ends a life, for the admin's statistics
+    const causes = this.meta.stats.causes || (this.meta.stats.causes = {});
+    causes[cause] = (causes[cause] || 0) + 1;
+    if (this.quest) this.quest.noteFail();
     this.audio.sfx('death');
     this.resetBreaking();
     this.input.exitLock();

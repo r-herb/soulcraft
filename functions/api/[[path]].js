@@ -8,6 +8,7 @@
 //   POST /api/mp/room           {world}  open a multiplayer room, returns {code}
 //   GET  /api/mp/ws/:code       WebSocket into a room (forwarded to the ROOMS
 //                               Durable Object of the soulcraft-mp Worker)
+//   POST /api/feedback          {kind, text, ctx}  an idea or a problem report
 //   GET  /api/saves             list of slots (no data)
 //   GET  /api/saves/:slot       one save
 //   PUT  /api/saves/:slot       {data, savedAt}
@@ -18,6 +19,11 @@
 //   POST   /api/admin/users/:id/password {password}
 //   DELETE /api/admin/users/:id
 //   GET    /api/admin/users/:id/saves
+//   GET    /api/admin/stats                      accounts and activity
+//   GET    /api/admin/insights                   how the game is played
+//   GET    /api/admin/feedback                   ideas and problem reports
+//   PATCH  /api/admin/feedback/:id               {done}
+//   DELETE /api/admin/feedback/:id
 //
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
@@ -151,6 +157,23 @@ async function route(parts, method, request, env, secure) {
 
   const s = await currentSession(request, env);
 
+  // ---------- feedback (players and guests) ----------
+  if (a === 'feedback' && !b && method === 'POST') {
+    const { kind, text, ctx } = await body(request);
+    const msg = String(text || '').trim().slice(0, 1000);
+    if (!msg) return err(400, 'empty');
+    const ip = request.headers.get('cf-connecting-ip') || 'local';
+    const rlKey = 'feedback:' + (await sha256(ip + '|' + (s && s.user ? s.user.id : 'guest')));
+    if (await tooManyAttempts(db, rlKey)) return err(429, 'too_many_attempts', 'Too many messages. Try again in 15 minutes.');
+    await noteFailure(db, rlKey); // every message counts towards the limit
+    let c = '';
+    try { c = JSON.stringify(ctx && typeof ctx === 'object' ? ctx : {}).slice(0, 1500); } catch { c = ''; }
+    const who = s && s.user ? s.user : null;
+    await db.prepare('INSERT INTO feedback (user_id, name, kind, text, ctx, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(who ? who.id : null, who ? who.name : null, kind === 'bug' ? 'bug' : 'idea', msg, c, Date.now()).run();
+    return json({ ok: true });
+  }
+
   if (a === 'auth' && b === 'logout' && method === 'POST') {
     if (s) await db.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(s.tokenHash).run();
     return json({ ok: true }, 200, { 'set-cookie': clearCookie(secure) });
@@ -251,6 +274,22 @@ async function route(parts, method, request, env, secure) {
   if (a === 'admin') {
     if (s.role !== 'superadmin') return err(403, 'forbidden');
     if (b === 'stats' && method === 'GET') return json(await stats(db, env));
+    if (b === 'insights' && method === 'GET') return json(await insights(db));
+    if (b === 'feedback') {
+      if (!c && method === 'GET') {
+        const { results } = await db.prepare('SELECT * FROM feedback ORDER BY done ASC, created_at DESC LIMIT 300').all();
+        return json({ feedback: results.map((f) => ({ id: f.id, userId: f.user_id, name: f.name, kind: f.kind, text: f.text, ctx: f.ctx ? JSON.parse(f.ctx) : null, createdAt: f.created_at, done: !!f.done })) });
+      }
+      const fid = Number(c);
+      if (fid > 0 && method === 'PATCH') {
+        await db.prepare('UPDATE feedback SET done = ? WHERE id = ?').bind((await body(request)).done ? 1 : 0, fid).run();
+        return json({ ok: true });
+      }
+      if (fid > 0 && method === 'DELETE') {
+        await db.prepare('DELETE FROM feedback WHERE id = ?').bind(fid).run();
+        return json({ ok: true });
+      }
+    }
     if (b === 'users' && !c && method === 'GET') {
       const q = (new URL(request.url).searchParams.get('q') || '').trim().toLowerCase();
       const like = '%' + q.replace(/[%_]/g, '') + '%';
@@ -366,6 +405,7 @@ async function stats(db, env) {
   const worlds = await one("SELECT COUNT(*) AS n, SUM(info LIKE '%\"creative\"%') AS creative FROM saves WHERE slot LIKE 'w-%'");
   const quest = await one("SELECT COUNT(*) AS n, SUM(json_extract(data, '$.quest.done') = 1) AS done FROM saves WHERE slot = 'quest'");
   const online = await one("SELECT COUNT(DISTINCT user_id) AS n FROM sessions WHERE role = 'user' AND expires_at > ?", now);
+  const fb = await one('SELECT COUNT(*) AS n FROM feedback WHERE done = 0');
   const { results: top } = await db.prepare(`SELECT u.id, u.name, u.avatar, json_extract(s.data, '$.totalCrystals') AS crystals, json_extract(s.data, '$.pet') AS pet
     FROM saves s JOIN users u ON u.id = s.user_id WHERE s.slot = 'profile' ORDER BY crystals DESC LIMIT 5`).all();
   return {
@@ -375,6 +415,42 @@ async function stats(db, env) {
     questStarted: quest.n || 0, questDone: quest.done || 0,
     daily, top: top.map((t) => ({ id: t.id, name: t.name, avatar: t.avatar || null, crystals: t.crystals || 0, pet: t.pet || null })),
     email: !!env.RESEND_API_KEY,
+    feedbackNew: fb.n || 0,
+  };
+}
+
+// How the game is played, read from the cloud saves. SQLite does the JSON
+// work (json_extract / json_each), so the Function itself stays light.
+async function insights(db) {
+  const all = async (sql) => (await db.prepare(sql).all()).results;
+  const PLAYED = "(s.slot LIKE 'w-%' OR s.slot IN ('current', 'quest'))";
+  const WORLD = "(s.slot LIKE 'w-%' OR s.slot = 'current')";
+  const num = (path) => `ifnull(json_extract(s.data, '${path}'), 0)`;
+  const [totals] = await all(`SELECT SUM(${num('$.playTime')}) AS play, SUM(${num('$.stats.placed')}) AS placed, SUM(${num('$.stats.broken')}) AS broken,
+    SUM(${num('$.stats.kills')}) AS kills, SUM(${num('$.stats.deaths')}) AS deaths FROM saves s WHERE ${PLAYED}`);
+  const causes = await all(`SELECT j.key AS cause, SUM(j.value) AS n FROM saves s, json_each(s.data, '$.stats.causes') j WHERE ${PLAYED} GROUP BY j.key ORDER BY n DESC`);
+  const cleared = await all("SELECT j.value AS level, COUNT(DISTINCT s.user_id) AS n FROM saves s, json_each(s.data, '$.quest.solved') j WHERE s.slot = 'quest' GROUP BY j.value");
+  const fails = await all("SELECT CAST(j.key AS INTEGER) AS level, SUM(j.value) AS n FROM saves s, json_each(s.data, '$.quest.fails') j WHERE s.slot = 'quest' GROUP BY j.key");
+  const [quest] = await all("SELECT COUNT(DISTINCT s.user_id) AS started FROM saves s WHERE s.slot = 'quest'");
+  const players = await all(`SELECT u.id, u.name, u.username,
+      (SELECT MAX(day) FROM activity a WHERE a.user_id = u.id) AS lastDay,
+      SUM(CASE WHEN ${PLAYED} THEN ${num('$.playTime')} ELSE 0 END) AS play,
+      SUM(CASE WHEN ${WORLD} THEN 1 ELSE 0 END) AS worlds,
+      SUM(CASE WHEN ${PLAYED} THEN ${num('$.stats.placed')} ELSE 0 END) AS placed,
+      SUM(CASE WHEN ${PLAYED} THEN ${num('$.stats.kills')} ELSE 0 END) AS kills,
+      SUM(CASE WHEN ${PLAYED} THEN ${num('$.stats.deaths')} ELSE 0 END) AS deaths,
+      MAX(CASE WHEN s.slot = 'quest' THEN (SELECT COUNT(*) FROM json_each(s.data, '$.quest.solved') q WHERE q.value BETWEEN 1 AND 12) END) AS ch1,
+      MAX(CASE WHEN s.slot = 'quest' THEN (SELECT COUNT(*) FROM json_each(s.data, '$.quest.solved') q WHERE q.value BETWEEN 14 AND 21) END) AS ch2,
+      MAX(CASE WHEN ${WORLD} THEN (SELECT COUNT(*) FROM json_each(s.data, '$.bosses') g WHERE g.value = 1) END) AS guardians,
+      MAX(CASE WHEN s.slot = 'profile' THEN json_extract(s.data, '$.pet') END) AS pet
+    FROM users u LEFT JOIN saves s ON s.user_id = u.id GROUP BY u.id ORDER BY play DESC LIMIT 200`);
+  return {
+    totals: { playSeconds: Math.round(totals.play || 0), placed: totals.placed || 0, broken: totals.broken || 0, kills: totals.kills || 0, deaths: totals.deaths || 0 },
+    causes: causes.map((c) => ({ cause: c.cause, n: c.n })),
+    questStarted: quest.started || 0,
+    quest: cleared.filter((c) => c.level > 0).map((c) => ({ level: c.level, n: c.n })),
+    fails: fails.map((f) => ({ level: f.level, n: f.n })),
+    players: players.map((p) => ({ ...p, play: Math.round(p.play || 0) })), // ch1/ch2/guardians stay null without a quest or world save
   };
 }
 

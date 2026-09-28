@@ -32,7 +32,16 @@ async function boot() {
   const input = new Input(document, canvas);
   input.sensitivity = settings().sensitivity;
 
+  // the last few errors go along with a problem report
+  const recentErrors = [];
+  const noteError = (m) => { recentErrors.push(String(m).slice(0, 200)); if (recentErrors.length > 5) recentErrors.shift(); };
+  window.addEventListener('error', (e) => noteError(e.message));
+  window.addEventListener('unhandledrejection', (e) => noteError((e.reason && e.reason.message) || e.reason));
+  const consoleError = console.error.bind(console);
+  console.error = (...a) => { noteError(a.map((x) => (x && x.message) || String(x)).join(' ')); consoleError(...a); };
+
   const app = {
+    recentErrors,
     game: null, profile: null, saveInfo: null, questInfo: null, worlds: [],
     async startQuest() {
       ui.showLoading(t('loading.world'));
@@ -221,7 +230,7 @@ async function boot() {
   document.addEventListener('dblclick', (e) => e.preventDefault());
   document.addEventListener('contextmenu', (e) => { if (!(e.target instanceof HTMLInputElement)) e.preventDefault(); });
   document.addEventListener('touchmove', (e) => {
-    if (e.target.closest && e.target.closest('.panel-body, .recipe-list, .skin-grid, .map-track, input[type=range]')) return;
+    if (e.target.closest && e.target.closest('.panel-body, .recipe-list, .skin-grid, .map-track, input[type=range], .screen')) return;
     e.preventDefault();
   }, { passive: false });
 

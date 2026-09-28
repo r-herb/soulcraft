@@ -88,6 +88,8 @@ export async function updateProfile(fields) {
 }
 
 // Forgotten password: the server emails a one-time link (?reset=token).
+// an idea or a problem report from the pause menu (guests may send too)
+export async function sendFeedback(kind, text, ctx) { await api('feedback', { method: 'POST', body: { kind, text, ctx } }); }
 export async function forgotPassword(email, lang) { await api('auth/forgot', { method: 'POST', body: { email, lang } }); }
 export async function resetPassword(token, password) { await api('auth/reset', { method: 'POST', body: { token, password } }); }
 

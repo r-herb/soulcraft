@@ -7,7 +7,7 @@ import { SVG } from './icons.js';
 import { Hud } from './hud.js';
 import * as panels from './panels.js';
 import { currentEvent } from '../quest/daily.js';
-import { forgotPassword, resetPassword } from '../save/account.js';
+import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
 
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
@@ -581,7 +581,7 @@ export class UI {
           <button class="btn primary" data-act="resume" data-i18n="pause.resume"></button>
           <div class="row"><button class="btn" style="flex:1" data-act="map" data-i18n="pause.map"></button><button class="btn" style="flex:1" data-act="shop" data-i18n="pause.shop"></button></div>
           <div class="row"><button class="btn" style="flex:1" data-act="settings" data-i18n="pause.settings"></button><button class="btn" style="flex:1" data-act="save" data-i18n="pause.save"></button></div>
-          ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
+          <div class="row">${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" style="flex:1" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}${account.available ? '<button class="btn" style="flex:1" data-act="feedback" data-i18n="fb.button"></button>' : ''}</div>
           ${account.user && account.mp && !this.game.isQuest ? `<button class="btn violet" data-act="room"><span data-i18n="mp.title"></span>${this.game.net ? `<span class="dot">${this.game.net.count}</span>` : ''}</button>` : ''}
           <button class="btn ember" data-act="quit" data-i18n="${this.game.isGuest ? 'mp.leave' : 'pause.quit'}"></button>
         </div>
@@ -589,6 +589,7 @@ export class UI {
     const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(); }); };
     on('daily', () => this.open('daily'));
     on('room', () => this.open('room'));
+    on('feedback', () => this.open('feedback'));
     on('resume', () => this.closeAll());
     on('map', () => this.open('map'));
     on('shop', () => this.open('shop'));
@@ -596,6 +597,73 @@ export class UI {
     on('save', () => this.game.save());
     on('quit', () => this.app.quitToTitle());
     return node;
+  }
+
+  // ---------- ideas and problems ----------
+  screen_feedback(args) {
+    let kind = args.kind || 'idea';
+    const node = el(`<div class="screen scrim" data-screen="feedback">
+      <div class="panel" style="width:min(520px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="fb.title"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <form class="panel-body col" style="gap:var(--sp-3)" novalidate>
+          <div class="seg" data-seg="kind"><button type="button" data-v="idea" data-i18n="fb.idea"></button><button type="button" data-v="bug" data-i18n="fb.bug"></button></div>
+          <textarea id="fb-text" class="input fb-text" maxlength="1000" rows="4"></textarea>
+          <p class="faint" style="margin:0" data-i18n="fb.note"></p>
+          <p class="form-error" role="alert"></p>
+          <button class="btn primary wide" type="submit" data-act="send" data-i18n="fb.send"></button>
+        </form>
+      </div></div>`);
+    const ta = node.querySelector('#fb-text');
+    const setKind = (k) => {
+      kind = k;
+      node.querySelectorAll('[data-seg="kind"] button').forEach((b) => b.classList.toggle('on', b.dataset.v === k));
+      ta.placeholder = t(k === 'bug' ? 'fb.placeholderBug' : 'fb.placeholderIdea');
+    };
+    setKind(kind);
+    node.querySelectorAll('[data-seg="kind"] button').forEach((b) => b.addEventListener('click', () => { this.click(); setKind(b.dataset.v); }));
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    const errEl = node.querySelector('.form-error');
+    ta.addEventListener('input', () => { errEl.textContent = ''; });
+    node.querySelector('form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      this.click();
+      const text = ta.value.trim();
+      if (!text) { errEl.textContent = t('fb.empty'); return; }
+      const btn = node.querySelector('[data-act="send"]');
+      btn.disabled = true; errEl.textContent = '';
+      try {
+        await sendFeedback(kind, text, this.feedbackContext());
+        this.toast(t('fb.sent'), 'ok');
+        this.back();
+      } catch (e) {
+        errEl.textContent = e.code === 'too_many_attempts' ? t('acct.err.too_many_attempts') : t('fb.err');
+        btn.disabled = false;
+      }
+    });
+    setTimeout(() => ta.focus(), 50);
+    return node;
+  }
+
+  // What goes with a message to help the admin: version, device and world
+  // (never the player's saves or passwords).
+  feedbackContext() {
+    const g = this.game, m = g && g.meta;
+    const ctx = {
+      v: VERSION, lang: getLang(), device: this.input.touchMode ? 'touch' : 'desktop',
+      screen: `${innerWidth}x${innerHeight}`, ua: navigator.userAgent.slice(0, 160),
+      errors: (this.app.recentErrors || []).slice(-5),
+    };
+    if (g && g.running && m) {
+      Object.assign(ctx, {
+        mode: g.isQuest ? 'quest' : g.creative ? 'creative' : 'survival', dim: m.dim, day: m.day, fps: g.fps,
+        quality: g.quality ? `${g.quality.mode} ${(g.quality.scale || 0).toFixed(2)}` : '',
+        room: g.net ? (g.net.isHost ? 'host' : 'guest') + ` ${g.net.count}/4` : null,
+        level: g.quest ? g.quest.current() : null,
+        pos: g.player ? [Math.round(g.player.pos.x), Math.round(g.player.pos.y), Math.round(g.player.pos.z)] : null,
+      });
+    }
+    return ctx;
   }
 
   // ---------- multiplayer ----------
