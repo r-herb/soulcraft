@@ -461,5 +461,19 @@
   "toast.flyOff": "Flying off",
   "hud.fly": "Fly",
   "hud.down": "Down",
-  "death.cause.cactus": "A cactus got the better of you."
+  "death.cause.cactus": "A cactus got the better of you.",
+  "shop.tabSkins": "Skins",
+  "shop.tabPets": "Companions",
+  "shop.withYou": "With you",
+  "shop.takeAlong": "Take along",
+  "shop.sendHome": "Leave at home",
+  "pet.fox": "Ember Fox",
+  "pet.owl": "Frost Owl",
+  "pet.golem": "Moss Golem",
+  "pet.fox.desc": "Quick and brave: bites monsters near you.",
+  "pet.owl.desc": "Flies above you and shoots ice shards.",
+  "pet.golem.desc": "Slow and tough: heavy punches knock monsters away.",
+  "pet.rest": "{name} is worn out and rests for {s} s.",
+  "pet.back": "{name} is back!",
+  "toast.petBought": "{name} joins you!"
 }

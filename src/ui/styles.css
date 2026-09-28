@@ -357,3 +357,6 @@ body.touch .desktop-only { display: none !important; }
 .btn.primary .continue-meta { color: rgba(5, 4, 15, 0.72); }
 #hud.creative .hearts, #hud.creative .foods { display: none; }
 @media (max-height: 420px) { .title-menu .row .btn { font-size: var(--fs-sm); } [data-mode-hint] { margin: 0; font-size: var(--fs-xs); } }
+.shop-tabs { flex: none; }
+.shop-tabs button { flex: none; min-height: 36px; padding: 0 var(--sp-3); white-space: nowrap; }
+.skin-card[data-pet] canvas { image-rendering: pixelated; }

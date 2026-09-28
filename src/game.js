@@ -11,6 +11,7 @@ import { ITEMS, blockDrop } from './player/items.js';
 import { BLOCKS, B, SHAPE } from './world/blocks.js';
 import { Layout, DIM_SPAWNS, BOSS_SPAWNS, ARENAS, CHAMBER } from './world/structures.js';
 import { EntityManager } from './entities/entities.js';
+import { Pet, PET } from './entities/pets.js';
 import { BossManager, BOSS_ORDER } from './bosses/bosses.js';
 import { HeldItem } from './player/held.js';
 import { settings } from './save/settings.js';
@@ -416,6 +417,7 @@ export class Game {
     this.hunger(dt);
     this.interact(dt, inp);
     this.entities.update(dt);
+    this.petTick(dt);
     this.bosses.update(dt);
     if (this.quest) this.quest.update(dt);
     // footsteps
@@ -630,6 +632,23 @@ export class Game {
       this.useCooldown = this.input.touchMode ? 0.28 : 0.2;
       this.ui.tutorialDone('place');
     }
+  }
+
+  // Keep the chosen companion in the world (it is cleared with the other
+  // entities on travel, so it comes back here).
+  petTick(dt) {
+    this._petT = (this._petT || 0) - dt;
+    if (this._petT > 0) return;
+    this._petT = 1;
+    const want = !this.quest && this.profile.pet && PET[this.profile.pet] ? this.profile.pet : null;
+    const have = this.pet && !this.pet.dead && this.entities.list.includes(this.pet) ? this.pet : null;
+    if (have && have.kind === want) return;
+    if (have) { have.dead = true; this.pet = null; }
+    if (!want) return;
+    const c = this.world.chunkAt(this.player.pos.x, this.player.pos.z);
+    if (!c || !c.data) return;
+    this.pet = this.entities.add(new Pet(this, want, this.player.pos.x, this.player.pos.y, this.player.pos.z));
+    this.pet.teleportNear();
   }
 
   // Creative flight: double-tap jump (or the touch fly button) toggles it.

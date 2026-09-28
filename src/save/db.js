@@ -90,16 +90,18 @@ export async function deleteWorld(slot = 'current') {
   try { await tx('worlds', 'readwrite', (s) => (s ? s.delete(slot) : memory.worlds.delete(slot))); } catch (e) { console.warn(e); }
 }
 
-const DEFAULT_PROFILE = { id: 'profile', crystals: 0, skins: ['wanderer'], skin: 'wanderer', totalCrystals: 0 };
+const DEFAULT_PROFILE = { id: 'profile', crystals: 0, skins: ['wanderer'], skin: 'wanderer', totalCrystals: 0, pets: [], pet: null };
+// a fresh copy, so no profile ever shares the default arrays
+const defaults = () => ({ ...DEFAULT_PROFILE, skins: [...DEFAULT_PROFILE.skins], pets: [] });
 
 export async function loadProfile(id = 'profile') {
   try {
     const r = await tx('profile', 'readonly', (s) => (s ? s.get(id) : null));
     const p = r || memory.profile.get(id);
-    return { ...DEFAULT_PROFILE, ...(p || {}), id };
+    return { ...defaults(), ...(p || {}), id };
   } catch (e) {
     console.warn('loadProfile failed', e);
-    return { ...DEFAULT_PROFILE };
+    return defaults();
   }
 }
 

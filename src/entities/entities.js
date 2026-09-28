@@ -153,6 +153,7 @@ const PROJ_STYLE = {
   fireball: { color: 0xff7a2e, size: [0.55, 0.55, 0.55], gravity: 0, emissive: 0xff5a1a },
   void_orb: { color: 0xb98bff, size: [0.7, 0.7, 0.7], gravity: 0, emissive: 0x6d45d6 },
   storm_bolt: { color: 0xb6fbff, size: [0.4, 0.4, 0.9], gravity: 0, emissive: 0x7ff3ff },
+  frost: { color: 0xc9f2ff, size: [0.3, 0.3, 0.5], gravity: 0, emissive: 0x5fb8e0 },
   coin: { color: 0xffd65c, size: [0.45, 0.12, 0.45], gravity: 9, emissive: 0x8a5a0a },
 };
 
@@ -358,7 +359,11 @@ export class Mob extends Entity {
     this.attackT -= dt;
     this.phase += dt * 6;
     if (this.life !== undefined) { this.life -= dt; if (this.life <= 0) { this.dead = true; this.poof(); return; } }
-    const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, dy = p.pos.y - this.pos.y;
+    // a pet that bit this mob draws its attention for a while (melee mobs)
+    this.petAggroT = (this.petAggroT || 0) - dt;
+    const pet = !d.ranged && this.petAggroT > 0 && this.petAggro && !this.petAggro.dead && !this.petAggro.resting ? this.petAggro : null;
+    const foe = pet ? pet.pos : p.pos;
+    const dx = foe.x - this.pos.x, dz = foe.z - this.pos.z, dy = foe.y - this.pos.y;
     const dist = Math.hypot(dx, dz);
     // burn in daylight
     if (d.burns && g.meta.dim === 'overworld' && !isNight(g.meta.time) && g.world.skyExposed(this.pos.x, this.pos.y + 1.6, this.pos.z)) {
@@ -400,7 +405,8 @@ export class Mob extends Entity {
       } else if (!d.ranged && dist < d.reach && Math.abs(dy + (d.flying ? 1 : 0)) < 2) {
         this.attackT = d.hazard ? 0.6 : 1.0;
         tmp2.set(dx, 0, dz).normalize();
-        if (d.hazard) { p.knock.set(tmp2.x * 9, 10, tmp2.z * 9); g.damagePlayer(d.dmg, 'mob', this.name); }
+        if (pet) pet.damage(d.dmg);
+        else if (d.hazard) { p.knock.set(tmp2.x * 9, 10, tmp2.z * 9); g.damagePlayer(d.dmg, 'mob', this.name); }
         else g.damagePlayer(d.dmg, 'mob', this.name, tmp2);
         if (this.rig) this.rig.armR.rotation.x = -2;
       }

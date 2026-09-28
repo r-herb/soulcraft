@@ -6,6 +6,7 @@ import { slotEl, fillSlot, itemName } from './hud.js';
 import { RECIPES, matchRecipe, canAfford, recipeNeeds } from '../player/crafting.js';
 import { ITEMS, maxStack } from '../player/items.js';
 import { SKINS, drawSkinPortrait } from '../entities/models.js';
+import { PETS, drawPetPortrait } from '../entities/pets.js';
 import { storeProfile } from '../save/account.js';
 import { BOSS_ORDER } from '../bosses/bosses.js';
 import { ARENAS } from '../world/structures.js';
@@ -215,34 +216,75 @@ export function shop(args, ui) {
   const node = el(`<div class="screen ${ui.game && ui.game.running ? 'scrim' : 'solid'}" data-screen="shop">
     <div class="panel" style="width:min(780px,100%);height:100%">
       ${head(esc(t('shop.title')))}
-      <div class="row"><span class="stat-chip crystal-chip"><span class="crystal-ico"></span><span class="bal"></span></span><span class="faint" style="flex:1;text-align:right">${esc(t('shop.hint'))}</span></div>
+      <div class="row"><span class="stat-chip crystal-chip"><span class="crystal-ico"></span><span class="bal"></span></span>
+        <div class="seg shop-tabs"><button data-tab="skins" data-i18n="shop.tabSkins"></button><button data-tab="pets" data-i18n="shop.tabPets"></button></div>
+        <span class="faint shop-hint" style="flex:1;text-align:right"></span></div>
       <div class="shop-layout">
         <div class="col" style="align-items:center"><canvas class="skin-preview" width="200" height="220"></canvas><b class="pv-name"></b><button class="btn primary wide pv-act"></button></div>
         <div class="skin-grid"></div>
       </div>
     </div></div>`);
+  let tab = args.tab || 'skins';
   let sel = profile.skin;
+  let selPet = profile.pet || PETS[0].id;
+  profile.pets = profile.pets || [];
   const preview = node.querySelector('.skin-preview');
   let angle = 0;
   let raf;
   const drawPreview = () => {
     const x = preview.getContext('2d');
     const tmp = document.createElement('canvas');
-    drawSkinPortrait(tmp, sel);
+    if (tab === 'pets') drawPetPortrait(tmp, selPet); else drawSkinPortrait(tmp, sel);
     x.clearRect(0, 0, preview.width, preview.height);
     x.imageSmoothingEnabled = false;
     angle += 0.03;
     const sq = Math.abs(Math.cos(angle)) * 0.35 + 0.65;
     const w = 128 * sq;
-    x.drawImage(tmp, (preview.width - w) / 2, 30 + Math.sin(angle * 2) * 3, w, 128 * 1.1);
+    if (tab === 'pets') x.drawImage(tmp, (preview.width - w * 1.1) / 2, 40 + Math.sin(angle * 2) * 4, w * 1.1, 140);
+    else x.drawImage(tmp, (preview.width - w) / 2, 30 + Math.sin(angle * 2) * 3, w, 128 * 1.1);
     raf = requestAnimationFrame(drawPreview);
   };
   const obs = new MutationObserver(() => { if (!node.isConnected) { cancelAnimationFrame(raf); obs.disconnect(); } });
   setTimeout(() => obs.observe(document.getElementById('screens'), { childList: true }), 0);
+  const drawPets = () => {
+    const grid = node.querySelector('.skin-grid');
+    for (const p of PETS) {
+      const owned = profile.pets.includes(p.id);
+      const card = el(`<button class="skin-card ${p.id === selPet ? 'sel' : ''}" data-pet="${p.id}"><canvas></canvas><span class="nm"></span><span class="pr"></span></button>`);
+      drawPetPortrait(card.querySelector('canvas'), p.id);
+      card.querySelector('.nm').textContent = t('pet.' + p.id);
+      card.querySelector('.pr').innerHTML = profile.pet === p.id ? esc(t('shop.withYou')) : owned ? '&#10003;' : `<span class="crystal-ico"></span>${p.price}`;
+      card.addEventListener('click', () => { ui.click(); selPet = p.id; draw(); });
+      grid.appendChild(card);
+    }
+    const p = PETS.find((k) => k.id === selPet);
+    const owned = profile.pets.includes(selPet);
+    node.querySelector('.pv-name').textContent = t('pet.' + selPet);
+    node.querySelector('.shop-hint').textContent = t('pet.' + selPet + '.desc');
+    const b = node.querySelector('.pv-act');
+    b.disabled = false;
+    b.innerHTML = profile.pet === selPet ? esc(t('shop.sendHome')) : owned ? esc(t('shop.takeAlong')) : `${esc(t('shop.buy'))} <span class="crystal-ico"></span>${p.price}`;
+    b.onclick = async () => {
+      if (!owned) {
+        if (profile.crystals < p.price) { ui.toast(t('toast.noCrystals'), 'warn'); return; }
+        profile.crystals -= p.price;
+        profile.pets.push(p.id);
+        ui.toast(t('toast.petBought', { name: t('pet.' + p.id) }), 'soul');
+        ui.audio.sfx('levelup');
+        profile.pet = p.id;
+      } else profile.pet = profile.pet === p.id ? null : p.id;
+      ui.click();
+      await storeProfile(profile);
+      draw();
+    };
+  };
   const draw = () => {
     node.querySelector('.bal').textContent = profile.crystals;
+    node.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x.dataset.tab === tab));
     const grid = node.querySelector('.skin-grid');
     grid.innerHTML = '';
+    if (tab === 'pets') { drawPets(); return; }
+    node.querySelector('.shop-hint').textContent = t('shop.hint');
     for (const s of SKINS) {
       const owned = profile.skins.includes(s.id);
       const card = el(`<button class="skin-card ${s.id === sel ? 'sel' : ''}" data-skin="${s.id}"><canvas></canvas><span class="nm"></span><span class="pr"></span></button>`);
@@ -274,6 +316,7 @@ export function shop(args, ui) {
       draw();
     };
   };
+  node.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { ui.click(); tab = b.dataset.tab; draw(); }));
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); cancelAnimationFrame(raf); ui.back(); });
   draw();
   drawPreview();
