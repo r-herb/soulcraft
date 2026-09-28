@@ -34,7 +34,7 @@ export default defineConfig({
     },
     withApi && {
       // the accounts API: Pages Functions + a throwaway local D1 database
-      command: 'rm -rf .wrangler/test-state && npx wrangler d1 migrations apply soulcraft --local --persist-to .wrangler/test-state && npx wrangler pages dev dist --port 8788 --persist-to .wrangler/test-state --binding SUPERADMIN_LOGIN=admin --binding SUPERADMIN_PASSWORD=admin-pass-123',
+      command: 'rm -rf .wrangler/test-state && npx wrangler d1 migrations apply soulcraft --local --persist-to .wrangler/test-state && npx wrangler pages dev dist --port 8788 --persist-to .wrangler/test-state --binding SUPERADMIN_LOGIN=admin --binding SUPERADMIN_PASSWORD=admin-pass-123 --binding MAIL_TEST=1',
       url: 'http://localhost:8788',
       reuseExistingServer: false,
       timeout: 120_000,

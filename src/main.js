@@ -127,6 +127,12 @@ async function boot() {
   }
 
   ui.showTitle();
+  // a password reset link from the email (?reset=token)
+  const resetToken = new URLSearchParams(location.search).get('reset');
+  if (resetToken) {
+    history.replaceState(null, '', location.pathname);
+    ui.open('reset', { token: resetToken });
+  }
 
   // audio needs a user gesture
   const unlock = () => { audio.unlock(); };

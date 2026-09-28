@@ -376,3 +376,5 @@ body.touch .desktop-only { display: none !important; }
 .ev-harvest { border-color: #ff9a3c; background: rgba(255, 154, 60, 0.14); color: #ffe2c4; }
 .ev-frost { border-color: #bfe6f5; background: rgba(191, 230, 245, 0.14); color: #eef9ff; }
 @media (max-height: 420px) { .title-screen .event-banner { font-size: var(--fs-xs); padding: 4px var(--sp-2); } }
+.linkish { background: none; border: 0; color: var(--c-soul-300); text-decoration: underline; font: inherit; font-size: var(--fs-sm); cursor: pointer; padding: 4px; align-self: center; min-height: 32px; }
+.form-ok { margin: 0; color: var(--c-ok); font-size: var(--fs-sm); min-height: 1em; }

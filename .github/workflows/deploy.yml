@@ -183,6 +183,17 @@ jobs:
           printf '%s' "$SUPERADMIN_LOGIN" | npx wrangler pages secret put SUPERADMIN_LOGIN --project-name soulcraft
           printf '%s' "$SUPERADMIN_PASSWORD" | npx wrangler pages secret put SUPERADMIN_PASSWORD --project-name soulcraft
 
+      - name: Email for password resets (Resend)
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "::warning::RESEND_API_KEY is not set in GitHub secrets - password reset by email stays off."
+            exit 0
+          fi
+          printf '%s' "$RESEND_API_KEY" | npx wrangler pages secret put RESEND_API_KEY --project-name soulcraft
+          node scripts/resend-domain.mjs
+
       # Runs from the repo root, so functions/ (the /api) and wrangler.toml
       # (the D1 binding) go up with the static build.
       - name: Deploy to Cloudflare Pages

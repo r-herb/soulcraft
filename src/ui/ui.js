@@ -7,6 +7,7 @@ import { SVG } from './icons.js';
 import { Hud } from './hud.js';
 import * as panels from './panels.js';
 import { currentEvent } from '../quest/daily.js';
+import { forgotPassword, resetPassword } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
 
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
@@ -328,6 +329,66 @@ export class UI {
   }
 
   // ---------- account ----------
+  screen_forgot(args) {
+    const node = el(`<div class="screen solid" data-screen="forgot">
+      <div class="panel" style="width:min(460px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="acct.forgotTitle"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <form class="panel-body col" style="gap:var(--sp-3)" novalidate>
+          <p style="margin:0" data-i18n="acct.forgotHelp"></p>
+          <div class="field"><label for="fp-email" data-i18n="acct.email"></label><input id="fp-email" class="input" type="email" autocomplete="email" maxlength="120"></div>
+          <p class="form-error" role="alert"></p>
+          <p class="form-ok" role="status"></p>
+          <button class="btn primary wide" type="submit" data-act="submit" data-i18n="acct.sendLink"></button>
+        </form>
+      </div></div>`);
+    const input = node.querySelector('#fp-email');
+    if (args.email && args.email.includes('@')) input.value = args.email;
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      this.click();
+      const btn = node.querySelector('[data-act="submit"]'), errEl = node.querySelector('.form-error'), okEl = node.querySelector('.form-ok');
+      btn.disabled = true; errEl.textContent = ''; okEl.textContent = '';
+      try {
+        await forgotPassword(input.value, getLang());
+        okEl.textContent = t('acct.linkSent');
+      } catch (e) { errEl.textContent = this.acctError(e); }
+      btn.disabled = false;
+    });
+    return node;
+  }
+
+  screen_reset(args) {
+    const node = el(`<div class="screen solid" data-screen="reset">
+      <div class="panel" style="width:min(460px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="acct.resetTitle"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <form class="panel-body col" style="gap:var(--sp-3)" novalidate>
+          <div class="field"><label for="rp-new" data-i18n="acct.newPassword"></label><input id="rp-new" class="input" type="password" autocomplete="new-password" maxlength="200"></div>
+          <div class="field"><label for="rp-rep" data-i18n="acct.repeatPassword"></label><input id="rp-rep" class="input" type="password" autocomplete="new-password" maxlength="200"></div>
+          <p class="form-error" role="alert"></p>
+          <button class="btn primary wide" type="submit" data-act="submit" data-i18n="acct.savePassword"></button>
+        </form>
+      </div></div>`);
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.showTitle(); });
+    node.querySelector('form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      this.click();
+      const errEl = node.querySelector('.form-error'), btn = node.querySelector('[data-act="submit"]');
+      const a = node.querySelector('#rp-new').value, b = node.querySelector('#rp-rep').value;
+      if (a !== b) { errEl.textContent = t('acct.pwMismatch'); return; }
+      btn.disabled = true; errEl.textContent = '';
+      try {
+        await resetPassword(args.token, a);
+        this.toast(t('acct.resetDone'), 'ok');
+        this.stack = [{ name: 'title', args: {} }, { name: 'signin', args: {} }];
+        this.render();
+      } catch (e) { errEl.textContent = this.acctError(e); btn.disabled = false; }
+    });
+    return node;
+  }
+
   acctError(e) {
     const k = 'acct.err.' + (e && e.code);
     const s = t(k);
@@ -345,10 +406,12 @@ export class UI {
           <label class="check"><input type="checkbox" id="si-remember" checked> <span data-i18n="acct.remember"></span></label>
           <p class="form-error" role="alert"></p>
           <button class="btn primary wide" type="submit" data-act="submit" data-i18n="acct.signIn"></button>
+          <button class="linkish" type="button" data-act="forgot" data-i18n="acct.forgot"></button>
           <p class="faint" style="margin:0" data-i18n="acct.note"></p>
         </form>
       </div></div>`);
     node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('[data-act="forgot"]').addEventListener('click', () => { this.click(); this.open('forgot', { email: node.querySelector('#si-login').value }); });
     const form = node.querySelector('form');
     const errEl = node.querySelector('.form-error');
     form.addEventListener('submit', async (ev) => {

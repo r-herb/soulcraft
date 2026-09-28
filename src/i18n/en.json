@@ -495,5 +495,18 @@
   "event.harvest.desc": "Embers rise at dusk, and monsters drop soul crystals three times as often.",
   "event.frost": "Frostfall",
   "event.frost.desc": "Snow falls everywhere, and the first villager you talk to each day has a gift.",
-  "event.frost.gift": "{name} gives you a Frostfall gift!"
+  "event.frost.gift": "{name} gives you a Frostfall gift!",
+  "acct.forgot": "Forgot password?",
+  "acct.forgotTitle": "Forgot password",
+  "acct.forgotHelp": "Enter the email of your account and we will send you a link to choose a new password.",
+  "acct.sendLink": "Send the link",
+  "acct.linkSent": "If this email belongs to an account, a link is on its way. Check your inbox (and spam).",
+  "acct.resetTitle": "New password",
+  "acct.newPassword": "New password",
+  "acct.repeatPassword": "Repeat the new password",
+  "acct.savePassword": "Save the password",
+  "acct.resetDone": "Password changed. Sign in with the new one.",
+  "acct.err.bad_token": "This link has expired or was already used. Ask for a new one.",
+  "acct.err.email_not_configured": "Password reset by email is not ready yet. Ask the admin to reset your password.",
+  "acct.err.email_failed": "The email could not be sent. Try again later."
 }

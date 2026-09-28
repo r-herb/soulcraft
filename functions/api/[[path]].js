@@ -20,8 +20,14 @@
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, checkPassword, checkAvatar,
-  publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures,
+  publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
 } from '../../server/lib.js';
+import { resetEmail, sendEmail } from '../../server/mail.js';
+
+const RESET_TTL = 60 * 60e3; // reset links work for an hour
+const today = () => new Date().toISOString().slice(0, 10);
+// remember that a player was active today (for the statistics)
+const noteActive = (db, uid) => db.prepare('INSERT OR IGNORE INTO activity (user_id, day) VALUES (?, ?)').bind(uid, today()).run();
 
 // save slots: the profile, the Treasure Quest run, and up to MAX_WORLDS
 // worlds ("w-" + id); "current" is the single world from older versions
@@ -88,8 +94,50 @@ async function route(parts, method, request, env, secure) {
     if (user.disabled) return err(403, 'disabled');
     await clearFailures(db, rlKey);
     await db.prepare('UPDATE users SET last_login = ? WHERE id = ?').bind(Date.now(), user.id).run();
+    await noteActive(db, user.id);
     const token = await createSession(db, user.id, 'user', !!remember);
     return json({ role: 'user', user: publicUser(user) }, 200, { 'set-cookie': sessionCookie(token, !!remember, secure) });
+  }
+
+  // forgotten password: email a one-time link (the answer never says
+  // whether the address belongs to an account)
+  if (a === 'auth' && b === 'forgot' && method === 'POST') {
+    const { email: raw, lang } = await body(request);
+    const email = normEmail(raw);
+    if (!email) return err(400, 'bad_email');
+    if (!env.RESEND_API_KEY && env.MAIL_TEST !== '1') return err(503, 'email_not_configured', 'Password reset by email is not set up yet.');
+    const ip = request.headers.get('cf-connecting-ip') || 'local';
+    const rlKey = 'forgot:' + (await sha256(email + '|' + ip));
+    if (await tooManyAttempts(db, rlKey)) return err(429, 'too_many_attempts', 'Too many attempts. Try again in 15 minutes.');
+    await noteFailure(db, rlKey); // every request counts towards the limit
+    const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
+    if (!user || user.disabled) return json({ ok: true });
+    const token = randomToken(32);
+    const now = Date.now();
+    await db.prepare('DELETE FROM password_resets WHERE user_id = ? OR expires_at < ?').bind(user.id, now).run();
+    await db.prepare('INSERT INTO password_resets (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)').bind(await sha256(token), user.id, now + RESET_TTL, now).run();
+    const link = new URL(request.url).origin + '/?reset=' + encodeURIComponent(token);
+    if (env.MAIL_TEST === '1') return json({ ok: true, testLink: link }); // local tests only
+    const mail = resetEmail({ name: user.name, link, lang: lang === 'ru' ? 'ru' : 'en' });
+    const sent = await sendEmail(env, { to: email, ...mail });
+    if (!sent) return err(502, 'email_failed', 'The email could not be sent. Try again later.');
+    return json({ ok: true });
+  }
+  if (a === 'auth' && b === 'reset' && method === 'POST') {
+    const { token, password } = await body(request);
+    const pw = checkPassword(password);
+    if (!pw) return err(400, 'weak_password');
+    if (!token || String(token).length > 100) return err(400, 'bad_token');
+    const th = await sha256(String(token));
+    const r = await db.prepare('SELECT * FROM password_resets WHERE token_hash = ?').bind(th).first();
+    if (!r || r.used_at || r.expires_at < Date.now()) return err(400, 'bad_token', 'This link has expired or was already used.');
+    const h = await hashPassword(pw);
+    await db.batch([
+      db.prepare('UPDATE users SET pass_hash = ?, pass_salt = ?, pass_iter = ?, updated_at = ? WHERE id = ?').bind(h.hash, h.salt, h.iter, Date.now(), r.user_id),
+      db.prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ?').bind(Date.now(), th),
+      db.prepare("DELETE FROM sessions WHERE user_id = ? AND role = 'user'").bind(r.user_id),
+    ]);
+    return json({ ok: true });
   }
 
   const s = await currentSession(request, env);
@@ -106,6 +154,7 @@ async function route(parts, method, request, env, secure) {
   // ---------- me ----------
   if (a === 'me' && !b && method === 'GET') {
     if (s.role === 'superadmin') return json({ role: 'superadmin', user: { id: 0, name: 'Superadmin' } });
+    await noteActive(db, s.user.id);
     return json({ role: 'user', user: publicUser(s.user) });
   }
   if (a === 'me' && !b && method === 'PATCH') {
@@ -163,6 +212,7 @@ async function route(parts, method, request, env, secure) {
   // ---------- admin ----------
   if (a === 'admin') {
     if (s.role !== 'superadmin') return err(403, 'forbidden');
+    if (b === 'stats' && method === 'GET') return json(await stats(db, env));
     if (b === 'users' && !c && method === 'GET') {
       const q = (new URL(request.url).searchParams.get('q') || '').trim().toLowerCase();
       const like = '%' + q.replace(/[%_]/g, '') + '%';
@@ -248,6 +298,32 @@ async function applyProfile(db, u, inp, admin) {
     .bind(next.name, next.email, next.phone, next.avatar, next.disabled, Date.now(), u.id).run();
   if (admin && next.disabled) await db.prepare('DELETE FROM sessions WHERE user_id = ? AND role = ?').bind(u.id, 'user').run();
   return db.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first();
+}
+
+// Numbers for the admin panel's statistics page.
+async function stats(db, env) {
+  const now = Date.now();
+  const dayAgo = (n) => new Date(now - n * 86400e3).toISOString().slice(0, 10);
+  const one = async (sql, ...args) => (await db.prepare(sql).bind(...args).first()) || {};
+  const users = await one('SELECT COUNT(*) AS n, SUM(disabled) AS off, SUM(created_at > ?) AS new30 FROM users', now - 30 * 86400e3);
+  const active7 = await one('SELECT COUNT(DISTINCT user_id) AS n FROM activity WHERE day >= ?', dayAgo(6));
+  const active30 = await one('SELECT COUNT(DISTINCT user_id) AS n FROM activity WHERE day >= ?', dayAgo(29));
+  const { results: days } = await db.prepare('SELECT day, COUNT(*) AS n FROM activity WHERE day >= ? GROUP BY day').bind(dayAgo(13)).all();
+  const perDay = Object.fromEntries(days.map((d) => [d.day, d.n]));
+  const daily = Array.from({ length: 14 }, (_, i) => { const d = dayAgo(13 - i); return { day: d, n: perDay[d] || 0 }; });
+  const worlds = await one("SELECT COUNT(*) AS n, SUM(info LIKE '%\"creative\"%') AS creative FROM saves WHERE slot LIKE 'w-%'");
+  const quest = await one("SELECT COUNT(*) AS n, SUM(json_extract(data, '$.quest.done') = 1) AS done FROM saves WHERE slot = 'quest'");
+  const online = await one("SELECT COUNT(DISTINCT user_id) AS n FROM sessions WHERE role = 'user' AND expires_at > ?", now);
+  const { results: top } = await db.prepare(`SELECT u.id, u.name, u.avatar, json_extract(s.data, '$.totalCrystals') AS crystals, json_extract(s.data, '$.pet') AS pet
+    FROM saves s JOIN users u ON u.id = s.user_id WHERE s.slot = 'profile' ORDER BY crystals DESC LIMIT 5`).all();
+  return {
+    users: users.n || 0, disabled: users.off || 0, newUsers30: users.new30 || 0,
+    active7: active7.n || 0, active30: active30.n || 0, signedIn: online.n || 0,
+    worlds: worlds.n || 0, creativeWorlds: worlds.creative || 0,
+    questStarted: quest.n || 0, questDone: quest.done || 0,
+    daily, top: top.map((t) => ({ id: t.id, name: t.name, avatar: t.avatar || null, crystals: t.crystals || 0, pet: t.pet || null })),
+    email: !!env.RESEND_API_KEY,
+  };
 }
 
 // A readable one-liner about a save, for the admin panel.

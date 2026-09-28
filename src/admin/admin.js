@@ -61,12 +61,95 @@ function renderLogin(message = '') {
   });
 }
 
+// ---------- navigation ----------
+function topBar(active) {
+  return `<div class="admin-top"><h1>Soulcraft Admin</h1>
+    <nav class="admin-tabs"><button class="${active === 'users' ? 'on' : ''}" data-nav="users">Users</button><button class="${active === 'stats' ? 'on' : ''}" data-nav="stats">Statistics</button></nav>
+    <a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>`;
+}
+function bindTopBar() {
+  root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
+  root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => (b.dataset.nav === 'stats' ? renderStats() : renderUsers())));
+}
+
+// ---------- statistics ----------
+async function renderStats() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('stats')}<div class="admin-card loading"><p class="empty">Loading...</p></div></div>`;
+  bindTopBar();
+  let s;
+  try { s = await api('admin/stats'); } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  root.querySelector('.loading').remove();
+  const tile = (label, value, sub = '') => `<div class="stat-tile"><span class="st-label">${esc(label)}</span><b class="st-value">${esc(value)}</b>${sub ? `<span class="st-sub">${esc(sub)}</span>` : ''}</div>`;
+  const pct = (a, b) => (b ? Math.round((100 * a) / b) + '%' : '-');
+  root.querySelector('.admin-wrap').insertAdjacentHTML('beforeend', `
+    <div class="stat-tiles">
+      ${tile('Players', s.users, `${s.newUsers30} new in 30 days${s.disabled ? `, ${s.disabled} disabled` : ''}`)}
+      ${tile('Active, last 7 days', s.active7, pct(s.active7, s.users) + ' of players')}
+      ${tile('Active, last 30 days', s.active30, pct(s.active30, s.users) + ' of players')}
+      ${tile('Signed in now', s.signedIn, 'players with a valid session')}
+      ${tile('Worlds in the cloud', s.worlds, `${s.creativeWorlds} creative`)}
+      ${tile('Treasure Quest', `${s.questDone} / ${s.questStarted}`, 'finished / started')}
+    </div>
+    <div class="admin-card">
+      <div class="chart-head"><h2>Active players per day</h2><span class="faint">last 14 days</span><button class="btn small ghost" data-act="table">Show table</button></div>
+      <div class="chart" role="img" aria-label="Active players per day over the last 14 days"></div>
+      <table class="chart-table hidden"><thead><tr><th>Day</th><th>Active players</th></tr></thead><tbody>${s.daily.map((d) => `<tr><td>${esc(d.day)}</td><td>${d.n}</td></tr>`).join('')}</tbody></table>
+    </div>
+    <div class="admin-card">
+      <h2>Top players by soul crystals earned</h2>
+      ${s.top.length ? `<ol class="top-list">${s.top.map((p) => `<li>${p.avatar ? `<img class="av" alt="" src="${esc(p.avatar)}">` : '<span class="av"></span>'}<b>${esc(p.name)}</b><span class="faint">${p.pet ? esc(p.pet) : ''}</span><span class="num">${p.crystals}</span></li>`).join('')}</ol>` : '<p class="empty">No player has saved a profile yet.</p>'}
+    </div>
+    <div class="admin-card"><p style="margin:0">Password reset by email: <b>${s.email ? 'ready' : 'not set up'}</b>${s.email ? '' : ' (add the RESEND_API_KEY secret in GitHub; until then reset passwords here)'}</p></div>`);
+  drawBars(root.querySelector('.chart'), s.daily);
+  root.querySelector('[data-act="table"]').addEventListener('click', (e) => {
+    const tb = root.querySelector('.chart-table');
+    tb.classList.toggle('hidden');
+    e.target.textContent = tb.classList.contains('hidden') ? 'Show table' : 'Hide table';
+  });
+}
+
+// A single-series bar chart: thin bars anchored to the baseline, a
+// recessive grid, and a tooltip on hover or tap.
+function drawBars(el, data) {
+  const W = 720, H = 220, L = 34, R = 8, T = 12, B = 28;
+  const max = Math.max(1, ...data.map((d) => d.n));
+  const step = max <= 5 ? 1 : Math.ceil(max / 4);
+  const top = Math.ceil(max / step) * step;
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  const bw = (W - L - R) / data.length;
+  const barW = Math.max(6, Math.min(28, bw - 8));
+  let svg = `<svg viewBox="0 0 ${W} ${H}" class="bars">`;
+  for (let v = 0; v <= top; v += step) svg += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${L - 6}" y="${y(v) + 4}" class="tick" text-anchor="end">${v}</text>`;
+  data.forEach((d, i) => {
+    const cx = L + bw * i + bw / 2, h = y(0) - y(d.n);
+    const r = Math.min(4, h / 2);
+    if (d.n > 0) svg += `<path class="bar" d="M${cx - barW / 2},${y(0)} v${-(h - r)} q0,${-r} ${r},${-r} h${barW - 2 * r} q${r},0 ${r},${r} v${h - r} z"/>`;
+    if (i % 2 === (data.length - 1) % 2) svg += `<text x="${cx}" y="${H - 8}" class="tick" text-anchor="middle">${d.day.slice(5).replace('-', '.')}</text>`;
+    svg += `<rect class="hit" x="${cx - bw / 2}" y="${T}" width="${bw}" height="${H - T - B}" data-i="${i}"/>`;
+  });
+  svg += '</svg><div class="tip hidden"></div>';
+  el.innerHTML = svg;
+  const tip = el.querySelector('.tip');
+  const show = (e) => {
+    const i = Number(e.target.dataset.i);
+    if (Number.isNaN(i)) return;
+    const d = data[i];
+    tip.innerHTML = `<b>${d.n}</b> active player${d.n === 1 ? '' : 's'}<br><span>${esc(new Date(d.day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}</span>`;
+    tip.classList.remove('hidden');
+    const box = el.getBoundingClientRect(), r = e.target.getBoundingClientRect();
+    tip.style.left = Math.min(box.width - 140, Math.max(0, r.left - box.left + r.width / 2 - 60)) + 'px';
+    el.querySelectorAll('.hit').forEach((h) => h.classList.toggle('on', h === e.target));
+  };
+  el.querySelectorAll('.hit').forEach((h) => { h.addEventListener('pointerenter', show); h.addEventListener('pointerdown', show); });
+  el.addEventListener('pointerleave', () => { tip.classList.add('hidden'); el.querySelectorAll('.hit').forEach((h) => h.classList.remove('on')); });
+}
+
 // ---------- users ----------
 let query = '';
 async function renderUsers() {
   root.innerHTML = `
     <div class="admin-wrap">
-      <div class="admin-top"><h1>Soulcraft Admin</h1><a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>
+      ${topBar('users')}
       <div class="admin-card">
         <div class="toolbar">
           <input class="input" type="search" placeholder="Search by name, email or phone" value="${esc(query)}" data-act="search">
@@ -75,7 +158,7 @@ async function renderUsers() {
       </div>
       <div class="admin-card"><table class="users"><thead><tr><th></th><th>Name</th><th>Email</th><th>Phone</th><th>Created</th><th>Last sign-in</th><th>Saves</th><th>Status</th><th></th></tr></thead><tbody><tr><td colspan="9" class="empty">Loading...</td></tr></tbody></table></div>
     </div>`;
-  root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
+  bindTopBar();
   root.querySelector('[data-act="add"]').addEventListener('click', () => userDialog(null));
   let t;
   root.querySelector('[data-act="search"]').addEventListener('input', (e) => { query = e.target.value; clearTimeout(t); t = setTimeout(loadUsers, 250); });

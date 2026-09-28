@@ -85,6 +85,10 @@ export async function updateProfile(fields) {
   return r.user;
 }
 
+// Forgotten password: the server emails a one-time link (?reset=token).
+export async function forgotPassword(email, lang) { await api('auth/forgot', { method: 'POST', body: { email, lang } }); }
+export async function resetPassword(token, password) { await api('auth/reset', { method: 'POST', body: { token, password } }); }
+
 export async function changePassword(current, next) { await api('me/password', { method: 'POST', body: { current, next } }); }
 
 // ---------- cloud saves ----------

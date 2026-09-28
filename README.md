@@ -171,6 +171,12 @@ The superadmin signs in with the `SUPERADMIN_LOGIN` / `SUPERADMIN_PASSWORD`
 GitHub secrets and can add, edit, disable and delete users, set their
 passwords, upload a photo, and see each user's saves.
 
+Players who forget their password tap **Forgot password?** on the sign-in
+screen and get a one-time link by email (valid for an hour; it signs out
+their other devices). The admin panel's **Statistics** tab shows players,
+active players per day (last 14 days, with a table view), worlds in the
+cloud, Treasure Quest progress and the top players.
+
 The API is a Cloudflare Pages Function (`functions/api/[[path]].js`, helpers
 in `server/lib.js`) backed by a D1 database (`migrations/`). Passwords are
 stored as PBKDF2-SHA256 hashes, sessions as SHA-256 token hashes, and
@@ -258,6 +264,7 @@ Set these under Settings > Secrets and variables > Actions:
 | `CLOUDFLARE_API_TOKEN` | A custom API token with **Account > Cloudflare Pages > Edit**, **Account > D1 > Edit**, **Zone > DNS > Edit** and **Zone > Zone > Read** (zone: 8nomads.com) |
 | `SUPERADMIN_LOGIN` | The admin panel username |
 | `SUPERADMIN_PASSWORD` | The admin panel password |
+| `RESEND_API_KEY` | Optional. A [Resend](https://resend.com) API key with full access, for password reset emails. The deploy registers `soulcraft.8nomads.com` as the sending domain and adds its DKIM/SPF records in Cloudflare. |
 
 If a permission is missing, the deploy scripts name it in the job log.
 

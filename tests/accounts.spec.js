@@ -163,3 +163,51 @@ test('the admin sees the player\'s saves and can reset the password', async ({ p
   await expect(page.locator('.admin-toast')).toHaveText('Password set');
   await gameSignIn(page, 'mia@example.com', 'reset-by-admin');
 });
+
+test('a player resets a forgotten password with the emailed link', async ({ page }) => {
+  await page.goto('/?nosw=1');
+  await page.click('[data-act="signin"]');
+  await page.fill('#si-login', 'mia@example.com');
+  await page.click('[data-act="forgot"]');
+  await expect(page.locator('#fp-email')).toHaveValue('mia@example.com');
+  // the local test server returns the link instead of emailing it
+  const link = await page.evaluate(async () => (await (await fetch('/api/auth/forgot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'mia@example.com' }) })).json()).testLink);
+  expect(link).toContain('/?reset=');
+  await page.click('[data-screen="forgot"] [data-act="submit"]');
+  await expect(page.locator('.form-ok')).toContainText('link is on its way');
+  // an unknown address gets the same answer
+  await page.fill('#fp-email', 'nobody@example.com');
+  await page.click('[data-screen="forgot"] [data-act="submit"]');
+  await expect(page.locator('.form-ok')).toContainText('link is on its way');
+  // only the newest link works; open it and choose a new password
+  const fresh = await page.evaluate(async () => (await (await fetch('/api/auth/forgot', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'mia@example.com' }) })).json()).testLink);
+  await page.goto(new URL(fresh).pathname + new URL(fresh).search);
+  await expect(page.locator('[data-screen="reset"]')).toBeVisible();
+  await page.fill('#rp-new', 'from-the-email');
+  await page.fill('#rp-rep', 'from-the-email');
+  await page.click('[data-screen="reset"] [data-act="submit"]');
+  await expect(page.locator('[data-screen="signin"]')).toBeVisible();
+  await page.fill('#si-login', 'mia@example.com');
+  await page.fill('#si-pass', 'from-the-email');
+  await page.click('[data-screen="signin"] [data-act="submit"]');
+  await expect(page.locator('[data-act="profile"]')).toContainText('Mia K');
+  // a used link does not work twice
+  const again = await page.evaluate(async (tok) => (await fetch('/api/auth/reset', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: tok, password: 'another-one' }) })).status, new URL(fresh).searchParams.get('reset'));
+  expect(again).toBe(400);
+});
+
+test('the admin sees statistics', async ({ page }) => {
+  await adminSignIn(page);
+  await page.click('[data-nav="stats"]');
+  await expect(page.locator('.stat-tile')).toHaveCount(6);
+  const tile = (label) => page.locator('.stat-tile').filter({ has: page.locator('.st-label', { hasText: new RegExp('^' + label + '$') }) }).locator('.st-value');
+  await expect(tile('Players')).toHaveText('1');
+  await expect(tile('Worlds in the cloud')).toHaveText('3');
+  await expect(page.locator('.chart .bar')).toHaveCount(1); // Mia was active today
+  await page.locator('.chart .hit').last().hover();
+  await expect(page.locator('.chart .tip')).toContainText('1 active player');
+  await page.click('[data-act="table"]');
+  await expect(page.locator('.chart-table tbody tr')).toHaveCount(14);
+  await expect(page.locator('.top-list li')).toHaveCount(1);
+});
+
