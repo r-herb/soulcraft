@@ -454,13 +454,14 @@ export const CH2_FIRST = 14, CH2_LAST = 21, CH2_VAULT = 22;
   level(20, {
     kind: 'den', enterX: o + 10,
     entryGate: [o + 6, F + 1, -2, o + 6, F + 4, 2],
-    spawns: [['frostSpirit', o + 36, -6], ['frostSpirit', o + 40, 6], ['frostSpirit', o + 44, 0], ['hollow', o + 38, 0], ['skitter', o + 32, 5], ['skitter', o + 32, -5]],
+    spawns: [['frostSpirit', o + 36, -6], ['frostSpirit', o + 40, 6], ['frostSpirit', o + 44, 0], ['hollow', o + 38, 0], ['skitter', o + 34, 3], ['skitter', o + 34, -3]],
   });
   entry(20);
   box(o + 6, F - 2, -10, o + 49, F, 10, B.frost_brick);
   box(o + 6, F, -10, o + 49, F, 10, B.snow);
   walls(o, -10, 10, 5);
-  for (const [px, pz] of [[o + 18, -5], [o + 18, 5], [o + 30, -5], [o + 30, 5]]) box(px, F + 1, pz, px + 1, F + 3, pz + 1, B.ice);
+  // ice columns flush with the walls: no corners for monsters to get stuck in
+  for (const [px, pz] of [[o + 18, -9], [o + 18, 8], [o + 30, -9], [o + 30, 8]]) box(px, F + 1, pz, px + 1, F + 3, pz + 1, B.ice);
   for (let x = o + 10; x < o + 49; x += 8) { box(x, F + 5, -10, x, F + 5, -10, B.glow_crystal); box(x, F + 5, 10, x, F + 5, 10, B.glow_crystal); }
   exitTunnel(20);
 }

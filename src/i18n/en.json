@@ -198,7 +198,7 @@
   "tut.break": "Aim at a block and hold the pickaxe button to break it.",
   "tut.breakDesktop": "Hold the left mouse button to break a block.",
   "tut.place": "Pick a block in the hotbar, then tap the block button to place it.",
-  "tut.placeDesktop": "Right-click to place the selected block.",
+  "tut.placeDesktop": "Right-click (or F, or Ctrl+click on a Mac) to place the selected block.",
   "tut.craft": "Open the inventory and use the recipe book to craft planks.",
   "tut.night": "Night brings enemies. Build a shelter or craft a sword!",
   "tut.village": "Villagers trade goods. Tap a villager to trade.",
@@ -589,5 +589,7 @@
   "mp.err.badCode": "The code has 6 letters and digits.",
   "mp.err.overworld": "Go back to the overworld first.",
   "mp.err.boss": "Finish the guardian fight first.",
-  "mp.err.network": "Could not connect. Check the internet and try again."
+  "mp.err.network": "Could not connect. Check the internet and try again.",
+  "toast.pickBlock": "Choose a block in the hotbar to place it",
+  "toast.pickBlockDesktop": "Choose a block first (keys 1-9 or the mouse wheel), then right-click to place it"
 }

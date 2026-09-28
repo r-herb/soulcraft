@@ -655,6 +655,12 @@ export class Game {
       const cell = this.quest.bridgeCell(this.player.eye, dir, hit);
       if (cell) hit = { x: cell.x, y: cell.y - 1, z: cell.z, nx: 0, ny: 1, nz: 0, id: 0, assist: true };
     }
+    // "use" on a block with nothing placeable in hand: say how to place
+    if (fresh && hit && !(def && def.block !== undefined) && !(def && (def.food || def.heart || def.special || def.weapon === 'bow' || def.throwable))) {
+      const now = performance.now();
+      if (now - (this._placeHintAt || 0) > 8000) { this._placeHintAt = now; this.ui.toast(t(this.input.touchMode ? 'toast.pickBlock' : 'toast.pickBlockDesktop')); }
+      return;
+    }
     if (def && def.block !== undefined && hit) {
       const x = hit.x + hit.nx, y = hit.y + hit.ny, z = hit.z + hit.nz;
       const cur = this.world.getBlock(x, y, z);

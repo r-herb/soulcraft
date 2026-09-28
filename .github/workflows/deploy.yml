@@ -169,6 +169,8 @@ jobs:
       WRANGLER_SEND_METRICS: "false"
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
@@ -232,10 +234,19 @@ jobs:
       # room), bound to the Pages project as ROOMS. It needs the API token
       # permission "Account > Workers Scripts > Edit"; without it the game
       # simply runs without "Play with friends".
+      # A redeploy restarts the Durable Objects and closes every open room,
+      # so the Worker is only deployed again when mp/ changed.
       - name: Multiplayer rooms Worker (Durable Objects)
+        env:
+          BEFORE: ${{ github.event.before }}
         run: |
-          if (cd mp && npx wrangler deploy); then
-            printf '\n[[durable_objects.bindings]]\nname = "ROOMS"\nclass_name = "Room"\nscript_name = "soulcraft-mp"\n' >> wrangler.toml
+          bind() { printf '\n[[durable_objects.bindings]]\nname = "ROOMS"\nclass_name = "Room"\nscript_name = "soulcraft-mp"\n' >> wrangler.toml; }
+          if [ -n "$BEFORE" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null && git diff --quiet "$BEFORE" HEAD -- mp/ \
+             && (cd mp && npx wrangler deployments list >/dev/null 2>&1); then
+            bind
+            echo "Rooms Worker unchanged: not redeployed (open rooms stay open), bound to Pages as ROOMS"
+          elif (cd mp && npx wrangler deploy); then
+            bind
             echo "Rooms Worker deployed and bound to Pages as ROOMS"
           else
             echo "::warning::Could not deploy the multiplayer Worker. Add the API token permission Account > Workers Scripts > Edit at https://dash.cloudflare.com/profile/api-tokens - Play with friends stays off until then."

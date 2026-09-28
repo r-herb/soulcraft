@@ -1,6 +1,8 @@
 // Unified input: touch (virtual joystick, look-drag, buttons) and desktop
 // (WASD, pointer-lock mouse look, mouse buttons, number keys).
 
+const IS_MAC = /Mac/.test(navigator.platform || navigator.userAgent || '');
+
 export class Input {
   constructor(root, canvas) {
     this.root = root;
@@ -18,7 +20,10 @@ export class Input {
     this.sensitivity = 1;
     this.touchLookScale = 0.0055;
     this.mouseLookScale = 0.0024;
-    this.touchMode = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+    // phones and tablets; a laptop with a touch screen still has a mouse or
+    // touchpad as its main pointer, so it plays with the desktop controls
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    this.touchMode = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && !fine);
     this.pointerLocked = false;
     this.joy = null; // active joystick pointer
     this.lookPointers = new Map();
@@ -51,11 +56,13 @@ export class Input {
     this.canvas.addEventListener('mousedown', (e) => {
       if (!this.enabled || this.touchMode) return;
       if (!this.pointerLocked) { this.requestLock(); return; }
-      if (e.button === 0) { this.attack = true; this.pressed.add('attack'); }
-      if (e.button === 2) { this.use = true; this.pressed.add('use'); }
+      // Ctrl+click is the right click on a Mac without a second button
+      const right = e.button === 2 || (e.button === 0 && e.ctrlKey && IS_MAC);
+      if (right) { this.use = true; this.pressed.add('use'); this._ctrlUse = e.button === 0; }
+      else if (e.button === 0) { this.attack = true; this.pressed.add('attack'); }
     });
     window.addEventListener('mouseup', (e) => {
-      if (e.button === 0) this.attack = false;
+      if (e.button === 0) { this.attack = false; if (this._ctrlUse) { this.use = false; this._ctrlUse = false; } }
       if (e.button === 2) this.use = false;
     });
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -190,7 +197,7 @@ export class Input {
       down: k.has('ShiftLeft') || k.has('KeyC') || !!this.downTouch,
       sprint: keyboard ? (k.has('ShiftLeft') || k.has('ControlLeft')) : this.sprint,
       attack: this.attack || !!this.attackTouch,
-      use: this.use || !!this.useTouch,
+      use: this.use || !!this.useTouch || this.keys.has('KeyF'),
       pressed: this.pressed,
     };
     this.lookDX = 0; this.lookDY = 0;
