@@ -137,6 +137,24 @@ world in the cloud. **New World** asks for a mode:
   on touch) to fly; jump rises, Shift/C (or the down button) descends.
   Creative worlds give no soul crystals, so the shop stays fair.
 
+## Biomes, companions, daily tasks and events
+
+- **Biomes**: away from spawn the land turns into **deserts** (dunes,
+  sandstone, cacti that prickle, dry bushes) or **snowfields** (snow cover,
+  frozen lakes, snowy pines). Big caverns have ore-rich walls and lava
+  pools, and **glow crystals** grow on cave floors.
+- **Companions** (Soul Shop > Companions): the **Ember Fox** (60 crystals)
+  bites, the **Frost Owl** (120) flies and shoots ice shards, the **Moss
+  Golem** (200) punches monsters away. One comes along at a time; it fights
+  monsters near you and the guardians, and rests 30 s when knocked out.
+- **Daily tasks** (pause menu): three tasks a day with crystal rewards and
+  a bonus for all three, in survival worlds.
+- **Seasonal events**: Bloom Days (April 1-20, double task rewards),
+  Harvest Glow (October 15 - November 5, monsters drop crystals three
+  times as often) and Frostfall (December 10 - January 6, a daily villager
+  gift), each with its own particles. `?event=bloom|harvest|frost` forces
+  one for testing.
+
 ## Accounts and the admin panel
 
 Playing needs no account: guests keep their worlds in the browser. Players
