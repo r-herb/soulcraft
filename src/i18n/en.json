@@ -602,5 +602,9 @@
   "fb.send": "Send",
   "fb.sent": "Thanks! The admin will read it.",
   "fb.empty": "Write a few words first.",
-  "fb.err": "Could not send. Try again later."
+  "fb.err": "Could not send. Try again later.",
+  "settings.controls": "Controls",
+  "settings.controls.auto": "Auto",
+  "settings.controls.touch": "Touch",
+  "settings.controls.desktop": "Mouse"
 }

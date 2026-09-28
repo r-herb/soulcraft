@@ -23,18 +23,55 @@ export class Input {
     // phones and tablets; a laptop with a touch screen still has a mouse or
     // touchpad as its main pointer, so it plays with the desktop controls
     const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-    this.touchMode = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && !fine);
+    this.autoTouch = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && !fine);
+    this.touchMode = this.autoTouch;
+    this.controls = 'auto'; // the player's choice in Settings
+    this.onModeChange = null;
     this.pointerLocked = false;
     this.joy = null; // active joystick pointer
     this.lookPointers = new Map();
     this._bind();
   }
 
+  // Settings: auto (follow the device, then whatever the player actually
+  // uses), touch, or desktop (mouse and keyboard).
+  setControls(pref) {
+    this.controls = pref || 'auto';
+    this.setTouchMode(this.controls === 'touch' ? true : this.controls === 'desktop' ? false : this.touchMode);
+  }
+
+  setTouchMode(v) {
+    v = !!v;
+    if (v === this.touchMode) return;
+    this.touchMode = v;
+    this.joy = null; this.lookPointers.clear();
+    this.move.x = 0; this.move.z = 0;
+    this.attackTouch = false; this.useTouch = false; this.jumpTouch = false;
+    if (v) this.exitLock();
+    if (this.onModeChange) this.onModeChange(v);
+  }
+
   _bind() {
+    // On "auto", a mouse click in the game switches a touch-mode device (a
+    // laptop with a touch screen) to mouse and keyboard, and a finger
+    // switches back: the controls follow what the player really uses.
+    // only on devices that have a mouse or touchpad at all (not phones)
+    const hasMouse = () => matchMedia('(any-pointer: fine)').matches;
+    window.addEventListener('pointerdown', (e) => {
+      if (this.controls !== 'auto') return;
+      if (e.pointerType === 'mouse' && this.touchMode && hasMouse()) {
+        const inGame = e.target === this.canvas || (e.target.closest && e.target.closest('.look-zone, .joy-zone'));
+        this.setTouchMode(false);
+        if (inGame && this.enabled) { e.preventDefault(); e.stopPropagation(); this.requestLock(); }
+      } else if (e.pointerType === 'touch' && !this.touchMode) this.setTouchMode(true);
+    }, true);
+
     const kd = (e) => {
       if (!this.enabled) return;
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
       const k = e.code;
+      // walking with the keyboard means a keyboard (and mouse) player
+      if (this.touchMode && this.controls === 'auto' && hasMouse() && /^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(k)) this.setTouchMode(false);
       if (!this.keys.has(k)) {
         if (k === 'KeyE') this.pressed.add('inventory');
         if (k === 'Escape') this.pressed.add('pause');

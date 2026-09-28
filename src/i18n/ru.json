@@ -602,5 +602,9 @@
   "fb.send": "Отправить",
   "fb.sent": "Спасибо! Администратор прочитает.",
   "fb.empty": "Сначала напишите пару слов.",
-  "fb.err": "Не удалось отправить. Попробуйте позже."
+  "fb.err": "Не удалось отправить. Попробуйте позже.",
+  "settings.controls": "Управление",
+  "settings.controls.auto": "Авто",
+  "settings.controls.touch": "Сенсор",
+  "settings.controls.desktop": "Мышь"
 }

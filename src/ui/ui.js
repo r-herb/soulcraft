@@ -26,6 +26,11 @@ export class UI {
     this.hud = new Hud(this, input);
     onLangChange(() => this.rerender());
     document.body.classList.toggle('touch', input.touchMode);
+    input.onModeChange = (touch) => {
+      document.body.classList.toggle('touch', touch);
+      if (this.game) this.game.mobile = touch;
+      if (this.hud) this.hud.applyControlSettings();
+    };
   }
 
   get game() { return this.app.game; }
@@ -531,6 +536,8 @@ export class UI {
           <div class="setting"><span class="setting-label" data-i18n="settings.funMusic"></span>${toggle('funMusic')}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.volume"></span>${range('volume', 0, 1, 0.05, pct)}</div>
           <div class="setting-section" data-i18n="settings.section.controls"></div>
+          <div class="setting"><span class="setting-label" data-i18n="settings.controls"></span>
+            <div class="seg" data-seg="controls">${['auto', 'touch', 'desktop'].map((v) => `<button data-v="${v}" class="${(s.controls || 'auto') === v ? 'on' : ''}" data-i18n="settings.controls.${v}"></button>`).join('')}</div></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.controlSize"></span>${range('controlSize', 0.7, 1.5, 0.05, pct)}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.controlOpacity"></span>${range('controlOpacity', 0.2, 1, 0.05, pct)}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.sensitivity"></span>${range('sensitivity', 0.3, 2.5, 0.05, pct)}</div>
@@ -543,6 +550,10 @@ export class UI {
     node.querySelectorAll('[data-seg="quality"] button').forEach((b) => b.addEventListener('click', () => {
       this.click(); setSetting('quality', b.dataset.v);
       node.querySelectorAll('[data-seg="quality"] button').forEach((x) => x.classList.toggle('on', x === b));
+    }));
+    node.querySelectorAll('[data-seg="controls"] button').forEach((b) => b.addEventListener('click', () => {
+      this.click(); setSetting('controls', b.dataset.v);
+      node.querySelectorAll('[data-seg="controls"] button').forEach((x) => x.classList.toggle('on', x === b));
     }));
     node.querySelectorAll('[data-seg="textures"] button').forEach((b) => b.addEventListener('click', () => {
       this.click(); setSetting('textures', b.dataset.v);

@@ -18,6 +18,7 @@ export const DEFAULTS = {
   fps: false,
   sensitivity: 1,
   autoJump: true,
+  controls: 'auto', // auto | touch | desktop (mouse and keyboard)
   tutorialDone: {},
 };
 
