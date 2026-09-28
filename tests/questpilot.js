@@ -75,7 +75,8 @@ export function installPilot() {
   pilot.course = async (pts, tries = 8) => {
     for (let i = 1; ; i++) {
       try { await pilot.path(pts, { retryOnFall: true }); return; } catch (e) {
-        if (e.message !== 'fell' || i >= tries) throw e;
+        if (e.message !== 'fell') throw e;
+        if (i >= tries) { const q = g.quality || {}; throw new Error(`fell ${i} times (fps ${g.fps}, quality ${q.mode} ${q.scale}, drops ${q.drops || 0})`); }
         pilot.log.push('fell, retrying the course');
         await new Promise((r) => setTimeout(r, 600));
       }

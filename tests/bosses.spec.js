@@ -43,7 +43,9 @@ test.describe('Boss progression', () => {
       }, id);
       await page.waitForFunction((bossId) => window.__sc.game.bosses.active && window.__sc.game.bosses.active.id === bossId, id, { timeout: 30_000 });
       await expect(page.locator('.boss-bar')).toBeVisible();
-      await expect(page.locator('.title-card')).toBeVisible();
+      // the title card only shows for a few seconds; on a slow machine it can
+      // be gone before this line runs, so check that it was shown for this boss
+      await page.waitForFunction((bossId) => window.__sc.ui.hud.lastCard === window.__sc.game.bossName(bossId), id, { timeout: 20_000 });
       const t0 = Date.now();
       // poll, logging progress so a slow fight is visible in the CI log
       for (let i = 0; ; i++) {

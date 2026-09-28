@@ -60,6 +60,7 @@ export class Player {
     this.walkPhase = 0;
     this.moving = false;
     this.fly = false;
+    this.coyote = 0;
     this.knock = new THREE.Vector3();
     this._out = {};
   }
@@ -113,7 +114,8 @@ export class Player {
     } else {
       this.vel.y -= 28 * dt;
       this.vel.y = Math.max(this.vel.y, -50);
-      if (inp.jump && this.onGround) { this.vel.y = 8.6; this.onGround = false; game && game.audio && game.audio.sfx('jump'); }
+      // coyote time: a jump still counts just after running off an edge
+      if (inp.jump && (this.onGround || this.coyote > 0)) { this.vel.y = 8.6; this.onGround = false; this.coyote = 0; game && game.audio && game.audio.sfx('jump'); }
     }
 
     const prevY = this.pos.y;
@@ -139,6 +141,8 @@ export class Player {
     }
     if (this.inWater) this.fallStart = null;
     this.onGround = o.onGround;
+    if (o.onGround) this.coyote = 0.12;
+    else if (this.coyote > 0) this.coyote -= dt;
     if (o.onGround && this.airLock > 0 && this.vel.y <= 0) this.airLock = 0;
     this.moving = Math.hypot(this.vel.x, this.vel.z) > 0.5 && this.onGround;
     if (this.moving) this.walkPhase += dt * Math.hypot(this.vel.x, this.vel.z) * 1.6;

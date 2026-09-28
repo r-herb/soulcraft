@@ -1,7 +1,7 @@
 // Boot: settings, language, WebGL check, UI, game, service worker.
 import './ui/tokens.css';
 import './ui/styles.css';
-import { loadSettings, settings, onSetting } from './save/settings.js';
+import { loadSettings, settings, onSetting, setSetting } from './save/settings.js';
 import { initLang, setLang, t } from './i18n/index.js';
 import { UI } from './ui/ui.js';
 import { Input } from './player/input.js';
@@ -163,7 +163,7 @@ async function boot() {
   if (new URLSearchParams(location.search).get('dev') === '1') initDevPanel(app, ui);
 
   // test / debug handle
-  window.__sc = { app, ui, input, audio, questLevels: QUEST_LEVELS, get game() { return app.game; } };
+  window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, get game() { return app.game; } };
 
   registerSW();
 }

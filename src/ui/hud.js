@@ -217,6 +217,7 @@ export class Hud {
   }
 
   titleCard(name, sub) {
+    this.lastCard = name;
     this.cardSlot.innerHTML = `<div class="title-card"><div class="tc-name"></div><div class="tc-sub"></div></div>`;
     this.cardSlot.querySelector('.tc-name').textContent = name;
     this.cardSlot.querySelector('.tc-sub').textContent = sub || '';

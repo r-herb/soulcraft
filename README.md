@@ -43,7 +43,9 @@ game adapts its resolution:
   the view distance until frames recover. **Fast** fixes a low resolution
   and a short view distance; **Sharp** always renders at full density.
 - Player physics runs in fixed steps of at most 1/60 s, so jumps carry the
-  same distance at 20 fps as at 60 fps.
+  same distance at 20 fps as at 60 fps, and a jump pressed a moment after
+  running off an edge still counts ("coyote time", 0.12 s), which keeps
+  parkour fair when frames are slow.
 - Chunks are generated and meshed in a Web Worker (greedy meshing), with a
   per-frame budget for new meshes.
 - The FPS counter (Settings) also shows the current resolution scale.

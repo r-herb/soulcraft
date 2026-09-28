@@ -14,6 +14,9 @@ test.describe('Treasure Quest', () => {
     const problems = watchConsole(page);
     await page.setViewportSize({ width: 800, height: 450 });
     await openTitle(page, '&dev=1');
+    // a fixed quality: the auto mode's resolution changes cost frame hitches,
+    // and the parkour levels time their jumps against the frame rate
+    await page.evaluate(() => window.__sc.setSetting('quality', 'low'));
     await page.click('[data-act="quest"]');
     await expect(page.locator('[data-screen="questIntro"]')).toBeVisible();
     await page.click('[data-screen="questIntro"] [data-act="start"]');
@@ -31,7 +34,10 @@ test.describe('Treasure Quest', () => {
     const step = async (i, fn) => {
       const t0 = Date.now();
       await page.evaluate(fn);
-      await page.waitForFunction((n) => window.__sc.game.meta.quest.solved.includes(n), i, { timeout: 120_000 });
+      await page.waitForFunction((n) => window.__sc.game.meta.quest.solved.includes(n), i, { timeout: 120_000 }).catch(async (e) => {
+        const st = await page.evaluate(() => { const g = window.__sc.game, p = g.player.pos, q = g.meta.quest; return `at ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)} onGround=${g.player.onGround} level=${g.quest.current()} checkpoint=${q.checkpoint} falls=${q.falls} fps=${g.fps}`; });
+        throw new Error(`level ${i} not solved: ${st}\n${e.message}`);
+      });
       console.log(`level ${i} solved in ${Math.round((Date.now() - t0) / 1000)}s`);
     };
     const toNext = (i) => page.evaluate(async (n) => {

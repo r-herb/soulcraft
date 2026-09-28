@@ -144,7 +144,7 @@ export class Game {
     const { max, min } = this.qualityLimits();
     if (fps < 40) {
       q.calm = 0;
-      if (q.scale > min + 0.01) { q.scale = Math.max(min, q.scale * 0.85); this.renderer.setPixelRatio(q.scale); this.resize(); }
+      if (q.scale > min + 0.01) { q.scale = Math.max(min, q.scale * 0.85); q.drops = (q.drops || 0) + 1; this.renderer.setPixelRatio(q.scale); this.resize(); }
       else if (fps < 28) {
         q.slow = (q.slow || 0) + 1;
         if (q.slow >= 2 && this.viewDistance() > 2) { q.rdCap = this.viewDistance() - 1; q.slow = 0; }
@@ -152,7 +152,9 @@ export class Game {
     } else if (fps > 55) {
       q.slow = 0;
       q.calm = (q.calm || 0) + span;
-      if (q.calm >= 6000) {
+      // raise slowly, and stop trying after a few drops: every change costs
+      // a hitch, so a device near the limit should settle, not flip-flop
+      if (q.calm >= 8000 && (q.drops || 0) < 3) {
         q.calm = 0;
         if (q.rdCap && q.rdCap < settings().renderDistance) q.rdCap++;
         else if (q.rdCap) q.rdCap = 0;
