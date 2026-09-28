@@ -403,7 +403,7 @@ export class UI {
         <div class="panel-head"><h2 class="panel-title" data-i18n="acct.signIn"></h2>
           <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
         <form class="panel-body col" style="gap:var(--sp-3)" novalidate>
-          <div class="field"><label for="si-login" data-i18n="acct.login"></label><input id="si-login" class="input" autocomplete="username" inputmode="email" maxlength="120"></div>
+          <div class="field"><label for="si-login" data-i18n="acct.login"></label><input id="si-login" class="input" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120"></div>
           <div class="field"><label for="si-pass" data-i18n="acct.password"></label><input id="si-pass" class="input" type="password" autocomplete="current-password" maxlength="200"></div>
           <label class="check"><input type="checkbox" id="si-remember" checked> <span data-i18n="acct.remember"></span></label>
           <p class="form-error" role="alert"></p>

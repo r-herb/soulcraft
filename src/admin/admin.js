@@ -152,7 +152,7 @@ async function renderUsers() {
       ${topBar('users')}
       <div class="admin-card">
         <div class="toolbar">
-          <input class="input" type="search" placeholder="Search by name, email or phone" value="${esc(query)}" data-act="search">
+          <input class="input" type="search" placeholder="Search by name, username, email or phone" value="${esc(query)}" data-act="search">
           <button class="btn primary" data-act="add">+ Add user</button>
         </div>
       </div>
@@ -174,7 +174,7 @@ async function loadUsers() {
   tb.innerHTML = users.map((u) => `
     <tr class="${u.disabled ? 'off' : ''}" data-id="${u.id}">
       <td>${u.avatar ? `<img class="av" alt="" src="${esc(u.avatar)}">` : '<span class="av"></span>'}</td>
-      <td><b>${esc(u.name)}</b></td><td>${esc(u.email || '-')}</td><td>${esc(u.phone || '-')}</td>
+      <td><b>${esc(u.name)}</b>${u.username ? `<div class="faint">@${esc(u.username)}</div>` : ''}</td><td>${esc(u.email || '-')}</td><td>${esc(u.phone || '-')}</td>
       <td>${esc(fmt(u.createdAt))}</td><td>${esc(fmt(u.lastLogin))}</td><td>${u.saves}</td>
       <td><span class="badge ${u.disabled ? 'off' : ''}">${u.disabled ? 'Disabled' : 'Active'}</span></td>
       <td><div class="acts">
@@ -216,10 +216,11 @@ function userDialog(u) {
     <form novalidate>
       <div class="row"><img class="av" alt="" style="width:56px;height:56px" ${avatar ? `src="${esc(avatar)}"` : ''}><label class="btn small">Photo<input type="file" accept="image/*" class="hidden" data-a="photo"></label><button type="button" class="btn small ghost" data-a="nophoto">Remove</button></div>
       <div class="field"><label>Name</label><input class="input" name="name" maxlength="40" value="${esc(u ? u.name : '')}" required></div>
+      <div class="field"><label>Username (optional, to sign in with, e.g. teo)</label><input class="input" name="username" maxlength="24" autocomplete="off" autocapitalize="none" spellcheck="false" value="${esc(u ? u.username || '' : '')}"></div>
       <div class="field"><label>Email</label><input class="input" name="email" type="email" maxlength="120" value="${esc(u ? u.email || '' : '')}"></div>
       <div class="field"><label>Phone</label><input class="input" name="phone" type="tel" maxlength="24" value="${esc(u ? u.phone || '' : '')}" placeholder="+371 20000000"></div>
       ${isNew ? '<div class="field"><label>Password (the player can change it later)</label><input class="input" name="password" type="text" autocomplete="off" minlength="6"></div>' : ''}
-      <p class="faint" style="margin:0">The player signs in with the email or the phone number, and the password.</p>
+      <p class="faint" style="margin:0">The player signs in with the username, the email or the phone number, and the password.</p>
       <p class="form-error" role="alert"></p>
       <div class="dlg-actions"><button type="button" class="btn ghost" data-a="cancel">Cancel</button><button class="btn primary" type="submit">${isNew ? 'Create user' : 'Save'}</button></div>
     </form>`);
@@ -233,7 +234,7 @@ function userDialog(u) {
   d.querySelector('form').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const f = ev.target;
-    const body = { name: f.name.value, email: f.email.value, phone: f.phone.value, avatar };
+    const body = { name: f.name.value, username: f.username.value, email: f.email.value, phone: f.phone.value, avatar };
     if (isNew) body.password = f.password.value;
     try {
       if (isNew) await api('admin/users', { method: 'POST', body });

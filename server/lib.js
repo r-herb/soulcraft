@@ -62,6 +62,12 @@ export function checkPassword(v) {
   const s = String(v || '');
   return s.length >= 6 && s.length <= 200 ? s : undefined;
 }
+// a short sign-in name: letters (any language), digits, _ . -; stored in lower case
+export function normUsername(v) {
+  const s = String(v || '').trim().toLowerCase();
+  if (!s) return null;
+  return /^[\p{L}\p{N}_.-]{2,24}$/u.test(s) && /\p{L}/u.test(s) ? s : undefined;
+}
 export function checkAvatar(v) {
   if (v === null || v === '') return null;
   const s = String(v);
@@ -70,7 +76,7 @@ export function checkAvatar(v) {
 
 export function publicUser(u) {
   if (!u) return null;
-  return { id: u.id, name: u.name, email: u.email, phone: u.phone, avatar: u.avatar || null, disabled: !!u.disabled, createdAt: u.created_at, lastLogin: u.last_login || null };
+  return { id: u.id, name: u.name, username: u.username || null, email: u.email, phone: u.phone, avatar: u.avatar || null, disabled: !!u.disabled, createdAt: u.created_at, lastLogin: u.last_login || null };
 }
 
 // ---------- sessions ----------

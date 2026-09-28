@@ -22,7 +22,7 @@
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import {
-  json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, checkPassword, checkAvatar,
+  json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
 } from '../../server/lib.js';
 import { resetEmail, sendEmail } from '../../server/mail.js';
@@ -92,10 +92,13 @@ async function route(parts, method, request, env, secure) {
       const token = await createSession(db, 0, 'superadmin', !!remember);
       return json({ role: 'superadmin', user: { id: 0, name: 'Superadmin' } }, 200, { 'set-cookie': sessionCookie(token, !!remember, secure) });
     }
-    const email = normEmail(ident), phone = normPhone(ident);
+    const email = normEmail(ident), phone = normPhone(ident), username = normUsername(ident);
     let user = null;
     if (email) user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
-    else if (phone) user = await db.prepare('SELECT * FROM users WHERE phone = ?').bind(phone).first();
+    else {
+      if (phone) user = await db.prepare('SELECT * FROM users WHERE phone = ?').bind(phone).first();
+      if (!user && username) user = await db.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+    }
     if (!user || !(await verifyPassword(String(password), user))) { await noteFailure(db, rlKey); return err(401, 'bad_credentials'); }
     if (user.disabled) return err(403, 'disabled');
     await clearFailures(db, rlKey);
@@ -252,8 +255,8 @@ async function route(parts, method, request, env, secure) {
       const q = (new URL(request.url).searchParams.get('q') || '').trim().toLowerCase();
       const like = '%' + q.replace(/[%_]/g, '') + '%';
       const { results } = await db.prepare(`SELECT u.*, (SELECT COUNT(*) FROM saves s WHERE s.user_id = u.id) AS saves
-        FROM users u WHERE ? = '' OR lower(u.name) LIKE ? OR lower(ifnull(u.email, '')) LIKE ? OR ifnull(u.phone, '') LIKE ? ORDER BY u.created_at DESC LIMIT 500`)
-        .bind(q, like, like, like).all();
+        FROM users u WHERE ? = '' OR lower(u.name) LIKE ? OR lower(ifnull(u.email, '')) LIKE ? OR ifnull(u.phone, '') LIKE ? OR ifnull(u.username, '') LIKE ? ORDER BY u.created_at DESC LIMIT 500`)
+        .bind(q, like, like, like, like).all();
       return json({ users: results.map((u) => ({ ...publicUser(u), saves: u.saves })) });
     }
     if (b === 'users' && !c && method === 'POST') {
@@ -262,16 +265,18 @@ async function route(parts, method, request, env, secure) {
       if (!pw) return err(400, 'weak_password', 'Password must be at least 6 characters.');
       const name = normName(inp.name);
       if (!name) return err(400, 'bad_name', 'Name is required (up to 40 characters).');
-      const email = normEmail(inp.email), phone = normPhone(inp.phone);
+      const email = normEmail(inp.email), phone = normPhone(inp.phone), username = normUsername(inp.username);
       if (email === undefined) return err(400, 'bad_email', 'That email address does not look right.');
       if (phone === undefined) return err(400, 'bad_phone', 'Phone must be 6-16 digits, optionally starting with +.');
-      if (!email && !phone) return err(400, 'need_login', 'Give the user an email or a phone number to sign in with.');
-      const dup = await findDuplicate(db, email, phone, 0);
+      if (username === undefined) return err(400, 'bad_username', USERNAME_RULE);
+      if (!email && !phone && !username) return err(400, 'need_login', 'Give the user a username, an email or a phone number to sign in with.');
+      if (username && reservedName(env, username)) return err(409, 'username_taken', 'That username is already taken.');
+      const dup = await findDuplicate(db, email, phone, 0, username);
       if (dup) return dup;
       const now = Date.now();
       const h = await hashPassword(pw);
-      const r = await db.prepare('INSERT INTO users (name, email, phone, pass_hash, pass_salt, pass_iter, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(name, email, phone, h.hash, h.salt, h.iter, now, now).run();
+      const r = await db.prepare('INSERT INTO users (name, email, phone, username, pass_hash, pass_salt, pass_iter, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(name, email, phone, username, h.hash, h.salt, h.iter, now, now).run();
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(r.meta.last_row_id).first();
       return json({ user: publicUser(u) }, 201);
     }
@@ -280,7 +285,7 @@ async function route(parts, method, request, env, secure) {
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
       if (!u) return err(404, 'no_user');
       if (!d && method === 'PATCH') {
-        const r = await applyProfile(db, u, await body(request), true);
+        const r = await applyProfile(db, u, await body(request), true, env);
         return r instanceof Response ? r : json({ user: publicUser(r) });
       }
       if (!d && method === 'DELETE') {
@@ -307,7 +312,12 @@ async function route(parts, method, request, env, secure) {
   return err(404, 'not_found');
 }
 
-async function findDuplicate(db, email, phone, selfId) {
+const USERNAME_RULE = 'A username is 2-24 letters or digits (also _ . -) with at least one letter.';
+// the superadmin's login cannot be a player's username
+const reservedName = (env, username) => !!env.SUPERADMIN_LOGIN && String(env.SUPERADMIN_LOGIN).toLowerCase() === username;
+
+async function findDuplicate(db, email, phone, selfId, username = null) {
+  if (username) { const x = await db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').bind(username, selfId).first(); if (x) return err(409, 'username_taken', 'That username is already taken.'); }
   if (email) { const x = await db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').bind(email, selfId).first(); if (x) return err(409, 'email_taken', 'That email is already used by another user.'); }
   if (phone) { const x = await db.prepare('SELECT id FROM users WHERE phone = ? AND id != ?').bind(phone, selfId).first(); if (x) return err(409, 'phone_taken', 'That phone number is already used by another user.'); }
   return null;
@@ -319,18 +329,25 @@ async function setPassword(db, id, pw) {
 }
 
 // Shared by the user's own profile edit and the admin's edit.
-async function applyProfile(db, u, inp, admin) {
-  const next = { name: u.name, email: u.email, phone: u.phone, avatar: u.avatar, disabled: u.disabled };
+async function applyProfile(db, u, inp, admin, env = {}) {
+  const next = { name: u.name, email: u.email, phone: u.phone, username: u.username || null, avatar: u.avatar, disabled: u.disabled };
   if ('name' in inp) { const v = normName(inp.name); if (!v) return err(400, 'bad_name', 'Name is required (up to 40 characters).'); next.name = v; }
   if ('email' in inp) { const v = normEmail(inp.email); if (v === undefined) return err(400, 'bad_email', 'That email address does not look right.'); next.email = v; }
   if ('phone' in inp) { const v = normPhone(inp.phone); if (v === undefined) return err(400, 'bad_phone', 'Phone must be 6-16 digits, optionally starting with +.'); next.phone = v; }
   if ('avatar' in inp) { const v = checkAvatar(inp.avatar); if (v === undefined) return err(400, 'bad_avatar', 'The picture must be a PNG, JPEG or WebP under 150 KB.'); next.avatar = v; }
   if (admin && 'disabled' in inp) next.disabled = inp.disabled ? 1 : 0;
-  if (!next.email && !next.phone) return err(400, 'need_login', 'Keep an email or a phone number to sign in with.');
-  const dup = await findDuplicate(db, next.email, next.phone, u.id);
+  // only the admin gives out usernames
+  if (admin && 'username' in inp) {
+    const v = normUsername(inp.username);
+    if (v === undefined) return err(400, 'bad_username', USERNAME_RULE);
+    if (v && reservedName(env, v)) return err(409, 'username_taken', 'That username is already taken.');
+    next.username = v;
+  }
+  if (!next.email && !next.phone && !next.username) return err(400, 'need_login', 'Keep a username, an email or a phone number to sign in with.');
+  const dup = await findDuplicate(db, next.email, next.phone, u.id, next.username !== (u.username || null) ? next.username : null);
   if (dup) return dup;
-  await db.prepare('UPDATE users SET name = ?, email = ?, phone = ?, avatar = ?, disabled = ?, updated_at = ? WHERE id = ?')
-    .bind(next.name, next.email, next.phone, next.avatar, next.disabled, Date.now(), u.id).run();
+  await db.prepare('UPDATE users SET name = ?, email = ?, phone = ?, username = ?, avatar = ?, disabled = ?, updated_at = ? WHERE id = ?')
+    .bind(next.name, next.email, next.phone, next.username, next.avatar, next.disabled, Date.now(), u.id).run();
   if (admin && next.disabled) await db.prepare('DELETE FROM sessions WHERE user_id = ? AND role = ?').bind(u.id, 'user').run();
   return db.prepare('SELECT * FROM users WHERE id = ?').bind(u.id).first();
 }

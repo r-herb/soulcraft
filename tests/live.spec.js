@@ -19,7 +19,9 @@ test('live site serves the game', async ({ page }) => {
 test('live accounts API and admin panel are up', async ({ page, request }) => {
   const me = await request.get('/api/me');
   expect(me.status()).toBe(200); // API + database reachable
-  expect(await me.json()).toEqual({ role: null, user: null }); // nobody signed in
+  const who = await me.json();
+  expect(who).toMatchObject({ role: null, user: null }); // nobody signed in
+  expect(who.mp).toBe(true); // the multiplayer rooms Worker is bound
   expect((await request.get('/api/saves')).status()).toBe(401);
   await page.goto('/admin');
   await expect(page.locator('form[data-form="login"]')).toBeVisible({ timeout: 30_000 });

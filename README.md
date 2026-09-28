@@ -125,6 +125,8 @@ for real, in order, through the Soul Map.
 - Cloud saves keep one world, one quest run and the profile per account;
   the newest copy wins if two devices play offline at the same time.
 - There is no self-service sign-up: the admin creates accounts in /admin.
+  Players sign in with a username (optional, set by the admin), an email
+  or a phone number.
 - Portrait orientation is not supported on phones (the game asks to rotate).
 - Sound effects and music are synthesised in code, so they are simple.
 - On very weak devices the Auto quality mode trades sharpness for frame

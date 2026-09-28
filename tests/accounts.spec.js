@@ -18,6 +18,7 @@ async function addUser(page, u) {
   await page.click('[data-act="add"]');
   const d = page.locator('dialog.admin-dlg');
   await d.locator('[name="name"]').fill(u.name);
+  if (u.username) await d.locator('[name="username"]').fill(u.username);
   if (u.email) await d.locator('[name="email"]').fill(u.email);
   if (u.phone) await d.locator('[name="phone"]').fill(u.phone);
   await d.locator('[name="password"]').fill(u.password);
@@ -101,10 +102,28 @@ test('a player signs in with a phone number, edits the profile and changes the p
   await page.fill('#si-login', 'mia@example.com');
   await page.fill('#si-pass', 'mia-pass-1');
   await page.click('[data-screen="signin"] [data-act="submit"]');
-  await expect(page.locator('.form-error')).toHaveText('Wrong email/phone or password.');
+  await expect(page.locator('.form-error')).toHaveText('Wrong username or password.');
   await page.fill('#si-pass', 'mia-new-2');
   await page.click('[data-screen="signin"] [data-act="submit"]');
   await expect(page.locator('[data-act="profile"]')).toContainText('Mia K');
+});
+
+test('a player signs in with a short username', async ({ page }) => {
+  await adminSignIn(page);
+  await addUser(page, { name: 'Teo', username: 'Teo', password: 'teo-pass-1' });
+  await expect(page.locator('table.users', { hasText: '@teo' })).toBeVisible();
+  // the same username twice is refused
+  await page.click('[data-act="add"]');
+  const d = page.locator('dialog.admin-dlg');
+  await d.locator('[name="name"]').fill('Teo 2');
+  await d.locator('[name="username"]').fill('TEO');
+  await d.locator('[name="password"]').fill('whatever1');
+  await d.locator('button[type=submit]').click();
+  await expect(d.locator('.form-error')).toHaveText('That username is already taken.');
+  await d.locator('[data-a="cancel"]').click();
+  // any capitalisation signs in
+  await gameSignIn(page, 'teo', 'teo-pass-1');
+  await expect(page.locator('[data-act="profile"]')).toContainText('Teo');
 });
 
 test('saves follow the player to another device, and "keep me signed in" survives a reload', async ({ browser }) => {
@@ -201,13 +220,13 @@ test('the admin sees statistics', async ({ page }) => {
   await page.click('[data-nav="stats"]');
   await expect(page.locator('.stat-tile')).toHaveCount(6);
   const tile = (label) => page.locator('.stat-tile').filter({ has: page.locator('.st-label', { hasText: new RegExp('^' + label + '$') }) }).locator('.st-value');
-  await expect(tile('Players')).toHaveText('1');
+  await expect(tile('Players')).toHaveText('2'); // Mia and Teo
   await expect(tile('Worlds in the cloud')).toHaveText('3');
-  await expect(page.locator('.chart .bar')).toHaveCount(1); // Mia was active today
+  await expect(page.locator('.chart .bar')).toHaveCount(1); // both were active today
   await page.locator('.chart .hit').last().hover();
-  await expect(page.locator('.chart .tip')).toContainText('1 active player');
+  await expect(page.locator('.chart .tip')).toContainText('2 active players');
   await page.click('[data-act="table"]');
   await expect(page.locator('.chart-table tbody tr')).toHaveCount(14);
-  await expect(page.locator('.top-list li')).toHaveCount(1);
+  await expect(page.locator('.top-list li')).toHaveCount(2);
 });
 
