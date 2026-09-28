@@ -81,6 +81,7 @@ function genOverworld(seed, cx, cz, data) {
   const cave2 = sampleGrid(N.b, ox, oz, 38, 22, 38, 50);
   const cavern = sampleGrid(N.c, ox, oz, 70, 26, 70);
   const heights = new Int16Array(S * S);
+  const biomes = new Array(S * S);
   const inChamberX = (wx) => wx >= CHAMBER.x + CHAMBER.x0 - 2 && wx <= CHAMBER.x + CHAMBER.x1 + 2;
   const inChamberZ = (wz) => wz >= CHAMBER.z + CHAMBER.z0 - 2 && wz <= CHAMBER.z + CHAMBER.z1 + 2;
 
@@ -89,15 +90,19 @@ function genOverworld(seed, cx, cz, data) {
     const h = L.height(wx, wz);
     heights[x + z * S] = h;
     const village = L.villageNear(wx, wz);
-    const snowy = h > 74;
+    const biome = L.biome(wx, wz);
+    biomes[x + z * S] = biome;
+    const desert = biome === 'desert', cold = biome === 'snow';
+    const snowy = h > 74 || cold;
     const beach = h <= SEA + 1;
     const nearChamber = Math.abs(wx - CHAMBER.x) < 40 && Math.abs(wz - CHAMBER.z) < 40;
     for (let y = 0; y <= Math.max(h, SEA); y++) {
       let id;
       if (y === 0) id = B.coreite;
-      else if (y > h) id = B.water;
-      else if (y === h) id = beach ? B.sand : snowy ? B.snow : B.grass;
-      else if (y > h - 4) id = beach ? B.sand : B.dirt;
+      else if (y > h) id = cold && y === SEA ? B.ice : B.water;
+      else if (y === h) id = beach || desert ? B.sand : snowy ? B.snow : B.grass;
+      else if (y > h - 4) id = beach || desert ? B.sand : B.dirt;
+      else if (desert && y > h - 8) id = B.sandstone;
       else if (y < 16 + ((hash3(seed, wx, 3, wz) * 3) | 0)) id = B.duskstone;
       else id = B.stone;
       if ((id === B.stone || id === B.duskstone) && y > 1) {
@@ -110,13 +115,20 @@ function genOverworld(seed, cx, cz, data) {
         if (!underSea) {
           const a = cave1(x, y, z), b = cave2(x, y, z);
           const worm = a * a + b * b < 0.012 * (y < h - 6 ? 1.6 : 0.8);
-          const big = y < 34 && cavern(x, y, z) > 0.5;
-          if (worm || big) id = y < 8 ? B.magma : B.air;
+          const cv = y < 34 ? cavern(x, y, z) : 0;
+          const big = cv > 0.5;
+          if (worm || big) id = y < 8 || (big && y < 11) ? B.magma : B.air;
+          // the walls of big caverns are rich in ore
+          else if (cv > 0.43 && (id === B.stone || id === B.duskstone)) {
+            const r = hash3(seed, wx, y + 400, wz);
+            if (r < 0.16) id = r < 0.02 ? B.gold_ore : r < 0.09 ? B.iron_ore : B.char_ore;
+          }
         }
       }
       data[idx(x, y, z)] = id;
     }
     if (village) carveVillageColumn(L, village, wx, wz, x, z, h, data);
+    else decorateColumn(seed, biome, wx, wz, x, z, h, data);
     if (inChamberX(wx) && inChamberZ(wz)) carveChamberColumn(wx, wz, x, z, data);
     carveChamberStairs(wx, wz, x, z, h, data);
   }
@@ -135,10 +147,14 @@ function genOverworld(seed, cx, cz, data) {
       }
       continue;
     }
-    const h = x >= 0 && z >= 0 && x < S && z < S ? heights[x + z * S] : L.height(wx, wz);
+    const inside = x >= 0 && z >= 0 && x < S && z < S;
+    const h = inside ? heights[x + z * S] : L.height(wx, wz);
     if (h <= SEA + 1 || h > 80) continue;
     if (L.villageNear(wx, wz)) continue;
     if (Math.abs(wx - CHAMBER.x) < 44 && Math.abs(wz - CHAMBER.z) < 70) continue;
+    const biome = inside ? biomes[x + z * S] : L.biome(wx, wz);
+    if (biome === 'desert') continue;
+    if (biome === 'snow') { pineTree(seed, wx, wz, x, z, h, data); continue; }
     const th = 4 + Math.floor(hash3(seed, wx, 5, wz) * 3);
     for (let ly = -2; ly <= 1; ly++) {
       const rad = ly >= 0 ? 1 : 2;
@@ -155,6 +171,44 @@ function genOverworld(seed, cx, cz, data) {
       data[idx(x, h, z)] = B.dirt;
       for (let t = 1; t <= th; t++) data[idx(x, h + t, z)] = B.log;
     }
+  }
+}
+
+// Snowy pine: a tall trunk under stacked rings of needles.
+function pineTree(seed, wx, wz, x, z, h, data) {
+  const th = 6 + Math.floor(hash3(seed, wx, 5, wz) * 3);
+  const rings = [[th + 1, 0], [th, 1], [th - 1, 1], [th - 2, 2], [th - 3, 1], [th - 4, 2]];
+  for (const [ly, rad] of rings) {
+    for (let lz = -rad; lz <= rad; lz++) for (let lx = -rad; lx <= rad; lx++) {
+      if (rad === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) continue;
+      const px = x + lx, pz = z + lz, py = h + ly;
+      if (px < 0 || pz < 0 || px >= S || pz >= S || py >= HEIGHT) continue;
+      const i = idx(px, py, pz);
+      if (data[i] === B.air) data[i] = B.pine_leaves;
+    }
+  }
+  if (x >= 0 && z >= 0 && x < S && z < S) {
+    const top = data[idx(x, h, z)];
+    if (top !== B.snow && top !== B.grass) return;
+    data[idx(x, h, z)] = B.dirt;
+    for (let t = 1; t <= th; t++) data[idx(x, h + t, z)] = B.log;
+  }
+}
+
+// Per-column extras outside villages: desert plants, and glowing crystal
+// clusters on cave floors.
+function decorateColumn(seed, biome, wx, wz, x, z, h, data) {
+  if (biome === 'desert' && h > SEA + 1 && data[idx(x, h, z)] === B.sand && data[idx(x, h + 1, z)] === B.air) {
+    const r = hash3(seed, wx, 77, wz);
+    if (r < 0.006) {
+      const ch = 2 + Math.floor(hash3(seed, wx, 78, wz) * 2);
+      for (let t = 1; t <= ch; t++) data[idx(x, h + t, z)] = B.cactus;
+    } else if (r < 0.03) data[idx(x, h + 1, z)] = B.dry_bush;
+  }
+  for (let y = 10; y < h - 6; y++) {
+    if (data[idx(x, y, z)] !== B.air) continue;
+    const below = data[idx(x, y - 1, z)];
+    if ((below === B.stone || below === B.duskstone) && hash3(seed, wx, y + 900, wz) < 0.014) data[idx(x, y, z)] = B.glow_crystal;
   }
 }
 

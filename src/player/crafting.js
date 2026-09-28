@@ -33,6 +33,7 @@ export const RECIPES = [
   r('spear', ['  I', ' S ', 'S  '], 'spear'),
   r('emberite_ingot', ['ee', 'eG'], 'emberite_ingot'),
   r('glass', ['DD', 'DD'], 'glass', 4),
+  r('sandstone', ['D', 'D'], 'sandstone', 2),
   r('brick', ['RD', 'DR'], 'brick', 4),
   r('ember_lamp', ['A', 'C', 'A'], 'ember_lamp', 2),
   r('glow_stew', ['WW', 'PP'], 'glow_stew'),

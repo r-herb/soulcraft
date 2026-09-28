@@ -460,5 +460,6 @@
   "toast.flyOn": "Flying: jump rises, Shift or the down button descends",
   "toast.flyOff": "Flying off",
   "hud.fly": "Fly",
-  "hud.down": "Down"
+  "hud.down": "Down",
+  "death.cause.cactus": "A cactus got the better of you."
 }

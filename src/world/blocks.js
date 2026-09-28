@@ -17,6 +17,8 @@ export const TILES = [
   'ruin_stone', 'ruin_top', 'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on',
   'lamp_off', 'lamp_on', 'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'chest_side',
   'chest_top', 'gold_brick',
+  // biomes and caves
+  'sandstone_top', 'sandstone_side', 'cactus_top', 'cactus_side', 'dry_bush', 'ice', 'pine_leaves', 'glow_crystal',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -108,6 +110,13 @@ const LIST = [
   def(59, 'trap_lit', { tex: { top: 'ruin_top', side: 'trap_lit', bottom: 'ruin_top' }, hardness: -1, light: 12 }),
   def(60, 'treasure_chest', { tex: { top: 'chest_top', side: 'chest_side', bottom: 'chest_top' }, hardness: -1, light: 8 }),
   def(61, 'gold_brick', { tex: 'gold_brick', hardness: 3, tool: 'pick', tier: 2, light: 4 }),
+  // biomes (desert, snow) and caves
+  def(62, 'sandstone', { tex: { top: 'sandstone_top', side: 'sandstone_side', bottom: 'sandstone_top' }, hardness: 1.2, tool: 'pick', tier: 1 }),
+  def(63, 'cactus', { tex: { top: 'cactus_top', side: 'cactus_side', bottom: 'cactus_top' }, hardness: 0.5, hurts: 1 }),
+  def(64, 'dry_bush', { tex: 'dry_bush', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, replaceable: true, drop: 'stick' }),
+  def(65, 'ice', { tex: 'ice', hardness: 0.5, tool: 'pick', drop: 'none' }),
+  def(66, 'pine_leaves', { tex: 'pine_leaves', layer: 1, opaque: false, hardness: 0.2, drop: 'none' }),
+  def(67, 'glow_crystal', { tex: 'glow_crystal', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0.8, light: 12 }),
 ];
 
 export const BLOCKS = [];

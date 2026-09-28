@@ -65,4 +65,27 @@ test.describe('Worlds', () => {
     await expect(page.locator('.world-row')).toContainText('Alpha');
     expect(problems).toEqual([]);
   });
+
+  test('deserts and snowfields generate away from spawn', async ({ page }) => {
+    await openTitle(page);
+    await create(page, 'Biomes', true);
+    for (const [biome, surface] of [['desert', [5, 63, 64]], ['snow', [38, 65, 66, 6]]]) {
+      const spot = await page.evaluate((b) => {
+        const L = window.__sc.game.layout;
+        for (let r = 300; r < 2000; r += 24) for (let a = 0; a < 48; a++) {
+          const x = Math.round(Math.cos(a / 48 * 6.283) * r), z = Math.round(Math.sin(a / 48 * 6.283) * r);
+          let ok = L.height(x, z) > 40;
+          for (let i = -1; i <= 1 && ok; i++) for (let j = -1; j <= 1 && ok; j++) if (L.biome(x + i * 20, z + j * 20) !== b) ok = false;
+          if (ok) return { x, z };
+        }
+        return null;
+      }, biome);
+      expect(spot).not.toBeNull();
+      await page.evaluate((p) => { const g = window.__sc.game; g.player.fly = true; g.player.pos.set(p.x + 0.5, 90, p.z + 0.5); }, spot);
+      await page.waitForFunction((p) => !!window.__sc.game.world.chunkAt(p.x, p.z)?.data, spot, { timeout: 30_000 });
+      const top = await page.evaluate((p) => { const w = window.__sc.game.world; for (let y = 100; y > 1; y--) { const id = w.getBlock(p.x, y, p.z); if (id && id !== 7 && id !== 66) return id; } return 0; }, spot);
+      expect(surface, `${biome} surface block ${top}`).toContain(top);
+    }
+    expect(await page.evaluate(() => window.__sc.game.layout.biome(20, 20))).toBe('plains');
+  });
 });

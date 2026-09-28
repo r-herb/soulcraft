@@ -725,7 +725,19 @@ export class Game {
     const p = this.player;
     if (p.dead) return;
     if (p.inMagma) { this._magmaT = (this._magmaT || 0) - dt; if (this._magmaT <= 0) { this._magmaT = 0.5; this.damagePlayer(4, 'magma'); } }
+    // cactus prickles on touch
+    this._cactusT = Math.max(0, (this._cactusT || 0) - dt);
+    if (!this._cactusT && this.touching(B.cactus)) { this._cactusT = 0.6; this.damagePlayer(1, 'cactus'); }
     if (p.pos.y < -8) { if (this.meta.dim === 'void' || p.pos.y < -30) this.damagePlayer(999, 'void'); }
+  }
+
+  // Is the player's body touching a block of this type (sides or below)?
+  touching(id) {
+    const p = this.player.pos, w = this.world, r = 0.36;
+    for (const y of [p.y + 0.2, p.y + 1.1]) {
+      if (w.getBlock(p.x + r, y, p.z) === id || w.getBlock(p.x - r, y, p.z) === id || w.getBlock(p.x, y, p.z + r) === id || w.getBlock(p.x, y, p.z - r) === id) return true;
+    }
+    return w.getBlock(p.x, p.y - 0.05, p.z) === id;
   }
 
   hunger(dt) {

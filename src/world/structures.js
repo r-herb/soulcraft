@@ -43,6 +43,15 @@ export class Layout {
     return 44 + cont * 12 + hills * 11 * (0.6 + 0.4 * cont) + detail * 2.5 + mount;
   }
 
+  // Biome of a column: 'plains', 'desert' or 'snow'. A temperature field
+  // decides it; the land around spawn is always plains.
+  biome(x, z) {
+    const fade = Math.min(1, Math.max(0, (Math.hypot(x, z) - 170) / 110));
+    if (fade <= 0) return 'plains';
+    const t = this.n2.fbm2(x / 520 + 13.7, z / 520 - 7.3, 2) * fade;
+    return t > 0.2 ? 'desert' : t < -0.2 ? 'snow' : 'plains';
+  }
+
   // Village for a region, or null. Region 0,0 always has one near spawn.
   villageInRegion(rx, rz) {
     const key = rx + ',' + rz;

@@ -460,5 +460,6 @@
   "toast.flyOn": "Полёт: прыжок вверх, Shift или кнопка вниз",
   "toast.flyOff": "Полёт выключен",
   "hud.fly": "Полёт",
-  "hud.down": "Вниз"
+  "hud.down": "Вниз",
+  "death.cause.cactus": "Кактус оказался сильнее."
 }

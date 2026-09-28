@@ -181,6 +181,45 @@ const painters = {
   spirit_tree: (p) => { for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex(x % 4 === 0 ? '#d9e8f0' : '#f0f7fa'), 0.85 + p.r() * 0.15)); p.speckle('#6cf2ff', 3); },
   spirit_leaves: (p) => { for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { if (p.r() < 0.2) p.set(x, y, [0, 0, 0], 0); else p.set(x, y, shade(hex(p.r() < 0.4 ? '#6cf2ff' : '#a7f7ff'), 0.8 + p.r() * 0.25)); } },
   snow: (p) => { p.noise(['#f4f8fb', '#e6eef4', '#ffffff']); },
+  sandstone_top: (p) => { p.noise(['#dcc98a', '#d4bf7c', '#e4d399']); p.border('#b89e5c'); },
+  sandstone_side: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+      const band = y < 4 ? '#e4d399' : y % 5 === 0 ? '#b89e5c' : '#d4bf7c';
+      p.set(x, y, shade(hex(band), 0.93 + p.r() * 0.1));
+    }
+  },
+  cactus_side: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex(x % 4 === 1 ? '#2f7a34' : '#3f9a44'), 0.9 + p.r() * 0.15));
+    for (let k = 0; k < 10; k++) { const x = (Math.floor(p.r() * 4) * 4 + 1) % T, y = Math.floor(p.r() * T); p.set(x, y, hex('#e8e0b8')); }
+  },
+  cactus_top: (p) => { p.noise(['#4aa84e', '#3f9a44']); p.border('#2f7a34'); p.set(7, 7, hex('#f6a6c8')); p.set(8, 7, hex('#f6a6c8')); p.set(7, 8, hex('#f6a6c8')); },
+  dry_bush: (p) => {
+    p.clear();
+    const c = hex('#8a6a3a');
+    for (let k = 0; k < 6; k++) {
+      let x = 8, y = 15;
+      const dx = (p.r() - 0.5) * 1.4;
+      for (let s = 0; s < 9; s++) { p.set(Math.round(x), y, shade(c, 0.85 + p.r() * 0.3)); x += dx; y -= 1; }
+    }
+  },
+  ice: (p) => { p.noise(['#a8d8f0', '#9accea', '#b6e2f6']); for (let k = 0; k < 4; k++) { const x = Math.floor(p.r() * 12), y = Math.floor(p.r() * 12); for (let i = 0; i < 4; i++) p.set(x + i, y + i, hex('#e6f6ff')); } },
+  pine_leaves: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+      if (p.r() < 0.15) p.set(x, y, [0, 0, 0], 0);
+      else if (y < 4 && p.r() < 0.7) p.set(x, y, shade(hex('#f4f8fb'), 0.92 + p.r() * 0.08));
+      else p.set(x, y, shade(hex(p.r() < 0.35 ? '#1f5a3a' : '#2a6e46'), 0.85 + p.r() * 0.25));
+    }
+  },
+  glow_crystal: (p) => {
+    p.clear();
+    const cs = [p.glow ? '#b6fbff' : '#8feaff', '#5fd0f0', '#c9a2ff', '#ffffff'].map(hex);
+    for (const [x0, w, h] of [[2, 3, 9], [6, 4, 13], [11, 3, 8]]) {
+      for (let y = T - h; y < T; y++) for (let x = x0; x < x0 + w; x++) {
+        const tip = y - (T - h) < Math.abs(x - x0 - (w - 1) / 2);
+        if (!tip) p.set(x, y, cs[(x + y) % 3 === 0 ? 3 : Math.floor(p.r() * 3)]);
+      }
+    }
+  },
   wool_blue: (p) => { p.noise(['#3b5bd6', '#3452c4', '#4466e0']); },
   vault: (p) => { painters.chamber_brick(p); for (let x = 4; x < 12; x++) for (let y = 4; y < 12; y++) p.set(x, y, hex(p.r() < 0.5 ? '#9ff6e0' : '#62d9c0')); p.border('#2b3530'); },
   iron_block: (p) => { p.noise(['#d6d9de', '#c8ccd2']); p.border('#9aa0a8'); },

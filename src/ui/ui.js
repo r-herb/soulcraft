@@ -528,7 +528,7 @@ export class UI {
   screen_death(args) {
     const g = this.game;
     const src = args.source || '';
-    const causeKey = g.isQuest && args.cause === 'magma' ? 'quest.burned' : { fall: 'death.cause.fall', mob: 'death.cause.mob', magma: 'death.cause.magma', void: 'death.cause.void', boss: 'death.cause.boss' }[args.cause] || 'death.cause.generic';
+    const causeKey = g.isQuest && args.cause === 'magma' ? 'quest.burned' : { fall: 'death.cause.fall', mob: 'death.cause.mob', magma: 'death.cause.magma', cactus: 'death.cause.cactus', void: 'death.cause.void', boss: 'death.cause.boss' }[args.cause] || 'death.cause.generic';
     const node = el(`<div class="screen death" data-screen="death">
       <h1 data-i18n="death.title"></h1>
       <p class="dim">${esc(t(causeKey, { name: src }))}</p>
