@@ -11,6 +11,7 @@ export const DEFAULTS = {
   funMusic: false,
   volume: 0.7,
   renderDistance: isTouch ? 3 : 5,
+  quality: 'auto', // auto | low | high: resolution (and view distance on auto)
   controlSize: 1,
   controlOpacity: 0.7,
   vibration: true,
@@ -28,6 +29,7 @@ export function loadSettings() {
   try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { s = {}; }
   current = { ...DEFAULTS, ...s };
   if (!current.lang) current.lang = detectLang();
+  if (!['auto', 'low', 'high'].includes(current.quality)) current.quality = 'auto';
   current.renderDistance = Math.max(2, Math.min(8, current.renderDistance | 0 || DEFAULTS.renderDistance));
   return current;
 }

@@ -32,6 +32,78 @@ The vault's chest gives the Treasure Hunter skin, the Starfall Blade and
 Levels have checkpoints, and falling just sends you back to the last one.
 With `?dev=1`, **Quest: skip level** jumps ahead one level.
 
+## Performance
+
+Weak phones are limited by pixels (the GPU), not by JavaScript, so the
+game adapts its resolution:
+
+- **Settings > Quality > Auto** (the default) starts a little under the
+  screen's density, lowers the resolution when frames run slow and raises
+  it again when there is headroom. At the lowest resolution it also trims
+  the view distance until frames recover. **Fast** fixes a low resolution
+  and a short view distance; **Sharp** always renders at full density.
+- Player physics runs in fixed steps of at most 1/60 s, so jumps carry the
+  same distance at 20 fps as at 60 fps.
+- Chunks are generated and meshed in a Web Worker (greedy meshing), with a
+  per-frame budget for new meshes.
+- The FPS counter (Settings) also shows the current resolution scale.
+
+`scripts/perf-probe.mjs` measures a simulated weak phone: a landscape phone
+at DPR 3 with software WebGL and the CPU slowed down 4x. With the adaptive
+resolution it went from 20.6 fps (p95 frame 83 ms) to 34.1 fps (p95 50 ms).
+
+```bash
+npm run build && npm run preview &
+node scripts/perf-probe.mjs 4 30   # CPU slowdown, seconds
+```
+
+## Testing the bosses with ?dev=1
+
+Open https://soulcraft.8nomads.com/?dev=1 and start or continue a world. A
+**DEV** button on the left opens the developer panel:
+
+- **God mode**: no damage.
+- **Give kit**: the best swords, a bow with arrows, a spear, wind charges,
+  food, soul hearts, the Void Lantern, torches and planks.
+- **+100 crystals**, **Set day**, **Set night**.
+- **Unlock all realms**: opens every realm on the Soul Map.
+- **Teleport: <boss>**: travels straight to that guardian's arena (Void
+  Dragon, Shell King, Whirlwind King, Ember Warden, Soul Storm).
+- **Damage boss**: takes 25% of the current boss's health, to check phase
+  changes and the defeat and reward flow quickly.
+- **Quest: skip level**: inside the Treasure Quest, jumps ahead one level.
+
+A quick check of one boss: God mode, Give kit, Teleport to the boss, then
+press Damage boss four times. The CI job `bosses` plays all five fights
+for real, in order, through the Soul Map.
+
+## Known limitations
+
+- Single player only; there is no multiplayer or shared world.
+- Worlds are procedurally generated per seed, but only edits are saved, so
+  a changed generator would reshape unedited terrain in old worlds.
+- Cloud saves keep one world, one quest run and the profile per account;
+  the newest copy wins if two devices play offline at the same time.
+- There is no self-service sign-up or "forgot password": the admin creates
+  accounts and resets passwords in /admin.
+- Portrait orientation is not supported on phones (the game asks to rotate).
+- Sound effects and music are synthesised in code, so they are simple.
+- On very weak devices the Auto quality mode trades sharpness for frame
+  rate, so the picture can look soft.
+
+## Ideas for next steps
+
+- Co-op multiplayer through Cloudflare Durable Objects (one room per world).
+- More biomes and blocks (desert, snow, caves with ores and lava lakes).
+- Pets or tamed creatures that follow the player and help in fights.
+- Daily quests and seasonal events that reward soul crystals.
+- A creative mode with flying and unlimited blocks.
+- Several world slots per account, and sharing a world with a friend.
+- A second Treasure Quest chapter with new mechanics (moving platforms,
+  switches that change gravity).
+- Admin panel extras: activity charts, bulk user import, password reset
+  links by email.
+
 ## Controls
 
 | | Touch (landscape) | Desktop |
@@ -207,7 +279,13 @@ tests/               Playwright tests
 
 **Запуск:** `npm install && npm run dev`.
 **Тесты:** `npm run build && npm test`.
-**Панель разработчика:** добавь `?dev=1` к адресу.
+**Панель разработчика:** добавь `?dev=1` к адресу. Там есть режим бога,
+набор предметов, телепорт к каждому стражу и кнопка, отнимающая 25%
+здоровья босса.
+
+**Производительность:** настройка «Качество» (Авто / Быстро / Чётко). В
+режиме «Авто» игра сама снижает разрешение на слабых телефонах и
+повышает его, когда есть запас.
 
 **Аккаунты:** играть можно и без входа. Игроки, которых добавил администратор,
 входят по email или телефону и паролю: сохранения хранятся в облаке и

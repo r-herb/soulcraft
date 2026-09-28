@@ -54,7 +54,10 @@ export class Game {
     let renderer;
     renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: !this.mobile, powerPreference: 'high-performance', alpha: false, stencil: false });
     renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+    // shader compile checks stall the first frames; only worth it in dev
+    renderer.debug.checkShaderErrors = !!import.meta.env.DEV;
     this.renderer = renderer;
+    this.quality = { mode: 'auto', scale: 0, rdCap: 0 };
     this.applyPixelRatio();
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(72, 1, 0.08, 400);
@@ -97,9 +100,65 @@ export class Game {
     }
   }
 
-  applyPixelRatio() {
+  // ---------- quality ----------
+  // "auto" starts a little under the screen's density and adapts: the
+  // resolution drops when frames run slow (weak phones are limited by
+  // pixels, not by JS) and climbs back when there is headroom; at the
+  // lowest resolution it also trims the view distance. "low" and "high"
+  // are fixed.
+  qualityLimits() {
     const dpr = window.devicePixelRatio || 1;
-    this.renderer.setPixelRatio(Math.min(dpr, this.mobile ? 1.5 : 2));
+    const mode = settings().quality || 'auto';
+    const max = Math.min(dpr, mode === 'high' || !this.mobile ? 2 : 1.5);
+    const min = Math.min(max, this.mobile ? 0.6 : 0.75);
+    return { mode, max, min };
+  }
+
+  applyPixelRatio() {
+    const { mode, max, min } = this.qualityLimits();
+    const q = this.quality;
+    if (mode === 'low') { q.scale = Math.min(max, this.mobile ? 0.75 : 1); q.rdCap = 3; }
+    else if (mode === 'high') { q.scale = max; q.rdCap = 0; }
+    else q.scale = Math.max(min, Math.min(max, q.scale || (this.mobile ? Math.min(max, 1.25) : max)));
+    q.mode = mode;
+    this.renderer.setPixelRatio(q.scale);
+    if (this.camera) this.resize();
+  }
+
+  // Render distance actually used: the setting, capped by the quality mode.
+  viewDistance() {
+    const rd = settings().renderDistance;
+    return this.quality.rdCap ? Math.min(rd, this.quality.rdCap) : rd;
+  }
+
+  adaptQuality() {
+    const q = this.quality;
+    if (q.mode !== 'auto' || !this.running || this.paused) { q.frames = 0; q.t0 = 0; return; }
+    const now = performance.now();
+    if (!q.t0) { q.t0 = now; q.frames = 0; return; }
+    q.frames++;
+    const span = now - q.t0;
+    if (span < 2000) return;
+    const fps = (q.frames * 1000) / span;
+    q.t0 = now; q.frames = 0; q.fps = Math.round(fps);
+    const { max, min } = this.qualityLimits();
+    if (fps < 40) {
+      q.calm = 0;
+      if (q.scale > min + 0.01) { q.scale = Math.max(min, q.scale * 0.85); this.renderer.setPixelRatio(q.scale); this.resize(); }
+      else if (fps < 28) {
+        q.slow = (q.slow || 0) + 1;
+        if (q.slow >= 2 && this.viewDistance() > 2) { q.rdCap = this.viewDistance() - 1; q.slow = 0; }
+      }
+    } else if (fps > 55) {
+      q.slow = 0;
+      q.calm = (q.calm || 0) + span;
+      if (q.calm >= 6000) {
+        q.calm = 0;
+        if (q.rdCap && q.rdCap < settings().renderDistance) q.rdCap++;
+        else if (q.rdCap) q.rdCap = 0;
+        else if (q.scale < max - 0.01) { q.scale = Math.min(max, q.scale * 1.1); this.renderer.setPixelRatio(q.scale); this.resize(); }
+      }
+    } else { q.slow = 0; q.calm = 0; }
   }
 
   resize() {
@@ -191,7 +250,7 @@ export class Game {
     this.world = new World({ scene: this.scene, pool: this.pool, materials: this.materials, seed: this.meta.seed, dim, edits: this.meta.edits[dim] });
     if (this.quest) { this.world.genExtra = () => this.quest.genExtra(); this.quest.reset(); }
     this.world.onBlockChange = (x, y, z, prev, id) => this.entities.onBlockChange(x, y, z, prev, id);
-    const rd = settings().renderDistance;
+    const rd = this.viewDistance();
     const need = (2 * Math.min(rd, 2) + 1) ** 2;
     const t0 = performance.now();
     // Pump chunk loading until the area around the player is meshed.
@@ -305,9 +364,10 @@ export class Game {
     if (this.running && !this.paused && this.world) {
       this.update(dt, inp);
     } else if (this.running && this.world) {
-      this.world.update(this.player.pos.x, this.player.pos.z, settings().renderDistance, { gen: 2, mesh: 1 });
+      this.world.update(this.player.pos.x, this.player.pos.z, this.viewDistance(), { gen: 2, mesh: 1 });
     }
     if (this.world) this.render(dt);
+    this.adaptQuality();
   }
 
   update(dt, inp) {
@@ -326,11 +386,16 @@ export class Game {
         this.ui.tutorial('night');
       }
     }
-    const rd = settings().renderDistance;
+    const rd = this.viewDistance();
     this.world.update(pl.pos.x, pl.pos.z, rd, { gen: this.mobile ? 2 : 3, mesh: this.mobile ? 1 : 2 });
     // don't simulate physics until the chunk under the player exists
     const here = this.world.chunkAt(pl.pos.x, pl.pos.z);
-    if (here && here.data) pl.update(dt, inp, this.world, this);
+    if (here && here.data) {
+      // fixed-size physics steps, so jumps carry the same way at any frame rate
+      const n = Math.min(6, Math.ceil(dt * 60 - 0.01));
+      const still = n > 1 ? { ...inp, lookDX: 0, lookDY: 0 } : inp;
+      for (let i = 0; i < n; i++) pl.update(dt / n, i ? still : inp, this.world, this);
+    }
     else { pl.yaw -= inp.lookDX; pl.pitch = Math.max(-1.55, Math.min(1.55, pl.pitch - inp.lookDY)); }
     this.environmentDamage(dt);
     this.hunger(dt);
@@ -615,7 +680,7 @@ export class Game {
 
   async ensureLoaded() {
     for (let i = 0; i < 200; i++) {
-      this.world.update(this.player.pos.x, this.player.pos.z, settings().renderDistance, { gen: 8, mesh: 4 });
+      this.world.update(this.player.pos.x, this.player.pos.z, this.viewDistance(), { gen: 8, mesh: 4 });
       const c = this.world.chunkAt(this.player.pos.x, this.player.pos.z);
       if (c && c.meshed) return;
       await new Promise((r) => setTimeout(r, 30));
@@ -669,7 +734,7 @@ export class Game {
     cam.rotation.y = p.yaw;
     cam.rotation.x = p.pitch;
     cam.rotation.z = p.dead ? 0.6 : (p.hurtTime > 0 ? Math.sin(p.hurtTime * 40) * 0.03 : 0);
-    const rd = settings().renderDistance;
+    const rd = this.viewDistance();
     cam.far = rd * 16 + 48;
     cam.updateProjectionMatrix();
     const daylight = this.sky.update(this.meta.time, cam, this.meta.dim, this.materials.uniforms, rd, this.scene);

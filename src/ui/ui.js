@@ -391,6 +391,8 @@ export class UI {
           <div class="setting-section" data-i18n="settings.section.graphics"></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.textures"></span>
             <div class="seg" data-seg="textures"><button data-v="classic" class="${s.textures === 'classic' ? 'on' : ''}" data-i18n="settings.tex.classic"></button><button data-v="glow" class="${s.textures === 'glow' ? 'on' : ''}" data-i18n="settings.tex.glow"></button></div></div>
+          <div class="setting"><span class="setting-label" data-i18n="settings.quality"></span>
+            <div class="seg" data-seg="quality">${['auto', 'low', 'high'].map((v) => `<button data-v="${v}" class="${s.quality === v ? 'on' : ''}" data-i18n="settings.q.${v}"></button>`).join('')}</div></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.renderDistance"></span>${range('renderDistance', 2, 8, 1, (v) => t('settings.chunks', { n: v }))}</div>
           <div class="setting-section" data-i18n="settings.section.audio"></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.music"></span>${toggle('music')}</div>
@@ -406,6 +408,10 @@ export class UI {
       </div></div>`);
     node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
     node.querySelectorAll('[data-seg="lang"] button').forEach((b) => b.addEventListener('click', () => { this.click(); setSetting('lang', b.dataset.v); setLang(b.dataset.v); }));
+    node.querySelectorAll('[data-seg="quality"] button').forEach((b) => b.addEventListener('click', () => {
+      this.click(); setSetting('quality', b.dataset.v);
+      node.querySelectorAll('[data-seg="quality"] button').forEach((x) => x.classList.toggle('on', x === b));
+    }));
     node.querySelectorAll('[data-seg="textures"] button').forEach((b) => b.addEventListener('click', () => {
       this.click(); setSetting('textures', b.dataset.v);
       node.querySelectorAll('[data-seg="textures"] button').forEach((x) => x.classList.toggle('on', x === b));

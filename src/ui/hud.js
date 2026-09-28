@@ -189,7 +189,7 @@ export class Hud {
     if (L.cr !== cr) { L.cr = cr; this.crystalsEl.textContent = cr; }
     const dayTxt = g.meta.dim === 'overworld' ? t('hud.day', { n: g.meta.day }) : t('realm.' + g.meta.dim);
     if (L.day !== dayTxt) { L.day = dayTxt; this.dayEl.textContent = dayTxt; }
-    if (settings().fps) this.fpsEl.textContent = t('hud.fps', { n: g.fps });
+    if (settings().fps) this.fpsEl.textContent = t('hud.fps', { n: g.fps }) + (g.quality ? ` · ${Math.round(g.quality.scale * 100)}%` : '');
     this.water.classList.toggle('hidden', !(p.inWater && g.world.getBlock(p.pos.x, p.pos.y + 1.62, p.pos.z) === 10));
     this.magma.classList.toggle('hidden', !p.inMagma);
     // quest objective

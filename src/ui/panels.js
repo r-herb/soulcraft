@@ -40,18 +40,18 @@ export function inventory(args, ui) {
     <div class="panel inv-panel">
       ${head(esc(t('inv.title')))}
       <div class="inv-layout">
-        <div class="col" style="min-height:0">
-          <div class="craft-area">
-            <div class="craft-grid"></div>
-            <span class="arrow-right">&#9654;</span>
-            <div class="col" style="align-items:center"><div class="slot result" data-result></div><span class="faint crystal-cost"></span></div>
-            <button class="btn small ghost" data-act="clear" data-i18n="inv.clear"></button>
-          </div>
-          <div class="item-info"></div>
+        <div class="craft-area inv-craft">
+          <div class="craft-grid"></div>
+          <span class="arrow-right">&#9654;</span>
+          <div class="col" style="align-items:center"><div class="slot result" data-result></div><span class="faint crystal-cost"></span></div>
+          <button class="btn small ghost" data-act="clear" data-i18n="inv.clear"></button>
+        </div>
+        <div class="col inv-bag">
           <div class="inv-grid main"></div>
           <div class="inv-grid hot"></div>
+          <div class="item-info"></div>
         </div>
-        <div class="col" style="min-height:0">
+        <div class="col inv-recipes" style="min-height:0">
           <div class="row"><span class="section-label" style="flex:1" data-i18n="inv.recipes"></span>
             <div class="seg" style="min-width:150px"><button data-f="all" class="on" data-i18n="inv.all"></button><button data-f="can" data-i18n="inv.craftable"></button></div></div>
           <div class="recipe-list"></div>
