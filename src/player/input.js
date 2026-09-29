@@ -26,6 +26,8 @@ export class Input {
     this.autoTouch = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && !fine);
     this.touchMode = this.autoTouch;
     this.controls = 'auto'; // the player's choice in Settings
+    this.wheelSlots = true; // scrolling changes the hotbar slot
+    this.slotSteps = 0; // hotbar steps scrolled since the last frame
     this.onModeChange = null;
     this.pointerLocked = false;
     this.joy = null; // active joystick pointer
@@ -62,7 +64,8 @@ export class Input {
       if (e.pointerType === 'mouse' && this.touchMode && hasMouse()) {
         const inGame = e.target === this.canvas || (e.target.closest && e.target.closest('.look-zone, .joy-zone'));
         this.setTouchMode(false);
-        if (inGame && this.enabled) { e.preventDefault(); e.stopPropagation(); this.requestLock(); }
+        // the click that follows captures the pointer
+        if (inGame && this.enabled) { e.preventDefault(); e.stopPropagation(); }
       } else if (e.pointerType === 'touch' && !this.touchMode) this.setTouchMode(true);
     }, true);
 
@@ -77,6 +80,7 @@ export class Input {
         if (k === 'Escape') this.pressed.add('pause');
         if (k === 'KeyQ') this.pressed.add('drop');
         if (k === 'KeyM') this.pressed.add('map');
+        if (k === 'KeyH') this.pressed.add('help');
         if (k === 'KeyF') this.pressed.add('use');
         if (k === 'F3') { this.pressed.add('fps'); e.preventDefault(); }
         if (/^Digit[1-9]$/.test(k)) this.pressed.add('slot' + (Number(k.slice(5)) - 1));
@@ -92,7 +96,8 @@ export class Input {
     // Mouse / pointer lock on desktop
     this.canvas.addEventListener('mousedown', (e) => {
       if (!this.enabled || this.touchMode) return;
-      if (!this.pointerLocked) { this.requestLock(); return; }
+      // the first click only captures the pointer (see the click handler)
+      if (!this.pointerLocked) return;
       // Ctrl+click is the right click on a Mac without a second button
       const right = e.button === 2 || (e.button === 0 && e.ctrlKey && IS_MAC);
       if (right) { this.use = true; this.pressed.add('use'); this._ctrlUse = e.button === 0; }
@@ -103,14 +108,35 @@ export class Input {
       if (e.button === 2) this.use = false;
     });
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Capture the pointer on a whole click, like Minecraft: Safari lets go
+    // of a lock taken while the button is still down as soon as it is
+    // released, so asking on mousedown made looking work only while pressed.
+    this.canvas.addEventListener('click', () => {
+      if (this.enabled && !this.touchMode && !this.pointerLocked) this.requestLock();
+    });
     window.addEventListener('mousemove', (e) => {
       if (!this.enabled || !this.pointerLocked) return;
       this.lookDX += e.movementX * this.mouseLookScale * this.sensitivity;
       this.lookDY += e.movementY * this.mouseLookScale * this.sensitivity;
     });
+    // Hotbar scrolling. A mouse wheel notch is one slot; a touchpad swipe
+    // sends dozens of small events (and more as it coasts), so it moves one
+    // slot per swipe and the rest of that swipe is ignored.
+    let acc = 0, lastWheel = 0, swipeUsed = false, lastSwitch = 0;
     window.addEventListener('wheel', (e) => {
-      if (!this.enabled || !this.pointerLocked) return;
-      this.pressed.add(e.deltaY > 0 ? 'nextSlot' : 'prevSlot');
+      if (!this.enabled || !this.pointerLocked || !this.wheelSlots) return;
+      const now = e.timeStamp || performance.now(); // when the swipe produced it
+      if (now - lastWheel > 180) { acc = 0; swipeUsed = false; } // a new swipe
+      lastWheel = now;
+      const dy = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      if (Math.abs(dy) >= 50) {
+        // a wheel notch
+        if (now - lastSwitch > 60) { this.slotSteps += dy > 0 ? 1 : -1; lastSwitch = now; }
+        return;
+      }
+      if (swipeUsed) return;
+      acc += dy;
+      if (Math.abs(acc) >= 30) { this.slotSteps += acc > 0 ? 1 : -1; swipeUsed = true; lastSwitch = now; }
     }, { passive: true });
     document.addEventListener('pointerlockchange', () => {
       const was = this.pointerLocked;
@@ -218,10 +244,21 @@ export class Input {
   poll() {
     const k = this.keys;
     let mx = 0, mz = 0;
-    if (k.has('KeyW') || k.has('ArrowUp')) mz += 1;
-    if (k.has('KeyS') || k.has('ArrowDown')) mz -= 1;
-    if (k.has('KeyD') || k.has('ArrowRight')) mx += 1;
-    if (k.has('KeyA') || k.has('ArrowLeft')) mx -= 1;
+    if (k.has('KeyW')) mz += 1;
+    if (k.has('KeyS')) mz -= 1;
+    if (k.has('KeyD')) mx += 1;
+    if (k.has('KeyA')) mx -= 1;
+    // arrow keys look around (for touchpads and anyone without a mouse)
+    const now = performance.now();
+    const dt = Math.min(0.05, (now - (this._pollAt || now)) / 1000);
+    this._pollAt = now;
+    if (this.enabled) {
+      const turn = 2.4 * dt * this.sensitivity;
+      if (k.has('ArrowRight')) this.lookDX += turn;
+      if (k.has('ArrowLeft')) this.lookDX -= turn;
+      if (k.has('ArrowUp')) this.lookDY -= turn * 0.7;
+      if (k.has('ArrowDown')) this.lookDY += turn * 0.7;
+    }
     const keyboard = mx !== 0 || mz !== 0;
     const move = keyboard ? { x: mx, z: mz } : { x: this.move.x, z: this.move.z };
     const len = Math.hypot(move.x, move.z);
@@ -236,7 +273,9 @@ export class Input {
       attack: this.attack || !!this.attackTouch,
       use: this.use || !!this.useTouch || this.keys.has('KeyF'),
       pressed: this.pressed,
+      slotSteps: this.slotSteps,
     };
+    this.slotSteps = 0;
     this.lookDX = 0; this.lookDY = 0;
     this.pressed = new Set();
     return out;

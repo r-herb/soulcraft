@@ -32,6 +32,7 @@ async function boot() {
   const input = new Input(document, canvas);
   input.sensitivity = settings().sensitivity;
   input.setControls(settings().controls);
+  input.wheelSlots = settings().wheelSlots !== false;
 
   // the last few errors go along with a problem report
   const recentErrors = [];
@@ -222,6 +223,7 @@ async function boot() {
     if (k === 'volume') audio.setVolume(v);
     if (k === 'sensitivity') input.sensitivity = v;
     if (k === 'controls') input.setControls(v);
+    if (k === 'wheelSlots') input.wheelSlots = v;
     if (k === 'autoJump' && g.player) g.player.autoJump = v;
     if (k === 'quality') { g.quality.scale = 0; g.quality.rdCap = 0; g.applyPixelRatio(); }
     if (k === 'controlSize' || k === 'controlOpacity' || k === 'fps') ui.hud.applyControlSettings();

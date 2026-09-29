@@ -187,6 +187,7 @@ export const SVG = {
   attack: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h12l3 3-3 3H3l2-3zM9 11h3v10H9z"/></svg>',
   use: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l9 5v10l-9 5-9-5V7z" opacity="0.9"/><path d="M12 12l9-5M12 12v10M12 12L3 7" stroke="#05040f" stroke-width="1.5" fill="none"/></svg>',
   inv: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>',
+  help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M8.5 9a3.5 3.5 0 1 1 5 3.2c-1 .5-1.5 1.2-1.5 2.3v.5"/><path d="M12 18.5v.5"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 5l14 14M19 5L5 19"/></svg>',
   crystal: '<svg viewBox="0 0 12 12"><path d="M6 0l4 4-4 8-4-8z" fill="#7ff3ff"/><path d="M6 0l1 4-1 8" fill="#b6fbff"/></svg>',
   phone: '<svg viewBox="0 0 64 64" fill="none" stroke="#7ff3ff" stroke-width="4"><rect x="18" y="6" width="28" height="52" rx="4"/><path d="M28 50h8"/></svg>',

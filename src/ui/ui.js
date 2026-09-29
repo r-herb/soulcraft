@@ -538,6 +538,7 @@ export class UI {
           <div class="setting-section" data-i18n="settings.section.controls"></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.controls"></span>
             <div class="seg" data-seg="controls">${['auto', 'touch', 'desktop'].map((v) => `<button data-v="${v}" class="${(s.controls || 'auto') === v ? 'on' : ''}" data-i18n="settings.controls.${v}"></button>`).join('')}</div></div>
+          <div class="setting"><span class="setting-label" data-i18n="settings.wheelSlots"></span>${toggle('wheelSlots')}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.controlSize"></span>${range('controlSize', 0.7, 1.5, 0.05, pct)}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.controlOpacity"></span>${range('controlOpacity', 0.2, 1, 0.05, pct)}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.sensitivity"></span>${range('sensitivity', 0.3, 2.5, 0.05, pct)}</div>
@@ -592,7 +593,8 @@ export class UI {
           <button class="btn primary" data-act="resume" data-i18n="pause.resume"></button>
           <div class="row"><button class="btn" style="flex:1" data-act="map" data-i18n="pause.map"></button><button class="btn" style="flex:1" data-act="shop" data-i18n="pause.shop"></button></div>
           <div class="row"><button class="btn" style="flex:1" data-act="settings" data-i18n="pause.settings"></button><button class="btn" style="flex:1" data-act="save" data-i18n="pause.save"></button></div>
-          <div class="row">${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" style="flex:1" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}${account.available ? '<button class="btn" style="flex:1" data-act="feedback" data-i18n="fb.button"></button>' : ''}</div>
+          <div class="row"><button class="btn" style="flex:1" data-act="help" data-i18n="help.title"></button>${account.available ? '<button class="btn" style="flex:1" data-act="feedback" data-i18n="fb.button"></button>' : ''}</div>
+          ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
           ${account.user && account.mp && !this.game.isQuest ? `<button class="btn violet" data-act="room"><span data-i18n="mp.title"></span>${this.game.net ? `<span class="dot">${this.game.net.count}</span>` : ''}</button>` : ''}
           <button class="btn ember" data-act="quit" data-i18n="${this.game.isGuest ? 'mp.leave' : 'pause.quit'}"></button>
         </div>
@@ -601,6 +603,7 @@ export class UI {
     on('daily', () => this.open('daily'));
     on('room', () => this.open('room'));
     on('feedback', () => this.open('feedback'));
+    on('help', () => this.open('help'));
     on('resume', () => this.closeAll());
     on('map', () => this.open('map'));
     on('shop', () => this.open('shop'));
@@ -608,6 +611,37 @@ export class UI {
     on('save', () => this.game.save());
     on('quit', () => this.app.quitToTitle());
     return node;
+  }
+
+  // ---------- how to play (the "?" button) ----------
+  screen_help() {
+    const touch = this.input.touchMode;
+    const mac = /Mac/.test(navigator.platform || navigator.userAgent || '');
+    const rows = touch
+      ? ['joy', 'look', 'jump', 'attack', 'use', 'slots', 'inv', 'pause']
+      : ['capture', 'wasd', 'mouse', 'arrows', 'jump', 'sprint', 'attack', mac ? 'useMac' : 'use', mac ? 'slotsMac' : 'slots', 'inv', 'drop', 'map', 'help', 'esc'];
+    const node = el(`<div class="screen scrim" data-screen="help">
+      <div class="panel" style="width:min(560px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="help.title"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body col" style="gap:var(--sp-3)">
+          <p class="faint" style="margin:0" data-i18n="${touch ? 'help.touch' : mac ? 'help.mac' : 'help.desktop'}"></p>
+          <dl class="help-list">${rows.map((r) => `<dt data-i18n="help.k.${touch ? 't' : 'd'}.${r}"></dt><dd data-i18n="help.v.${touch ? 't' : 'd'}.${r}"></dd>`).join('')}</dl>
+          <button class="btn primary wide" data-act="replay" data-i18n="help.replay"></button>
+        </div>
+      </div></div>`);
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('[data-act="replay"]').addEventListener('click', () => { this.click(); this.replayTutorial(); });
+    return node;
+  }
+
+  // Show the first-time hints again, from the first one.
+  replayTutorial() {
+    setSetting('tutorialDone', {});
+    this._tutShown = null;
+    this.hud.clearTutorial();
+    this.closeAll();
+    setTimeout(() => this.tutorial('move'), 500);
   }
 
   // ---------- ideas and problems ----------

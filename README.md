@@ -145,19 +145,22 @@ for real, in order, through the Soul Map.
 | | Touch (landscape) | Desktop |
 |---|---|---|
 | Move | Drag the left side (virtual joystick) | W A S D |
-| Look | Drag the right side | Mouse (click the game to capture it) |
+| Look | Drag the right side | Mouse or trackpad (click the game to capture it, Esc frees it); arrow keys |
 | Jump / swim up | Arrow button | Space |
 | Break / attack | Hold the hammer button | Left mouse button |
-| Place / use / eat / trade | Cube button | Right mouse button (or F) |
-| Hotbar | Tap a slot or swipe the hotbar | 1-9, mouse wheel |
+| Place / use / eat / trade | Cube button | Right mouse button, two-finger click on a Mac trackpad, F, or Ctrl+click on a Mac |
+| Hotbar | Tap a slot or swipe the hotbar | 1-9, mouse wheel (one notch or one trackpad swipe = one slot) |
 | Inventory and crafting | Grid button | E |
 | Soul Map | Map button | M |
 | Pause | Pause button | Esc |
 | Drop the held item | - | Q |
+| How to play, replay the tutorial | ? button | H, ? button, or the pause menu |
 | FPS counter | Settings | F3 |
 
-Control size, opacity, look sensitivity, auto-jump and vibration are all in
-Settings.
+Control size, opacity, look sensitivity, auto-jump, vibration, the control
+type (Auto, Touch, Mouse) and whether scrolling changes the item are all in
+Settings. On Auto, a laptop with a touch screen switches to mouse and
+keyboard on the first mouse click or WASD key, and back on a finger tap.
 
 ## Worlds and creative mode
 

@@ -469,11 +469,13 @@ export class Game {
   }
 
   handlePressed(inp) {
+    if (inp.slotSteps) this.selectSlot((((this.inventory.selected + inp.slotSteps) % 9) + 9) % 9);
     const P = inp.pressed;
     if (!P.size) return;
     if (P.has('pause') || P.has('lockLost')) { if (!this.paused) this.ui.openPause(); return; }
     if (P.has('inventory')) { this.ui.openInventory(); return; }
     if (P.has('map')) { this.ui.openMap(); return; }
+    if (P.has('help')) { this.ui.open('help'); return; }
     if (P.has('fps')) this.ui.toggleFps();
     for (let i = 0; i < 9; i++) if (P.has('slot' + i)) this.selectSlot(i);
     if (P.has('nextSlot')) this.selectSlot((this.inventory.selected + 1) % 9);

@@ -19,6 +19,7 @@ export const DEFAULTS = {
   sensitivity: 1,
   autoJump: true,
   controls: 'auto', // auto | touch | desktop (mouse and keyboard)
+  wheelSlots: true, // scrolling (wheel or two fingers) changes the hotbar slot
   tutorialDone: {},
 };
 

@@ -390,3 +390,10 @@ body.touch .desktop-only { display: none !important; }
 .room-input { text-transform: uppercase; letter-spacing: 0.3em; font-size: var(--fs-lg); text-align: center; }
 .room-chip { color: var(--c-soul-400); font-size: var(--fs-xs); margin-left: var(--sp-2); letter-spacing: 0.06em; }
 .fb-text { resize: vertical; min-height: 96px; font-family: var(--font-body); line-height: 1.4; }
+/* mouse and keyboard: shown while the pointer is free */
+.click-to-play { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); padding: 8px 14px; border-radius: var(--r-md); background: rgba(5, 4, 15, 0.7); border: 2px solid var(--c-soul-400); color: var(--c-soul-300); font-size: var(--fs-sm); pointer-events: none; animation: fadeIn var(--t-med) ease-out; }
+#hud.overlay-open .click-to-play { display: none !important; }
+/* the "?" how-to-play panel */
+.help-list { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--sp-3); margin: 0; }
+.help-list dt { font-weight: 700; color: var(--c-soul-300); white-space: nowrap; }
+.help-list dd { margin: 0; color: var(--c-text-dim); }

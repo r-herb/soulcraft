@@ -30,6 +30,7 @@ export class Hud {
       <div class="look-zone touch-only" data-z="look"></div>
       <div class="joy-zone touch-only" data-z="joy"><div class="joy-base"><div class="joy-knob"></div></div></div>
       <div class="crosshair"></div>
+      <div class="click-to-play desktop-only hidden" data-i18n="hud.clickToPlay"></div>
       <div class="hurt-flash"></div>
       <div class="underwater hidden"></div>
       <div class="inmagma hidden"></div>
@@ -40,6 +41,7 @@ export class Hud {
       </div>
       <div class="hud-top-right">
         <span class="fps hidden"></span>
+        <button class="hud-btn pe" data-b="help" data-i18n-aria="help.title">${SVG.help}</button>
         <button class="hud-btn pe" data-b="map" data-i18n-aria="hud.map">${SVG.map}</button>
         <button class="hud-btn pe" data-b="fullscreen" data-i18n-aria="hud.fullscreen">${SVG.fullscreen}</button>
         <button class="hud-btn pe" data-b="pause" data-i18n-aria="hud.pause">${SVG.pause}</button>
@@ -67,6 +69,7 @@ export class Hud {
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
     this.questObj = q('.quest-obj');
     this.roomChip = q('.room-chip');
+    this.clickToPlay = q('.click-to-play');
     const buttons = {};
     this.el.querySelectorAll('[data-a]').forEach((b) => { buttons[b.dataset.a] = b; });
     input.attachTouch({ lookZone: q('.look-zone'), joyZone: q('.joy-zone'), joyBase: q('.joy-base'), joyKnob: q('.joy-knob'), buttons });
@@ -75,6 +78,7 @@ export class Hud {
         e.stopPropagation();
         const k = b.dataset.b;
         if (k === 'pause') ui.openPause();
+        else if (k === 'help') ui.open('help');
         else if (k === 'map') ui.openMap();
         else if (k === 'fullscreen') ui.toggleFullscreen();
       });
@@ -165,6 +169,9 @@ export class Hud {
 
   update(g, dt) {
     const p = g.player;
+    // mouse and keyboard: say how to capture the pointer when it is free
+    const free = !this.input.touchMode && !this.input.pointerLocked && !p.dead;
+    if (free !== this._free) { this._free = free; this.clickToPlay.classList.toggle('hidden', !free); }
     const L = this.last;
     const hp = Math.ceil(p.health), mh = p.maxHealth;
     if (L.hp !== hp || L.mh !== mh) {

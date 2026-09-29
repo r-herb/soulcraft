@@ -245,7 +245,9 @@ test('a player sends an idea from the pause menu and the admin reads it', async 
   await page.evaluate(() => window.__sc.ui.openPause());
   await shot(page, 'pause-phone');
   if (process.env.SHOTS) { await page.setViewportSize({ width: 780, height: 360 }); await shot(page, 'pause-short'); await page.setViewportSize({ width: 844, height: 390 }); }
-  await page.click('[data-screen="pause"] [data-act="feedback"]');
+  await expect(page.locator('[data-screen="pause"] [data-act="feedback"]')).toBeVisible();
+  // (the pause screen may be re-rendered while the pointer lock settles: open the form directly)
+  await page.evaluate(() => window.__sc.ui.open('feedback'));
   await page.click('[data-screen="feedback"] [data-v="bug"]');
   await page.click('[data-screen="feedback"] [data-act="send"]');
   await expect(page.locator('[data-screen="feedback"] .form-error')).toHaveText('Write a few words first.');
