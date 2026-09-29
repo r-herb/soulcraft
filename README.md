@@ -88,7 +88,9 @@ The Soul Map is one button away (and the Void Lantern still opens it).
 ## Malaga: a real city
 
 **Malaga** on the title screen opens a world built from the real centre of
-Malaga, from the Centro and the port to El Limonar, at 1 block = 1 metre:
+Malaga: the whole city inside the ring road, from the airport and the
+Guadalhorce to El Palo (about 15.6 x 10.9 km, 135,000 buildings, 860 bus
+stops), at 1 block = 1 metre:
 the hills (the Alcazaba and Gibralfaro), the streets, squares, parks and
 beach, and every building with its footprint and height. It can be played
 in creative mode (flying, all blocks) or in survival, and shared with
@@ -212,13 +214,13 @@ A bus ride in Malaga costs 2 coins from your hand (paid when you get in);
 without coins you can still climb onto the roof for free. Diamonds are a
 new ore deep underground (below y 20, needs an iron pickaxe).
 
-**Food.** Market stalls (in every village and at Malaga's 135 real food
+**Food.** Market stalls (in every village and at Malaga's 449 real food
 shops) sell ingredients: tomatoes, oranges, rice, sardines, olive oil,
 flour, bread and charcoal. Cook them at the workbench (charcoal is the fire):
 espetos (sardine, stick, charcoal), gazpacho (three tomatoes and olive oil),
 paella (rice, sardine, tomatoes, olive oil, charcoal; two portions) and
 churros (flour, olive oil, charcoal; two). Restaurants (a village tavern,
-and Malaga's 475 restaurants, cafes and bars) serve the same dishes to eat
+and Malaga's 1,151 restaurants, cafes and bars) serve the same dishes to eat
 on the spot: faster and more filling, but two to three times dearer.
 
 **The city.** Soulcraft has its own calendar: time runs 24 times faster, so
@@ -622,7 +624,7 @@ tests/               Playwright tests
 знаков, друзья вводят его на главном экране («К другу»).
 
 **Малага:** кнопка «Малага» на главном экране открывает настоящий центр
-Малаги (от Centro и порта до El Limonar) в масштабе 1 блок = 1 метр: холмы,
+всей Малаги (от аэропорта до Эль-Пало) в масштабе 1 блок = 1 метр: холмы,
 улицы, площади, пляж и все дома по данным OpenStreetMap (c) участники
 OpenStreetMap, ODbL. Можно играть в творческом режиме или на выживание.
 

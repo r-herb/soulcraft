@@ -184,8 +184,8 @@ Leģenda vēsta par apslēptu dārgumu glabātuvi. Spēlētājs drupās atrod d�
 ## 10. MALAGA: īsta pilsēta spēlē
 
 Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malagas centra** (Spānija) mērogā **1 bloks = 1 metrs**.
-- Teritorija: no Centro un ostas līdz El Limonar rajonam.
-- Ir īstie pakalni (Alcazaba un Gibralfaro), ielas, laukumi, parki, pludmale un **ap 20 000 ēku** ar īstajām kontūrām un augstumiem.
+- Teritorija: visa Malaga iekšpus apvedceļa, no lidostas un Guadalhorce upes līdz El Palo (ap 15,6 x 10,9 km, ap 135 000 ēku).
+- Ir īstie pakalni (Alcazaba un Gibralfaro), ielas, laukumi, parki, pludmale un **ap 135 000 ēku** ar īstajām kontūrām un augstumiem.
 - Dati nāk no OpenStreetMap.
 - Var spēlēt radošajā režīmā (lidot, visi bloki) vai izdzīvošanā (naktī nāk monstri) un kopā ar draugiem.
 
@@ -202,9 +202,10 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
   - **Plaza de la Merced**;
   - **Paseo del Parque**;
   - **El Limonar**;
+  - jaunie rajoni: **lidosta** (Aeropuerto), **El Palo** un **Pedregalejo** pludmales, **Huelin**, **La Misericordia**, **Teatinos** (universitāte), **La Rosaleda** stadions, **María Zambrano** stacija, **Ciudad Jardín**;
   - **Banco de España** (centrālā banka).
 - **Ielu nosaukumi** uzkrāsoti uz brauktuves ar lieliem bloku burtiem (C/, AV., PZA.), lai tos var izlasīt, lidojot virs pilsētas.
-- **Māju numuri:** zili balti numuru plāksnītes virs durvīm, kā īstajā Malagā. Ap 8 900 mājām ir numurs.
+- **Māju numuri:** zili balti numuru plāksnītes virs durvīm, kā īstajā Malagā. Ap 45 000 mājām ir numurs.
 - **Pilsēta dzīvo:**
   - zivis jūrā un ostā;
   - peldētāji baseinos;
@@ -215,7 +216,7 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 
 - Pa pilsētu brauc **īstās EMT Malaga autobusu līnijas** pa saviem īstajiem maršrutiem, pēc **īstā saraksta** un Malagas laika. Visi spēlētāji redz to pašu autobusu tajā pašā vietā.
 - Līnijas: 72 no 74 virzieniem ar īsto sarakstu; ir arī nakts līnijas, piemēram, N1.
-- **Pieturas:** 184 zilas pieturas zīmes. Izmantojot zīmi, redzi nākamos autobusus katrai līnijai (pēc minūtēm un pulksteņa laika) un vari parādīt līnijas uz kartes.
+- **Pieturas:** 860 pieturas (1037 zilas pieturas zīmes). Izmantojot zīmi, redzi nākamos autobusus katrai līnijai (pēc minūtēm un pulksteņa laika) un vari parādīt līnijas uz kartes.
 - **Iekāpšana:**
   - kad autobuss stāv pieturā, izmanto to un iekāp; biļete maksā **2 monētas**;
   - lēciens izkāpj;
@@ -225,7 +226,7 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 ### Nauda, banka un birža
 
 - Katram pierakstītam spēlētājam ir maks: **20 monētas** sākumā, monētas kabatā un bankā.
-- **Bankomāti:** 29 pie īstajām Malagas bankām un pa vienam pie katra ciemata akas. Tie atver ekrānu **Banka un birža** ar cilnēm:
+- **Bankomāti:** 172 pie īstajām Malagas bankām un bankomātiem un pa vienam pie katra ciemata akas. Tie atver ekrānu **Banka un birža** ar cilnēm:
   - **Birža:** pārdod savākto (pārtiku, kokus, akmeni, stiklu, stieņus, dimantus) pret monētām vai pērc. Cenas kustas: jo vairāk spēlētāji kaut ko pārdod, jo lētāks tas kļūst, un pirkšana to sadārdzina. Bultiņas rāda tendenci.
   - **Tirgus:** izliec savas mantas pārdošanā citiem spēlētājiem par savu cenu. Tās gaida tirgū, līdz kāds nopērk (pārdevējs saņem ziņu), vai paņem atpakaļ.
   - **Banka:** noguldi un izņem monētas, redzi pēdējās darbības.
@@ -236,13 +237,13 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 
 ### Ēdiens: veikali, gatavošana, restorāni
 
-- **Tirgus stendi:** 135 pie īstajiem Malagas pārtikas veikaliem un pa vienam katrā ciematā. Tur pārdod tomātus, apelsīnus, rīsus, sardīnes, olīveļļu, miltus, maizi un ogles.
+- **Tirgus stendi:** 449 pie īstajiem Malagas pārtikas veikaliem un pa vienam katrā ciematā. Tur pārdod tomātus, apelsīnus, rīsus, sardīnes, olīveļļu, miltus, maizi un ogles.
 - **Gatavošana pie darbgalda** (ogles ir uguns):
   - **Espetos**: sardīne, iesms, ogles. Tās ir sardīnes uz iesma, Malagas specialitāte.
   - **Gaspačo**: 3 tomāti un olīveļļa.
   - **Paelja**: rīsi, sardīne, tomāti, olīveļļa, ogles; iznāk 2 porcijas.
   - **Čurrosi**: milti, olīveļļa, ogles; iznāk 2.
-- **Restorāni:** 475 Malagas restorāni, kafejnīcas un bāri, kā arī ciemata krogs. Tur šos ēdienus pasniedz uzreiz: ātrāk un sātīgāk, bet 2-3 reizes dārgāk. Paēdušam neko nepasniedz.
+- **Restorāni:** 1151 Malagas restorāns, kafejnīca un bārs, kā arī ciemata krogs. Tur šos ēdienus pasniedz uzreiz: ātrāk un sātīgāk, bet 2-3 reizes dārgāk. Paēdušam neko nepasniedz.
 
 ### Ko Malagā var darīt (aktivitātes)
 
@@ -337,7 +338,6 @@ Vari pielāgot, bet saglabā nodaļas un loģisko secību. Katrai ainai ir norā
 
 **(Neobligāti) 9. nodaļa: Drīzumā** (skaidri atzīmēta kā nākotne):
 - bankas aplaupīšana (kvesti un apsardze);
-- visa Malaga no lidostas līdz El Palo (iekšpus apvedceļa);
 - vairāk pilsētu.
 
 ## Kvalitātes pārbaude pirms nodošanas

@@ -38,6 +38,16 @@ export const CITY_PLACES = {
     { name: 'Paseo del Parque', lat: 36.71910, lon: -4.41700 },
     { name: 'Banco de España', lat: 36.72016, lon: -4.41566 },
     { name: 'El Limonar', lat: 36.72700, lon: -4.40000 },
+    { name: 'Mercado de Atarazanas', lat: 36.71790, lon: -4.42470 },
+    { name: 'Estación María Zambrano', lat: 36.71180, lon: -4.43180 },
+    { name: 'La Rosaleda', lat: 36.73400, lon: -4.42670 },
+    { name: 'Huelin', lat: 36.69850, lon: -4.43900 },
+    { name: 'La Misericordia', lat: 36.69180, lon: -4.45020 },
+    { name: 'Teatinos (Universidad)', lat: 36.71600, lon: -4.47200 },
+    { name: 'Aeropuerto', lat: 36.67490, lon: -4.49910 },
+    { name: 'Pedregalejo', lat: 36.71900, lon: -4.38300 },
+    { name: 'El Palo', lat: 36.71940, lon: -4.36140 },
+    { name: 'Ciudad Jardín', lat: 36.74400, lon: -4.42500 },
   ],
 };
 
