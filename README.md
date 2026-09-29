@@ -98,14 +98,18 @@ friends like any other world.
   (c) OpenStreetMap contributors, under the Open Database License (ODbL
   1.0). Elevation from the Mapzen/AWS Terrain Tiles (open data). The city
   file `public/city/malaga.bin.gz` is a derived database under the ODbL.
-- The **City data** workflow (Actions, run by hand) downloads the
-  OpenStreetMap extract with the Overpass API and commits it to the
-  `city-data` branch. `node scripts/city/build-city.mjs malaga --preview`
-  turns it into the city file (and a PNG preview in `data/city/`):
-  ground height, surfaces, city walls, trees and a table of buildings.
-- The game loads the file once and builds each chunk from it in the
-  worker (`src/world/city.js`). Heights are scaled by 0.82 so Gibralfaro
-  fits under the build limit.
+- The **City data** workflow (Actions) downloads the OpenStreetMap extract
+  with the Overpass API in parts (`data/city/<city>-osm/`) and commits it
+  to the `city-data` branch. `node --max-old-space-size=12000
+  scripts/city/build-city.mjs malaga` turns it into the city: an index,
+  tiles of 512 x 512 blocks and an overview image for the maps
+  (`public/city/malaga/`). `scripts/city/proj.mjs` holds the projection: a
+  city keeps its first area's origin, so a bigger area never moves the
+  places of older worlds. `CITY_BBOX='[s,w,n,e]'` builds a smaller area.
+- The game loads the index, then the tiles around the player (a chunk is
+  generated once its tiles are here); the worker builds each chunk from
+  its slice (`src/world/city.js`). Heights are scaled by 0.82, and above
+  84 blocks pressed further, so the hills fit under the build limit.
 - Street names (from OpenStreetMap, with the Spanish abbreviations C/,
   AV., PZA.) are painted on the roads in big block letters that read from
   above, and houses with an address carry blue number plaques over a door.

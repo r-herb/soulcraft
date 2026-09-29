@@ -17,8 +17,12 @@ export function encodePng(w, h, rgb) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
-const COL = [[196, 190, 170], [70, 70, 76], [190, 186, 178], [235, 228, 210], [110, 170, 80], [232, 214, 160], [40, 110, 170], [150, 140, 120], [120, 90, 70], [210, 200, 180], [60, 120, 60], [170, 170, 170], [200, 190, 175], [150, 160, 90], [110, 170, 80], [90, 90, 96], [150, 120, 80], [80, 150, 80], [80, 195, 232]];
-const WALL = [[245, 245, 240], [238, 224, 190], [226, 180, 110], [205, 120, 90], [220, 210, 185], [170, 90, 70], [120, 170, 200], [180, 180, 180], [215, 185, 130]];
+// the game's map colours (surfaces, walls, roofs)
+const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const COL = ['#bdb393', '#55555a', '#aaa59b', '#e9e3d5', '#80b06a', '#e9d8a6', '#2f6db3', '#9a9486', '#6b5d53',
+  '#d2c9b6', '#4d7b3e', '#9aa0a6', '#bdb5a4', '#9daa6c', '#88b872', '#707074', '#c9a66b', '#62a254', '#4fc3e8'].map(hex);
+const WALL = ['#eeede8', '#eadfc4', '#dcb670', '#c97d5c', '#dad1ba', '#a6583f', '#86abc8', '#b3b3b0', '#d6b685'].map(hex);
+const ROOF_TILES = hex('#c2663e'), ROOF_STONE = hex('#d9c8a2'), TREE = hex('#3f7033');
 
 export function writePreview(file, W, D, ground, surf, bid, table, scale = 2) {
   const w = Math.floor(W / scale), h = Math.floor(D / scale);
@@ -26,8 +30,8 @@ export function writePreview(file, W, D, ground, surf, bid, table, scale = 2) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * scale * W + x * scale;
     let c;
-    if (bid[i]) { const b = table[bid[i]]; const k = Math.min(1, 0.55 + b[1] / 60); c = WALL[b[2]].map((v) => v * k); }
-    else c = (surf[i] & 0x80) ? [40, 100, 40] : COL[surf[i] & 0x7f] || [255, 0, 255];
+    if (bid[i]) { const b = table[bid[i]]; c = b[3] === 1 ? ROOF_TILES : b[3] === 2 ? ROOF_STONE : WALL[b[2]] || WALL[0]; }
+    else c = (surf[i] & 0x80) ? TREE : COL[surf[i] & 0x7f] || COL[0];
     // hill shading from the ground height
     const gx = ground[Math.min(W * D - 1, i + scale)] - ground[i], gz = ground[Math.min(W * D - 1, i + scale * W)] - ground[i];
     const shade = Math.max(0.6, Math.min(1.25, 1 - (gx + gz) * 0.08));

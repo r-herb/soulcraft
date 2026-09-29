@@ -7,23 +7,20 @@
 //
 // Writes public/city/<city>-bus.json. Map data (c) OpenStreetMap
 // contributors, ODbL 1.0. Timetables: EMT Malaga open data.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { gunzipSync } from 'node:zlib';
+import { writeFileSync, existsSync } from 'node:fs';
 import { CITIES } from './cities.mjs';
+import { projection, loadOsm } from './proj.mjs';
 import { readGtfs } from './gtfs.mjs';
 
 const id = process.argv[2] || 'malaga';
-const city = CITIES[id];
-const [S, W, N, E] = city.bbox;
-const lat0 = (S + N) / 2 * Math.PI / 180;
-const MLAT = 111132.92 - 559.82 * Math.cos(2 * lat0) + 1.175 * Math.cos(4 * lat0);
-const MLON = 111412.84 * Math.cos(lat0) - 93.5 * Math.cos(3 * lat0);
-const px = (lon) => (lon - W) * MLON;
-const pz = (lat) => (N - lat) * MLAT;
-const WIDTH = Math.ceil(px(E)), DEPTH = Math.ceil(pz(S));
-const inside = ([x, z], m = 0) => x >= -m && z >= -m && x < WIDTH + m && z < DEPTH + m;
+const city = { ...CITIES[id] };
+if (process.env.CITY_BBOX) city.bbox = JSON.parse(process.env.CITY_BBOX);
+// world blocks, the same projection as the city (proj.mjs)
+const P = projection(city);
+const { px, pz, X0, Z0, WIDTH, DEPTH } = P;
+const inside = ([x, z], m = 0) => x >= X0 - m && z >= Z0 - m && x < X0 + WIDTH + m && z < Z0 + DEPTH + m;
 
-const osm = JSON.parse(gunzipSync(readFileSync(`data/city/${id}-osm.json.gz`)).toString('utf8'));
+const osm = loadOsm(id);
 const byId = new Map(osm.elements.map((e) => [e.type + e.id, e]));
 const routes = osm.elements.filter((e) => e.type === 'relation' && e.tags && e.tags.route === 'bus' && /EMT/i.test(e.tags.operator || ''));
 console.log(`${routes.length} EMT route relations`);

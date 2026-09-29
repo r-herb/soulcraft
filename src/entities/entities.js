@@ -747,9 +747,9 @@ export class EntityManager {
     if (dim === 'city') {
       // night monsters in the streets and parks (not on roofs or in the sea)
       if (!night || !g.city) return;
-      const i = g.city.inside(x, z) ? z * g.city.w + x : -1;
-      if (i < 0 || g.city.bid[i] || (g.city.surf[i] & 0x7f) === 6) return;
-      const y = g.city.ground[i];
+      const a = g.city.at(x, z);
+      if (!a || a.b || a.s === 6) return;
+      const y = a.g;
       if (g.world.getBlock(x, y + 1, z) !== B.air || g.world.getBlock(x, y + 2, z) !== B.air) return;
       const roll = Math.random();
       this.spawnMob(roll < 0.6 ? 'hollow' : roll < 0.85 ? 'skitter' : 'gloomshot', x + 0.5, y + 1.05, z + 0.5);

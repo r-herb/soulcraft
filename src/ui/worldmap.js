@@ -15,42 +15,19 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rgb = (hex) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 
 // ---------- the city picture (built once per city, 2 m per pixel) ----------
-const CITY_SURF = ['#bdb393', '#55555a', '#aaa59b', '#e9e3d5', '#80b06a', '#e9d8a6', '#4a86c8', '#9a9486', '#6b5d53',
-  '#d2c9b6', '#4d7b3e', '#9aa0a6', '#bdb5a4', '#9daa6c', '#88b872', '#707074', '#c9a66b', '#62a254', '#4fc3e8'].map(rgb);
-const CITY_WALL = ['#eeede8', '#eadfc4', '#dcb670', '#c97d5c', '#dad1ba', '#a6583f', '#86abc8', '#b3b3b0', '#d6b685'].map(rgb);
-const ROOF_TILES = rgb('#c2663e'), ROOF_STONE = rgb('#d9c8a2'), SEA_RGB = rgb('#2f6db3'), TREE_RGB = rgb('#3f7033');
-export const CITY_STEP = 2;
-const STEP = CITY_STEP;
-
-export function cityPicture(city) {
-  if (city._mapPic) return city._mapPic;
-  const W = Math.ceil(city.w / STEP), D = Math.ceil(city.d / STEP);
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = D;
-  const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(W, D);
-  const px = img.data, cw = city.w;
-  for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
-    const gx = x * STEP, gz = z * STEP, i = gz * cw + gx;
-    const g = city.ground[i], s = city.surf[i] & 0x7f, b = city.bid[i];
-    let c;
-    if (s === 6 && g < city.seaY) c = SEA_RGB;
-    else if (b) {
-      const roof = city.table[b * 4 + 3];
-      c = roof === 1 ? ROOF_TILES : roof === 2 ? ROOF_STONE : CITY_WALL[city.table[b * 4 + 2]] || CITY_WALL[0];
-    } else c = (city.surf[i] & 0x80) ? TREE_RGB : CITY_SURF[s] || CITY_SURF[0];
-    // light from the north-west: slopes and building edges
-    const iw = gz > 0 && gx > 0 ? i - cw * STEP - STEP : i;
-    let shade = 1 + (g - city.ground[iw]) * 0.05;
-    if (b && city.bid[iw] !== b) shade *= 1.12;
-    if (b && gx + STEP < city.w && gz + STEP < city.d && city.bid[i + cw * STEP + STEP] !== b) shade *= 0.72;
-    shade = clamp(shade, 0.62, 1.3);
-    const o = (z * W + x) * 4;
-    px[o] = clamp(c[0] * shade, 0, 255); px[o + 1] = clamp(c[1] * shade, 0, 255); px[o + 2] = clamp(c[2] * shade, 0, 255); px[o + 3] = 255;
+// The city's top view (built with the city: 4 blocks per pixel), or null
+// until it has loaded; { img, x0, z0, step }.
+export function cityPicture(city, onLoad) {
+  if (!city._mapPic) {
+    const o = city.header.overview;
+    const img = new Image();
+    city._mapPic = { img, x0: o.x0, z0: o.z0, step: o.step, ready: false, wait: [] };
+    img.onload = () => { city._mapPic.ready = true; for (const fn of city._mapPic.wait) fn(); city._mapPic.wait = []; };
+    img.src = `/city/${city.id}/${o.file}`;
   }
-  ctx.putImageData(img, 0, 0);
-  city._mapPic = cv;
-  return cv;
+  const p = city._mapPic;
+  if (!p.ready && onLoad) p.wait.push(onLoad);
+  return p.ready ? p : null;
 }
 
 // ---------- overworld colours from the terrain layout ----------
@@ -196,9 +173,8 @@ export function worldMap(args, ui) {
     ctx.fillRect(0, 0, W, H);
     ctx.imageSmoothingEnabled = st.s < 1;
     if (city) {
-      const pic = cityPicture(city);
-      const [sx, sy] = toScreen(0, 0);
-      ctx.drawImage(pic, sx, sy, pic.width * STEP * st.s, pic.height * STEP * st.s);
+      const pic = cityPicture(city, () => draw());
+      if (pic) { const [sx, sy] = toScreen(pic.x0, pic.z0); ctx.drawImage(pic.img, sx, sy, pic.img.width * pic.step * st.s, pic.img.height * pic.step * st.s); }
       if (showBus) drawBuses();
       for (const pl of CITY_PLACES[g.meta.city] || []) { const q = city.toXZ(pl.lat, pl.lon); marker(q.x, q.z, '#ffd36b', 3); label(q.x, q.z, pl.name); }
     } else if (owPic) {
@@ -234,14 +210,15 @@ export function worldMap(args, ui) {
     if (!w || !h) return;
     st.W = w; st.H = h;
     cv.width = Math.round(w * st.dpr); cv.height = Math.round(h * st.dpr);
-    if (city) minS = Math.min(st.W / city.w, st.H / city.d) * 0.9;
+    if (city) minS = Math.min(st.W / city.area.w, st.H / city.area.d) * 0.9;
     draw();
   }
 
   // a place a player can stand on, near where they tapped
   function landing(x, z) {
     x = Math.floor(x); z = Math.floor(z);
-    if (city) return city.openCellNear(x, z, 40);
+    // (a city tile far away may not be here yet: the trip finds the spot)
+    if (city) return city.inArea(x, z) ? (city.loaded(x, z) ? city.openCellNear(x, z, 40) : { x, z }) : null;
     for (let r = 0; r <= 48; r += 2) for (let dz = -r; dz <= r; dz += 2) for (let dx = -r; dx <= r; dx += 2) {
       if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
       if (L.height(x + dx, z + dz) > SEA) return { x: x + dx, z: z + dz };

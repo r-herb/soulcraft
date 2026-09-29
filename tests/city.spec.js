@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { openTitle, watchConsole } from './helpers.js';
 
-// Real-city worlds: Malaga from OpenStreetMap (public/city/malaga.bin.gz).
+// Real-city worlds: Malaga from OpenStreetMap (public/city/malaga/: an index
+// and tiles of 512 x 512 blocks loaded around the player).
 const shot = async (page, name) => { if (!process.env.SHOTS) return; await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SHOTS}/${name}.png` }); };
 
 test.describe('Malaga', () => {
@@ -18,7 +19,7 @@ test.describe('Malaga', () => {
     await page.waitForFunction(() => window.__sc && window.__sc.game.running && !document.querySelector('[data-screen="loading"]'), null, { timeout: 120_000 });
     const info = await page.evaluate(() => {
       const g = window.__sc.game, p = g.player.pos, c = g.city;
-      return { dim: g.meta.dim, city: g.meta.city, creative: g.creative, x: p.x, z: p.z, w: c.w, d: c.d, spawn: c.header.spawn };
+      return { dim: g.meta.dim, city: g.meta.city, creative: g.creative, x: p.x, z: p.z, spawn: c.header.spawn, tiles: c.tiles.size };
     });
     expect(info).toMatchObject({ dim: 'city', city: 'malaga', creative: true });
     expect(Math.hypot(info.x - info.spawn[0], info.z - info.spawn[1])).toBeLessThan(45);
@@ -28,11 +29,10 @@ test.describe('Malaga', () => {
       let found = null;
       for (let r = 2; r < 60 && !found; r++) for (let dz = -r; dz <= r && !found; dz++) for (let dx = -r; dx <= r && !found; dx++) {
         const x = Math.floor(p.x) + dx, z = Math.floor(p.z) + dz;
-        if (c.inside(x, z) && c.bid[z * c.w + x]) found = { x, z };
+        if (c.bidAt(x, z)) found = { x, z };
       }
       if (!found) return null;
-      const b = c.bid[found.z * c.w + found.x];
-      const base = c.table[b * 4], h = c.table[b * 4 + 1];
+      const [base, h] = c.buildings.get(c.bidAt(found.x, found.z));
       return { base, h, block: g.world.getBlock(found.x, base + 2, found.z) };
     });
     expect(check).not.toBeNull();
@@ -40,10 +40,16 @@ test.describe('Malaga', () => {
     await page.evaluate(() => { const g = window.__sc.game; g.player.pitch = -0.2; });
     await shot(page, 'city-street');
     // street names are painted on the roads and houses carry their numbers
-    const marks = await page.evaluate(() => { const m = window.__sc.game.city.mark; let paint = 0, plaques = 0, atms = 0; for (const v of m) { if (v === 1 || v === 2) paint++; else if (v === 4) atms++; else if (v >= 10) plaques++; } return { paint, plaques, atms }; });
+    const marks = await page.evaluate(async () => {
+      const c = window.__sc.game.city, [sx, sz] = c.header.spawn;
+      await c.ensure(sx, sz, 700);
+      let paint = 0, plaques = 0, atms = 0;
+      for (const t of c.tiles.values()) for (const v of t.mark) { if (v === 1 || v === 2) paint++; else if (v === 4) atms++; else if (v >= 10) plaques++; }
+      return { paint, plaques, atms };
+    });
     expect(marks.paint).toBeGreaterThan(2000);
     expect(marks.plaques).toBeGreaterThan(20);
-    expect(marks.atms).toBeGreaterThan(20); // a cash machine by each bank
+    expect(marks.atms).toBeGreaterThan(10); // a cash machine by each bank (within 700 m of the plaza)
     // real places land inside the map
     const larios = await page.evaluate(() => window.__sc.game.city.toXZ(36.7195, -4.4215));
     expect(larios.x).toBeGreaterThan(0);
@@ -96,28 +102,30 @@ test.describe('Malaga', () => {
       await page.waitForTimeout(1500);
       await shot(page, name);
     };
-    await visit('city-beach', () => {
+    await visit('city-beach', async () => {
       const c = window.__sc.game.city, t = c.toXZ(36.7172, -4.4085);
+      await c.ensure(t.x, t.z, 100);
       for (let r = 0; r < 80; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
-        const i = (t.z + dz) * c.w + t.x + dx;
-        if ((c.surf[i] & 127) === 5 && !c.bid[i]) return { x: t.x + dx, z: t.z + dz + 4, y: c.ground[i] + 6, yaw: 0, pitch: -0.45 };
+        const a = c.at(t.x + dx, t.z + dz);
+        if (a && a.s === 5 && !a.b) return { x: t.x + dx, z: t.z + dz + 4, y: a.g + 6, yaw: 0, pitch: -0.45 };
       }
       return null;
     }, ['sunbather', 'fish']);
     await visit('city-pool', () => {
       const c = window.__sc.game.city, p = window.__sc.game.player.pos;
       let best = null, bd = 1e9;
-      for (let z = 1; z < c.d - 1; z += 3) for (let x = 1; x < c.w - 1; x += 3) {
-        const i = z * c.w + x;
-        if ((c.surf[i] & 127) !== 18 || c.bid[i]) continue;
+      const px = Math.floor(p.x), pz = Math.floor(p.z);
+      for (let z = pz - 600; z < pz + 600; z += 3) for (let x = px - 600; x < px + 600; x += 3) {
+        const a = c.at(x, z);
+        if (!a || a.s !== 18 || a.b) continue;
         const d = Math.hypot(x - p.x, z - p.z);
-        if (d < bd) { bd = d; best = { x, z: z + 7, y: c.ground[i] + 5, yaw: 0, pitch: -0.55 }; }
+        if (d < bd) { bd = d; best = { x, z: z + 7, y: a.g + 5, yaw: 0, pitch: -0.55 }; }
       }
       return best;
     }, ['swimmer']);
     await visit('city-walkers', () => {
       const c = window.__sc.game.city, t = c.toXZ(36.7196, -4.4216);
-      return { x: t.x, z: t.z + 10, y: c.ground[t.z * c.w + t.x] + 2.5, yaw: 0, pitch: -0.15 };
+      return { x: t.x, z: t.z + 10, y: c.groundAt(t.x, t.z) + 2.5, yaw: 0, pitch: -0.15 };
     }, ['walker']);
     expect(problems).toEqual([]);
   });

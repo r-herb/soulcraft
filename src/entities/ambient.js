@@ -40,9 +40,9 @@ export class AmbientLife {
 
   cityCell(x, z) {
     const c = this.game.city;
-    if (!c || this.game.meta.dim !== 'city' || !c.inside(x, z)) return null;
-    const i = z * c.w + x;
-    return { s: c.surf[i] & 0x7f, g: c.ground[i], b: c.bid[i] };
+    if (!c || this.game.meta.dim !== 'city') return null;
+    const a = c.at(x, z);
+    return a && { s: a.s, g: a.g, b: a.b };
   }
 
   update(dt) {

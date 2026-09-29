@@ -9,30 +9,39 @@
 // "City data" workflow) and the Terrain Tiles on AWS; writes
 // public/city/<city>.bin.gz, which the game loads for a city world.
 // Map data (c) OpenStreetMap contributors, ODbL 1.0.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { gunzipSync, gzipSync } from 'node:zlib';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { CITIES } from './cities.mjs';
+import { projection, loadOsm } from './proj.mjs';
+import { writePreview } from './preview.mjs';
 import { loadElevation } from './elevation.mjs';
 import { plainText, shortStreetName, textPixel, GLYPH_W, GLYPH_H } from './font3x5.mjs';
 
 const id = process.argv[2] || 'malaga';
-const city = CITIES[id];
-const [S, W, N, E] = city.bbox;
+const city = { ...CITIES[id] };
+// a smaller area for a quick build: CITY_BBOX='[s,w,n,e]'
+if (process.env.CITY_BBOX) city.bbox = JSON.parse(process.env.CITY_BBOX);
 
-// ---------- projection: metres east (x) and south (z) of the north-west corner ----------
-const lat0 = (S + N) / 2 * Math.PI / 180;
-const MLAT = 111132.92 - 559.82 * Math.cos(2 * lat0) + 1.175 * Math.cos(4 * lat0);
-const MLON = 111412.84 * Math.cos(lat0) - 93.5 * Math.cos(3 * lat0);
-const px = (lon) => (lon - W) * MLON;
-const pz = (lat) => (N - lat) * MLAT;
-const WIDTH = Math.ceil(px(E)), DEPTH = Math.ceil(pz(S));
+// ---------- projection ----------
+// World blocks east (x) and south (z) of the city's fixed point (proj.mjs);
+// inside this script the raster starts at the area's north-west corner,
+// so array x = world x - X0 (and z likewise).
+const P = projection(city);
+const { MLAT, MLON, X0, Z0, WIDTH, DEPTH } = P;
+const px = (lon) => P.px(lon) - X0;
+const pz = (lat) => P.pz(lat) - Z0;
 const CELLS = WIDTH * DEPTH;
+const TILE = 512; // the game loads the city in tiles of 512 x 512 blocks
 console.log(`${city.name}: ${WIDTH} x ${DEPTH} m (${(CELLS / 1e6).toFixed(1)} M cells)`);
 
 // ---------- world heights ----------
 export const SEA_Y = 6; // water surface; land starts one above
 const VSCALE = 0.82; // hills a little flatter so Gibralfaro fits under the sky limit
 const MAX_Y = 118;
+// heights above 84 blocks are pressed together, so the eastern hills fit
+// under the sky limit too (the old centre, Gibralfaro aside, is lower)
+const KNEE = 84;
+const lift = (m) => { const y = Math.max(0, m) * VSCALE; return Math.round(y <= KNEE ? y : KNEE + (y - KNEE) * 0.35); };
 
 // surface codes (the game's generator knows the same list)
 export const SURF = {
@@ -46,18 +55,18 @@ export const MAT = { white: 0, cream: 1, ochre: 2, terracotta: 3, limestone: 4, 
 export const ROOF = { flat: 0, tiles: 1, stone: 2 };
 
 // ---------- data ----------
-const osm = JSON.parse(gunzipSync(readFileSync(`data/city/${id}-osm.json.gz`)).toString('utf8'));
+const osm = loadOsm(id);
 console.log(`${osm.elements.length} OSM elements`);
 const elevAt = await loadElevation(city.bbox, `data/city/elev-${id}`);
 
 const elev = new Float32Array(CELLS);
 for (let z = 0; z < DEPTH; z++) {
-  const lat = N - (z + 0.5) / MLAT;
-  for (let x = 0; x < WIDTH; x++) elev[z * WIDTH + x] = elevAt(lat, W + (x + 0.5) / MLON);
+  const lat = P.latOf(z + Z0 + 0.5);
+  for (let x = 0; x < WIDTH; x++) elev[z * WIDTH + x] = elevAt(lat, P.lonOf(x + X0 + 0.5));
 }
 
 const surf = new Uint8Array(CELLS);
-const bid = new Uint16Array(CELLS);
+const bid = new Uint32Array(CELLS);
 const wallH = new Uint8Array(CELLS); // city walls: height above ground
 let sea = new Uint8Array(CELLS); // 1 = sea or harbour water
 
@@ -296,17 +305,16 @@ const area = (rs) => rs.reduce((a, r) => { let s = 0; for (let i = 0, j = r.leng
 const shapes = [...buildingEls, ...partEls].map((el) => ({ el, rs: rings(el), part: !tags(el).building })).filter((s) => s.rs.length);
 shapes.forEach((s) => { s.a = area(s.rs); });
 shapes.sort((a, b) => (a.part - b.part) || (b.a - a.a));
-const isPart = new Uint8Array(65536);
+const isPart = [];
 for (const { el, rs } of shapes) {
   const t = { ...tags(el), _id: el.id };
-  if (table.length >= 65535) break;
   const cells = [];
   fillPolygon(rs, (i) => { if (!sea[i]) cells.push(i); });
   if (cells.length < 4) continue;
   // the floor sits at the average ground height; foundations fill below
   let sum = 0;
   for (const i of cells) sum += elev[i];
-  const ground = SEA_Y + 1 + Math.round(Math.max(0, sum / cells.length) * VSCALE);
+  const ground = SEA_Y + 1 + lift(sum / cells.length);
   let { wall, roof } = styleOf(t);
   let h = heightOf(t);
   const part = !t.building;
@@ -521,7 +529,7 @@ const ground = new Uint8Array(CELLS);
 for (let i = 0; i < CELLS; i++) {
   if (sea[i]) { ground[i] = SEA_Y - 5; continue; }
   const s = surf[i] & 0x7f;
-  let g = SEA_Y + 1 + Math.round(Math.max(0, elev[i]) * VSCALE);
+  let g = SEA_Y + 1 + lift(elev[i]);
   if (s === SURF.riverbed) g = Math.max(SEA_Y + 1, g - 3);
   if (s === SURF.sand && beachD[i] < 65535) g = Math.min(g, SEA_Y + 2 + Math.floor(beachD[i] / 14)); // beaches slope gently from the sea (the elevation data is smoothed)
   if (s === SURF.water) g = Math.max(SEA_Y, g - 1); // fountains, ponds
@@ -548,27 +556,63 @@ for (let i = 0; i < CELLS; i++) {
 }
 const wallTop = wallH;
 
-// ---------- pack ----------
-// header (JSON) + ground (u8) + surf (u8) + wall heights (u8) + building ids (u16) + building table (4 x u8 per building)
-// + (v2) marks (u8)
+// ---------- pack: an index and tiles of 512 x 512 blocks ----------
+// Each tile: header (JSON) + ground (u8) + surf (u8) + wall heights (u8) +
+// marks (u8) + building numbers (u16, local to the tile) + the tile's
+// building table (per building: id u32, base, height, wall, roof).
+const out = `public/city/${id}`;
+rmSync(out, { recursive: true, force: true });
+rmSync(`public/city/${id}.bin.gz`, { force: true });
+mkdirSync(out, { recursive: true });
+const tx0 = Math.floor(X0 / TILE), tx1 = Math.floor((X0 + WIDTH - 1) / TILE);
+const tz0 = Math.floor(Z0 / TILE), tz1 = Math.floor((Z0 + DEPTH - 1) / TILE);
+const tiles = [];
+let bytes = 0;
+for (let tz = tz0; tz <= tz1; tz++) for (let tx = tx0; tx <= tx1; tx++) {
+  const wx0 = tx * TILE, wz0 = tz * TILE, n = TILE * TILE;
+  const tg = new Uint8Array(n).fill(SEA_Y - 5), ts = new Uint8Array(n).fill(SURF.water), tw = new Uint8Array(n), tm = new Uint8Array(n), tb = new Uint16Array(n);
+  const local = new Map(), rows = [];
+  let land = 0;
+  for (let z = 0; z < TILE; z++) {
+    const az = wz0 + z - Z0;
+    if (az < 0 || az >= DEPTH) continue;
+    for (let x = 0; x < TILE; x++) {
+      const ax = wx0 + x - X0;
+      if (ax < 0 || ax >= WIDTH) continue;
+      const i = az * WIDTH + ax, k = z * TILE + x;
+      tg[k] = ground[i]; ts[k] = surf[i]; tw[k] = wallH[i]; tm[k] = mark[i];
+      if (!sea[i]) land++;
+      const b = bid[i];
+      if (b) {
+        let l = local.get(b);
+        if (l === undefined) { l = rows.length + 1; local.set(b, l); rows.push(b); }
+        tb[k] = l;
+      }
+    }
+  }
+  if (!land) continue; // open sea
+  const table8 = new Uint8Array((rows.length + 1) * 8);
+  const dv = new DataView(table8.buffer);
+  rows.forEach((b, r) => { const o = (r + 1) * 8, t = table[b]; dv.setUint32(o, b, true); table8[o + 4] = t[0]; table8[o + 5] = Math.min(255, t[1]); table8[o + 6] = t[2]; table8[o + 7] = t[3]; });
+  const hb = Buffer.from(JSON.stringify({ v: 3, tx, tz, size: TILE, buildings: rows.length + 1 }));
+  const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32LE(hb.length);
+  const pad = Buffer.alloc((4 - ((4 + hb.length) % 4)) % 4, 32);
+  const body = Buffer.concat([lenBuf, hb, pad, Buffer.from(tg.buffer), Buffer.from(ts.buffer), Buffer.from(tw.buffer), Buffer.from(tm.buffer), Buffer.from(tb.buffer), Buffer.from(table8.buffer)]);
+  const gz = gzipSync(body, { level: 9 });
+  writeFileSync(`${out}/t_${tx}_${tz}.bin.gz`, gz);
+  bytes += gz.length;
+  tiles.push([tx, tz]);
+}
+// a top view of the whole city for the maps (4 blocks per pixel)
+const OVER = 4;
+writePreview(`${out}/overview.png`, WIDTH, DEPTH, ground, surf, bid, table, OVER);
 const [sLat, sLon] = city.spawn;
-const header = {
-  v: 2, id, name: city.name, width: WIDTH, depth: DEPTH, seaY: SEA_Y, buildings: table.length,
-  spawn: [Math.round(px(sLon)), Math.round(pz(sLat))], bbox: city.bbox,
+const index = {
+  v: 3, id, name: city.name, seaY: SEA_Y, tile: TILE, tiles,
+  spawn: [Math.round(P.px(sLon)), Math.round(P.pz(sLat))], bbox: city.bbox, proj: P.proj,
+  area: [X0, Z0, WIDTH, DEPTH], overview: { file: 'overview.png', x0: X0, z0: Z0, step: OVER },
   attribution: 'Map data (c) OpenStreetMap contributors (ODbL). Elevation: Terrain Tiles on AWS (SRTM and others).',
 };
-const hb = Buffer.from(JSON.stringify(header));
-const bt = new Uint8Array(table.length * 4);
-table.forEach((r, k) => { bt[k * 4] = r[0]; bt[k * 4 + 1] = Math.min(255, r[1]); bt[k * 4 + 2] = r[2]; bt[k * 4 + 3] = r[3]; });
-const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32LE(hb.length);
-const pad = Buffer.alloc((4 - ((4 + hb.length) % 4)) % 4, 32);
-const body = Buffer.concat([lenBuf, hb, pad, Buffer.from(ground.buffer), Buffer.from(surf.buffer), Buffer.from(wallTop.buffer), Buffer.from(bid.buffer), Buffer.from(bt.buffer), Buffer.from(mark.buffer)]);
-mkdirSync('public/city', { recursive: true });
-const gz = gzipSync(body, { level: 9 });
-writeFileSync(`public/city/${id}.bin.gz`, gz);
-console.log(`wrote public/city/${id}.bin.gz: ${(gz.length / 1e6).toFixed(2)} MB (raw ${(body.length / 1e6).toFixed(1)} MB)`);
-// a quick top view for checking the result
-if (process.argv.includes('--preview')) {
-  const { writePreview } = await import('./preview.mjs');
-  writePreview(`data/city/${id}-preview.png`, WIDTH, DEPTH, ground, surf, bid, table);
-}
+writeFileSync(`${out}/index.json`, JSON.stringify(index));
+console.log(`wrote ${out}: ${tiles.length} tiles, ${(bytes / 1e6).toFixed(2)} MB`);
+if (process.argv.includes('--preview')) writePreview(`data/city/${id}-preview.png`, WIDTH, DEPTH, ground, surf, bid, table);

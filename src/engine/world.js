@@ -181,6 +181,7 @@ export class World {
       const cx = pcx + dx, cz = pcz + dz;
       const k = ckey(cx, cz);
       if (this.chunks.has(k)) continue;
+      if (this.genReady && !this.genReady(cx, cz)) continue; // its data is still on the way
       const c = { cx, cz, data: null, solid: null, water: null, dirty: false, meshing: false, meshed: false };
       this.chunks.set(k, c);
       this.genInFlight++; budget.gen--;

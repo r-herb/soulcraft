@@ -80,7 +80,7 @@ test.describe('Malaga buses', () => {
     await shot(page, 'bus-roof');
 
     // a stop sign opens the timetable of its stop
-    const sign = await page.evaluate((si) => { const g = window.__sc.game, c = g.city, s = g.buses.net.stops[si]; let best = null, bd = 1e9; for (let z = s.z - 12; z <= s.z + 12; z++) for (let x = s.x - 12; x <= s.x + 12; x++) { if (c.inside(x, z) && c.mark[z * c.w + x] === 3) { const d = Math.hypot(x - s.x, z - s.z); if (d < bd) { bd = d; best = { x, z }; } } } return best; }, plan.stop);
+    const sign = await page.evaluate((si) => { const g = window.__sc.game, c = g.city, s = g.buses.net.stops[si]; let best = null, bd = 1e9; for (let z = s.z - 12; z <= s.z + 12; z++) for (let x = s.x - 12; x <= s.x + 12; x++) { if (c.markAt(x, z) === 3) { const d = Math.hypot(x - s.x, z - s.z); if (d < bd) { bd = d; best = { x, z }; } } } return best; }, plan.stop);
     expect(sign).not.toBeNull();
     await page.evaluate((s) => { const g = window.__sc.game; g.buses.net.fixedMinutes = 12 * 60; g.player.pos.set(s.x + 2.5, 120, s.z + 2.5); g.placeOnGround(); window.__sc.ui.open('busStop', s); }, sign);
     await expect(page.locator('[data-screen="busStop"] .bus-row').first()).toBeVisible();

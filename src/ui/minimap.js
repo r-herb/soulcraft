@@ -4,7 +4,7 @@
 import { SEA } from '../world/blocks.js';
 import { Layout } from '../world/structures.js';
 import { CITY_PLACES } from '../world/city.js';
-import { cityPicture, owColour, CITY_STEP } from './worldmap.js';
+import { cityPicture, owColour } from './worldmap.js';
 
 const RANGE = 72; // blocks from the centre to the edge
 const SAMPLES = 48; // overworld samples across
@@ -39,9 +39,11 @@ export class Minimap {
       ctx.fillStyle = '#2f6db3';
       ctx.fillRect(0, 0, size, size);
       const pic = cityPicture(city);
-      const [sx, sy] = toS(0, 0);
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(pic, sx, sy, pic.width * CITY_STEP * s, pic.height * CITY_STEP * s);
+      if (pic) {
+        const [sx, sy] = toS(pic.x0, pic.z0);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(pic.img, sx, sy, pic.img.width * pic.step * s, pic.img.height * pic.step * s);
+      }
     } else {
       const L = Layout.get(g.meta.seed);
       // re-sample when the player has moved a fair way

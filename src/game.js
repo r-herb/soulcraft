@@ -312,7 +312,7 @@ export class Game {
     if (!this.meta.edits[dim]) this.meta.edits[dim] = {};
     this.world = new World({ scene: this.scene, pool: this.pool, materials: this.materials, seed: this.meta.seed, dim, edits: this.meta.edits[dim] });
     if (this.quest) { this.world.genExtra = () => this.quest.genExtra(); this.quest.reset(); }
-    if (this.city && dim === 'city') this.world.genExtra = (cx, cz) => this.city.slice(cx, cz);
+    if (this.city && dim === 'city') { this.world.genExtra = (cx, cz) => this.city.slice(cx, cz); this.world.genReady = (cx, cz) => this.city.readyFor(cx, cz); }
     this.world.onBlockChange = (x, y, z, prev, id) => {
       this.entities.onBlockChange(x, y, z, prev, id);
       this.farm.onBlockChange(x, y, z, prev, id);
@@ -509,6 +509,7 @@ export class Game {
     this.farm.update(dt);
     this.livestock.update(dt);
     this.missions.update(dt);
+    if (this.city && this.meta.dim === 'city') { this._tileT = (this._tileT || 0) - dt; if (this._tileT <= 0) { this._tileT = 1; this.city.ensure(pl.pos.x, pl.pos.z, 200); } }
     this.petTick(dt);
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
     this.eventTick(dt);
@@ -909,6 +910,13 @@ export class Game {
     this.paused = true;
     this.audio.sfx('portal');
     const p = this.player;
+    if (this.city && this.meta.dim === 'city') {
+      // the tiles there first, then a spot off buildings and the sea
+      await this.city.ensure(x, z, 64);
+      const c = this.city.openCellNear(Math.floor(x), Math.floor(z), 48);
+      if (!c) { if (!free) this.meta.lives = this.lives + 1; this.ui.hideLoading(); this.paused = false; this.ui.toast(t('wmap.cantLand'), 'warn'); return false; }
+      x = c.x; z = c.z;
+    }
     p.pos.set(Math.floor(x) + 0.5, 126, Math.floor(z) + 0.5);
     p.vel.set(0, 0, 0);
     p.fallStart = null;
