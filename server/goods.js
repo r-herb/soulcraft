@@ -23,6 +23,8 @@ export const DAILY_CAP = {
   wheat: 256, tomato: 128, carrot: 128, egg: 64, wool: 64, raw_chicken: 32, raw_mutton: 32, raw_beef: 32,
 };
 export const capFor = (item) => DAILY_CAP[item] || 256;
+// coins the city pays once for each finished city mission
+export const MISSION_PAY = { deposit: 10, tour: 60, bus: 40, paella: 50, critic: 30 };
 export const START_CASH = 20;
 export const BUS_FARE = 2;
 const REF = 200;

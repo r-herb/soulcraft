@@ -325,6 +325,12 @@ body.touch .desktop-only { display: none !important; }
 .quest-obj { position: absolute; top: calc(var(--sp-2) + var(--safe-t)); left: 50%; transform: translateX(-50%); max-width: min(46vw, 440px); text-align: center; background: rgba(5, 4, 15, 0.55); border: 2px solid rgba(246, 198, 103, 0.55); border-radius: var(--r-md); padding: 4px var(--sp-3); pointer-events: none; }
 .quest-obj b { display: block; font-family: var(--font-display); font-size: 10px; font-weight: 400; color: var(--c-gold-400); text-shadow: var(--text-shadow); margin-bottom: 3px; }
 .quest-obj span { font-size: var(--fs-sm); text-shadow: var(--text-shadow); }
+.quest-obj .mis-arrow { display: inline-block; font-style: normal; color: var(--c-gold-400); margin-left: 6px; transition: transform 0.15s linear; }
+.mis-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.mis-card { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); background: rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; gap: 4px; }
+.mis-card.done { opacity: 0.6; }
+.mis-card.on { outline: 2px solid var(--c-gold-400); }
+.mis-card .row { justify-content: space-between; gap: var(--sp-2); flex-wrap: wrap; }
 .parchment { width: 100%; max-width: 760px; height: auto; image-rendering: pixelated; border: var(--px) solid #5a3a1a; border-radius: var(--r-sm); background: #e8d5a0; }
 .reward-row { display: flex; gap: var(--sp-4); justify-content: center; align-items: center; }
 .reward-row .rw { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--c-gold-400); }

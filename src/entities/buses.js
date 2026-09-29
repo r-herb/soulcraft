@@ -106,6 +106,7 @@ export class BusManager {
       this.lastStop = b.stop;
       const s = this.net.stops[b.line.stops[b.stop].s];
       g.ui.toast(t('bus.atStop', { name: s.name || '?' }));
+      g.missions.event('stop');
     } else if (b.stop < 0 && this.lastStop >= 0 && b.next < b.line.stops.length) {
       const s = this.net.stops[b.line.stops[b.next].s];
       if (this.announced !== b.next) { this.announced = b.next; g.ui.toast(t('bus.nextStop', { name: s.name || '?' })); }
@@ -123,6 +124,7 @@ export class BusManager {
       g.placeOnGround(Math.min(126, b.y + 8));
     }
     g.ui.toast(t('bus.off'));
+    g.missions.event('getoff');
   }
 
   // use near a bus: board it when it stands at a stop
@@ -162,6 +164,7 @@ export class BusManager {
     const last = this.net.stops[b.line.stops[b.line.stops.length - 1].s];
     g.ui.toast(t('bus.boarded', { ref: b.line.ref, to: b.line.to || (last && last.name) || '' }));
     g.audio.sfx('click');
+    g.missions.event('board');
   }
 
   // after the player's own movement: stand on roofs, be carried, and not walk through buses

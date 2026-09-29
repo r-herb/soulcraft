@@ -117,6 +117,7 @@ export const econ = {
   history: () => api('econ/history'),
   async trade(side, item, qty) { const r = await api('econ/' + side, { method: 'POST', body: { item, qty } }); setWallet(r.wallet); return r; },
   async move(side, amount) { const r = await api('econ/' + side, { method: 'POST', body: { amount } }); setWallet(r.wallet); return r; },
+  async mission(id) { const r = await api('econ/mission', { method: 'POST', body: { id } }); if (r.wallet) setWallet(r.wallet); return r; },
   quest: (kind, ref) => api('econ/quest', { method: 'POST', body: { kind, ref } }),
   async lottery(tickets) { const r = await api('econ/lottery', { method: 'POST', body: { tickets } }); setWallet(r.wallet); return r; },
   offers: () => api('econ/offers'),

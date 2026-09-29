@@ -76,6 +76,13 @@ test.describe('Economy', () => {
     expect(h.history.map((x) => x.kind)).toEqual(['bus', 'sell', 'withdraw', 'deposit', 'sell']);
     expect(h.history[0].amount).toBe(-2);
 
+    // a city mission pays once
+    r = await request.post('/api/econ/mission', { data: { id: 'tour' } });
+    expect((await r.json()).paid).toBe(60);
+    r = await request.post('/api/econ/mission', { data: { id: 'tour' } });
+    expect((await r.json()).paid).toBe(0);
+    expect((await request.post('/api/econ/mission', { data: { id: 'moon' } })).status()).toBe(400);
+
     // groceries and a meal
     r = await request.post('/api/econ/pay', { data: { what: 'shop', item: 'tomato', qty: 3 } });
     expect((await r.json()).total).toBe(6);

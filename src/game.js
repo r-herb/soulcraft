@@ -28,6 +28,7 @@ import { BusNet } from './world/bus.js';
 import { BusManager } from './entities/buses.js';
 import { Farm, harvestOf, isCrop } from './world/farm.js';
 import { Livestock } from './entities/livestock.js';
+import { Missions } from './quest/missions.js';
 
 // real-city data, loaded once per city
 const cityCache = new Map();
@@ -106,6 +107,7 @@ export class Game {
     this.entities = new EntityManager(this);
     this.farm = new Farm(this);
     this.livestock = new Livestock(this);
+    this.missions = new Missions(this);
     this.daily = new DailyTracker(this);
     this.event = currentEvent();
     this.bosses = new BossManager(this);
@@ -506,6 +508,7 @@ export class Game {
     this.entities.update(dt);
     this.farm.update(dt);
     this.livestock.update(dt);
+    this.missions.update(dt);
     this.petTick(dt);
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
     this.eventTick(dt);
@@ -704,6 +707,7 @@ export class Game {
     if (hit && hit.id === B.workbench && fresh && !(def && def.block !== undefined)) { this.ui.openInventory(); this.useCooldown = 0.3; return; }
     if (def && def.food && fresh) {
       if (!this.feed(def.food)) { this.ui.toast(t('toast.fullHealth')); return; }
+      this.missions.event('eat', { item: h.item });
       this.inventory.consumeHeld(1);
       this.useCooldown = 0.4;
       return;

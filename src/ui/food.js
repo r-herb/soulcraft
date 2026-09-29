@@ -69,6 +69,7 @@ export function foodShop(args, ui) {
           const r = await econ.pay('shop', { item, qty });
           g.giveItem(item, qty);
           ui.toast(t('food.bought', { q: qty, item: itemName(item), n: r.total }), 'ok');
+          g.missions.event('buy', { item });
         } catch (e) { f.errEl.textContent = failText(e); }
         busy = false;
         draw();
@@ -104,6 +105,7 @@ export function restaurant(args, ui) {
         try {
           await econ.pay('meal', { item });
           g.feed(m.food);
+          g.missions.event('meal', { item, key: `${Math.round(g.player.pos.x / 12)},${Math.round(g.player.pos.z / 12)}` });
           ui.toast(t('food.ate', { item: itemName(item) }), 'ok');
         } catch (e) { f.errEl.textContent = failText(e); }
         busy = false;

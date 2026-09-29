@@ -153,6 +153,7 @@ export function inventory(args, ui) {
     if (rec.crystals) g.profile.crystals -= rec.crystals;
     for (let i = 0; i < 9; i++) if (inv.grid[i]) { inv.grid[i].count--; if (inv.grid[i].count <= 0) inv.grid[i] = null; }
     g.giveItem(rec.out, rec.count);
+    g.missions.event('craft', { item: rec.out });
     if (rec.out === 'void_lantern') { g.meta.hasLantern = true; ui.tutorialDone('map'); }
     g.audio.sfx('craft');
     g.daily.note('craft');

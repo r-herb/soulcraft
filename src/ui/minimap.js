@@ -61,6 +61,18 @@ export class Minimap {
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,6,24,0.85)'; ctx.strokeText(pl.name, x, y - 5);
       ctx.fillStyle = '#fff'; ctx.fillText(pl.name, x, y - 5);
     }
+    // the tracked mission's place
+    const tg = city && g.missions && g.missions.target();
+    if (tg) {
+      let [x, y] = toS(tg.x, tg.z);
+      const cx = size / 2, cy = size / 2, r = size / 2 - 7;
+      const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+      if (d > r) { x = cx + (dx / d) * r; y = cy + (dy / d) * r; }
+      ctx.fillStyle = '#ffd36b'; ctx.strokeStyle = 'rgba(8,6,24,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? 2.6 : 6; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+      ctx.closePath(); ctx.stroke(); ctx.fill();
+    }
     // bus stops and the buses on the road
     if (city && g.buses) {
       for (const st of g.buses.net.stops) {

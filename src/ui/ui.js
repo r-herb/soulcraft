@@ -12,6 +12,7 @@ import { friends, social, refreshSocial } from './social.js';
 import { chat, chatState } from './chat.js';
 import { bank } from './bank.js';
 import { foodShop, restaurant } from './food.js';
+import { missions } from './missionsui.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
@@ -67,7 +68,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -617,6 +618,7 @@ export class UI {
         <div class="col">
           <button class="btn primary" data-act="resume" data-i18n="pause.resume"></button>
           <div class="row"><button class="btn" style="flex:1" data-act="map" data-i18n="pause.map"></button><button class="btn" style="flex:1" data-act="shop" data-i18n="pause.shop"></button></div>
+          ${this.game.missions && this.game.missions.active ? '<button class="btn gold" data-act="missions" data-i18n="mis.title"></button>' : ''}
           <div class="row"><button class="btn" style="flex:1" data-act="settings" data-i18n="pause.settings"></button><button class="btn" style="flex:1" data-act="save" data-i18n="pause.save"></button></div>
           <div class="row"><button class="btn" style="flex:1" data-act="help" data-i18n="help.title"></button>${account.available ? '<button class="btn" style="flex:1" data-act="feedback" data-i18n="fb.button"></button>' : ''}</div>
           ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
@@ -635,6 +637,7 @@ export class UI {
     on('resume', () => this.closeAll());
     on('map', () => this.openMap());
     on('shop', () => this.open('shop'));
+    on('missions', () => this.open('missions'));
     on('settings', () => this.open('settings'));
     on('save', () => this.game.save());
     on('quit', () => this.app.quitToTitle());

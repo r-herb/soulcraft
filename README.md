@@ -120,6 +120,15 @@ friends like any other world.
   buses of each line and the lines on the map. A bus standing at a stop can
   be boarded (jump gets off), and the ladder at the back leads to the roof,
   where a player rides along.
+- **Missions** (pause menu > Malaga missions; the HUD follows one, with an
+  arrow and the distance to its next place, and the minimap shows a star):
+  the tourist route (Plaza de la Constitucion, the Cathedral, the Alcazaba,
+  Gibralfaro, La Malagueta), a bus ride of two stops or more to the beach,
+  the paella master (buy rice, cook a paella, eat it on the beach), the
+  restaurant critic (three different restaurants) and a first bank deposit.
+  Progress is kept in the player's profile; each pays soul crystals in
+  survival, and the city pays coins once per mission to signed-in players
+  (`missions_done`, migration 0012).
 - Other cities can be added in `scripts/city/cities.mjs`.
 
 ## Friends
@@ -468,6 +477,10 @@ What the tests cover:
 - `tests/call.spec.js`: a friend calls with video (the browser's fake
   camera), the other answers, both connect, mute works and hanging up ends
   the call for both; strangers cannot ring anyone.
+- `tests/missions.spec.js` (desktop): the HUD follows the tourist route with
+  an arrow and a distance; the landmarks, the bus ride (getting off early
+  starts over), the paella (eaten on the beach only), the critic (the same
+  restaurant counts once) and the deposit each complete their mission.
 - `tests/farm.spec.js`: seeds planted on grass grow into ripe wheat and
   tomatoes and give a harvest, two cows fed wheat have a calf, a hen lays
   an egg, a sheep gives wool, and animals are parked in the save and come

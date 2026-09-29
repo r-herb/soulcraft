@@ -109,7 +109,7 @@ export function bank(args, ui) {
       const side = a.startsWith('deposit') ? 'deposit' : 'withdraw';
       const amount = a === 'depositAll' ? wallet.cash : a === 'withdrawAll' ? wallet.bank : Math.floor(Number(inp.value) || 0);
       if (!(amount > 0)) { errEl.textContent = t('econ.noMoney'); return; }
-      act(async () => { await econ.move(side, amount); ui.toast(t(side === 'deposit' ? 'econ.deposited' : 'econ.withdrawn', { n: amount }), 'ok'); });
+      act(async () => { await econ.move(side, amount); if (side === 'deposit') g.missions.event('deposit'); ui.toast(t(side === 'deposit' ? 'econ.deposited' : 'econ.withdrawn', { n: amount }), 'ok'); });
     }));
     drawHistory();
   }

@@ -96,6 +96,21 @@ Pirmajā reizē apmācība parāda soli pa solim: iet, skatīties, lauzt, likt, 
   - būvmateriāli un lukturi.
 - **Nāve:** parādās atdzimšanas ekrāns, un spēlētājs atdzimst mājas punktā.
 
+## 4b. Lauku sēta: dārzeņi un mājlopi
+
+- **Dārzeņi:**
+  - kviešu un tomātu sēklas un burkāni tirgus stendā;
+  - sēj uz zāles vai zemes, un zeme kļūst par aramzemi;
+  - augs aug 4 stadijās (apmēram 7,5 minūtes spēles laika);
+  - nobriedis augs dod ražu un sēklas atpakaļ;
+  - no kviešiem cep maizi un maļ miltus.
+- **Mājlopi (vistas, aitas, govis):**
+  - dienā klīst pa zāli grupās, tirgus stendā tos var nopirkt kastē;
+  - seko spēlētājam, ja tas tur rokā to barību;
+  - divi pabaroti pieaugušie dabū mazuli;
+  - vistas dēj olas, aitas dod vilnu, gaļu cep ar oglēm.
+- Ražu, olas, vilnu un gaļu var pārdot biržā.
+
 ## 5. Ciemati, tirdzniecība un Dvēseļu veikals
 
 - **Ciemati:** mājas ar durvīm uz centru un aka vidū. Ciematnieki tirgojas: dod, piemēram, 6 baļķus pret 2 maizēm. Jo biežāk tirgojies, jo lielāka draudzība un jo labāki piedāvājumi.
@@ -231,7 +246,14 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 
 ### Ko Malagā var darīt (aktivitātes)
 
-Spēlē **nav atsevišķu scenārija misiju tikai Malagai**. Pilsēta ir atvērta pasaule, kurā dari:
+Malagā ir 5 **misijas** (pauzes izvēlne - "Malagas misijas"). HUD augšā rāda izvēlēto misiju, bultu un attālumu līdz nākamajai vietai, bet minikartē ir zelta zvaigzne:
+- **Tūrista maršruts:** Plaza de la Constitución, katedrāle, Alcazaba, Gibralfaro, La Malagueta (+60 monētas, +20 kristāli).
+- **Ar autobusu uz pludmali:** iekāp autobusā, nobrauc vismaz 2 pieturas un izkāp pie La Malagueta; ja izkāp agrāk, jāsāk no jauna (+40, +10).
+- **Paeljas meistars:** nopērc rīsus, pagatavo paelju un apēd to La Malagueta pludmalē (+50, +15).
+- **Restorānu kritiķis:** paēd 3 dažādos restorānos (+30, +10).
+- **Pirmie ietaupījumi:** noguldi monētas bankā (+10, +5).
+
+Kristāli nāk izdzīvošanas režīmā, bet monētas pilsēta izmaksā vienreiz par katru misiju pierakstītiem spēlētājiem. Bez misijām pilsēta ir atvērta pasaule, kurā dari:
 1. **Izpēti orientierus:** aizej no Plaza de la Constitución pa Calle Larios līdz Katedrālei, uzkāp Alcazaba un Gibralfaro, nonāc pludmalē La Malagueta un ostā Muelle Uno.
 2. **Brauc ar autobusu:** atrodi pieturu, apskati sarakstu, iekāp un aizbrauc uz citu rajonu, vai brauc uz jumta.
 3. **Ceļo ar karti:** aizlido uz jebkuru vietu, izdzīvošanā tas maksā dzīvību.
@@ -315,7 +337,7 @@ Vari pielāgot, bet saglabā nodaļas un loģisko secību. Katrai ainai ir norā
 
 **(Neobligāti) 9. nodaļa: Drīzumā** (skaidri atzīmēta kā nākotne):
 - bankas aplaupīšana (kvesti un apsardze);
-- dārzeņu audzēšana un mājlopi, ko pārdot biržā;
+- visa Malaga no lidostas līdz El Palo (iekšpus apvedceļa);
 - vairāk pilsētu.
 
 ## Kvalitātes pārbaude pirms nodošanas

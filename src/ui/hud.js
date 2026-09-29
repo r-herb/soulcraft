@@ -51,7 +51,7 @@ export class Hud {
         <button class="hud-btn pe" data-b="pause" data-i18n-aria="hud.pause">${SVG.pause}</button>
       </div>
       <button class="minimap pe hidden" data-b="map" data-i18n-aria="hud.map"><canvas></canvas><i class="mm-n">N</i></button>
-      <div class="quest-obj hidden"><b></b><span></span></div>
+      <div class="quest-obj hidden"><b></b><span></span><i class="mis-arrow hidden">&#9650;</i></div>
       <div class="boss-bar hidden"><div class="boss-name"></div><div class="boss-hp"><i></i></div><div class="boss-hint"></div></div>
       <div class="held-name"></div>
       <div class="hotbar pe"></div>
@@ -73,6 +73,7 @@ export class Hud {
     this.hurt = q('.hurt-flash'); this.water = q('.underwater'); this.magma = q('.inmagma');
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
     this.questObj = q('.quest-obj');
+    this.misArrow = q('.mis-arrow');
     this.roomChip = q('.room-chip');
     this.chatBtn = q('[data-b="chat"]');
     this.livesChip = q('.lives-chip'); this.livesN = q('.lives-n');
@@ -228,6 +229,25 @@ export class Hud {
     // quest objective
     if (g.quest && !g.bosses.active) {
       const [head, detail] = g.quest.objective();
+      if (L.qh !== head || L.qd !== detail) {
+        L.qh = head; L.qd = detail;
+        this.questObj.querySelector('b').textContent = head;
+        this.questObj.querySelector('span').textContent = detail;
+      }
+      this.questObj.classList.remove('hidden');
+      this.misArrow.classList.add('hidden');
+    } else if (g.missions && g.missions.active && g.missions.tracked && !g.bosses.active) {
+      // a city mission: its next step, and an arrow and distance to its place
+      const m = g.missions.tracked, tg = g.missions.target(m);
+      const head = t('mis.' + m.id);
+      let detail = g.missions.stepText(m);
+      if (tg) {
+        const dx = tg.x - p.pos.x, dz = tg.z - p.pos.z;
+        detail += ` - ${Math.round(Math.hypot(dx, dz))} m`;
+        const deg = Math.round(((p.yaw - Math.atan2(-dx, -dz)) * 180) / Math.PI);
+        if (L.ma !== deg) { L.ma = deg; this.misArrow.style.transform = `rotate(${deg}deg)`; }
+      }
+      this.misArrow.classList.toggle('hidden', !tg);
       if (L.qh !== head || L.qd !== detail) {
         L.qh = head; L.qd = detail;
         this.questObj.querySelector('b').textContent = head;

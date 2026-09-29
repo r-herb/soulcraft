@@ -28,7 +28,7 @@
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import { monthIndex, monthStart, scDate, PAY, SALARY_CAP, QUEST_MAX, TICKET, MAX_TICKETS } from '../../server/calendar.js';
-import { capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
+import { MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -410,6 +410,15 @@ async function route(parts, method, request, env, secure) {
       return Math.max(0, capFor(item) - a.n - b2.n);
     };
     const capErr = (left) => json({ error: 'daily_cap', message: `You can sell ${left} more of this today.`, left }, 429);
+    // a city mission finished: paid once per player
+    if (b === 'mission') {
+      const id = String(inp.id || '');
+      if (!MISSION_PAY[id]) return err(400, 'bad_mission');
+      const r = await db.prepare('INSERT OR IGNORE INTO missions_done (user_id, mission, at) VALUES (?, ?, ?)').bind(uid, id, now).run();
+      if (!r.meta.changes) return json({ ok: true, paid: 0, wallet: await wallet() });
+      await db.batch([db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(MISSION_PAY[id], now, uid), entry('mission', id, null, MISSION_PAY[id])]);
+      return json({ ok: true, paid: MISSION_PAY[id], wallet: await wallet() });
+    }
     // a quest done: counts toward this month's salary (once per quest per month)
     if (b === 'quest') {
       const kind = String(inp.kind || ''), ref = String(inp.ref || '').slice(0, 80);
