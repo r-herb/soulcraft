@@ -252,6 +252,15 @@ const painters = {
   },
   limestone: (p) => { p.bricks('#d9ccb0', '#b8a987', 16, 8); p.speckle('#c8b996', 8); },
   concrete: (p) => { p.noise(['#b4b5b8', '#adaeb1', '#bbbcbf']); p.speckle('#9c9da0', 5); },
+  bus_stop: (p) => {
+    p.noise(['#1f5fbf', '#1c58b3']); p.border('#f2f2f2');
+    const w = hex('#ffffff'), d = hex('#1f5fbf');
+    // a small bus: body, windows, wheels
+    for (let x = 3; x < 13; x++) for (let y = 4; y < 11; y++) p.set(x, y, w);
+    for (let x = 4; x < 12; x += 3) for (let y = 5; y < 7; y++) { p.set(x, y, d); p.set(x + 1, y, d); }
+    for (const x of [5, 10]) { p.set(x, 11, w); p.set(x + 1, 11, w); p.set(x, 12, w); p.set(x + 1, 12, w); }
+  },
+  bus_stop_top: (p) => { p.noise(['#b8bcc2', '#aeb2b8']); p.border('#8a8e94'); },
   road_paint: (p) => { p.noise(['#f2f1ea', '#e8e7df', '#f7f6f0']); p.speckle('#c9c8c0', 5); },
   paint_dark: (p) => { p.noise(['#27324a', '#2d3953', '#222c42']); p.speckle('#3d4a66', 5); },
   ...Object.fromEntries(Array.from({ length: 10 }, (_, d) => ['num_' + d, (p) => {

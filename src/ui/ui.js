@@ -7,6 +7,7 @@ import { SVG } from './icons.js';
 import { Hud } from './hud.js';
 import * as panels from './panels.js';
 import { worldMap } from './worldmap.js';
+import { busStop } from './busui.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
@@ -62,7 +63,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || (top.name === 'worldMap' ? worldMap : null);
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -400,6 +401,11 @@ export class UI {
   }
 
   acctError(e) {
+    if (e && e.code === 'banned') {
+      const d = e.data || {};
+      const until = d.until && d.until < 4e12 ? new Date(d.until).toLocaleString(getLang(), { dateStyle: 'medium', timeStyle: 'short' }) : t('acct.banForever');
+      return t('acct.err.banned', { until }) + (d.reason ? ' (' + d.reason + ')' : '');
+    }
     const k = 'acct.err.' + (e && e.code);
     const s = t(k);
     return s === k ? t('acct.err.generic') : s;
@@ -448,6 +454,7 @@ export class UI {
     const node = el(`<div class="screen solid" data-screen="profile">
       <div class="panel" style="width:min(720px,100%)">
         <div class="panel-head"><h2 class="panel-title" data-i18n="acct.profile"></h2>
+          ${u.role === 'admin' ? '<a class="btn small gold" href="/admin" data-i18n="acct.adminPanel"></a>' : ''}
           <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
         <div class="panel-body">
           <div class="profile-grid">

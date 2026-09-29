@@ -156,6 +156,8 @@ export function genCity(cx, cz, data, e) {
     // plants on open ground
     if (!b && (s === SURF.park || s === SURF.garden || s === SURF.ground) && hash3(wx, 2, wz, 7) < 0.06 && g + 1 < HEIGHT) data[idx(lx, g + 1, lz)] = B.tallgrass;
     if (!b && s === SURF.scrub && hash3(wx, 3, wz, 7) < 0.08 && g + 1 < HEIGHT) data[idx(lx, g + 1, lz)] = B.dry_bush;
+    // a bus stop sign (two blocks high)
+    if (mk === 3 && !b && g + 2 < HEIGHT) { data[idx(lx, g + 1, lz)] = B.bus_stop; data[idx(lx, g + 2, lz)] = B.bus_stop; }
     // city walls (the Alcazaba, Gibralfaro)
     const wh = e.wall[k];
     if (wh) {

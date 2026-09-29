@@ -61,6 +61,15 @@ export class Minimap {
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,6,24,0.85)'; ctx.strokeText(pl.name, x, y - 5);
       ctx.fillStyle = '#fff'; ctx.fillText(pl.name, x, y - 5);
     }
+    // bus stops and the buses on the road
+    if (city && g.buses) {
+      for (const st of g.buses.net.stops) {
+        const [x, y] = toS(st.x, st.z);
+        if (x < 0 || y < 0 || x > size || y > size) continue;
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 2, y - 2, 4, 4); ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 1; ctx.strokeRect(x - 2, y - 2, 4, 4);
+      }
+      for (const b of g.buses.net.active()) { const [x, y] = toS(b.x, b.z); if (x > -5 && y > -5 && x < size + 5 && y < size + 5) this.dot(x, y, '#c8102e', 3); }
+    }
     if (g.homeHere()) { const h = g.meta.home; this.dot(...toS(h.x, h.z), '#7cf0a0', 3.5); }
     if (g.net && g.net.players) for (const o of g.net.players.values()) if (o.object && o.seen) this.dot(...toS(o.object.position.x, o.object.position.z), '#b48cff', 3);
     // the player

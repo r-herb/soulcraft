@@ -404,6 +404,23 @@ const LIGHT_PAINT = new Set([SURF.road, SURF.parking]);
   }
   console.log(`${labels} street name labels`);
 
+  // bus stops: a stop sign on the pavement next to the stop
+  let signs = 0;
+  for (const el of osm.elements) {
+    const t = tags(el);
+    if (el.type !== 'node' || t.highway !== 'bus_stop') continue;
+    const x0 = Math.floor(px(el.lon)), z0 = Math.floor(pz(el.lat));
+    let done = false;
+    for (let r = 0; r <= 6 && !done; r++) for (let dz = -r; dz <= r && !done; dz++) for (let dx = -r; dx <= r && !done; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const x = x0 + dx, z = z0 + dz;
+      if (x < 0 || z < 0 || x >= WIDTH || z >= DEPTH) continue;
+      const i = z * WIDTH + x, s2 = surf[i] & 0x7f;
+      if (!bid[i] && !mark[i] && (s2 === SURF.pavement || s2 === SURF.plaza || s2 === SURF.marble)) { mark[i] = 3; done = true; signs++; }
+    }
+  }
+  console.log(`${signs} bus stop signs`);
+
   // house numbers: on the facade that faces the street, one plaque per digit
   const numbers = [];
   for (const el of osm.elements) {

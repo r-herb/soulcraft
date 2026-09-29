@@ -73,10 +73,45 @@ export function worldMap(args, ui) {
   const city = g.city && g.meta.dim === 'city' ? g.city : null;
   const L = city ? null : Layout.get(g.meta.seed);
   const creative = !!g.creative;
+  // the bus network layer (cities): all lines, or the lines of one stop
+  const net = city && g.buses ? g.buses.net : null;
+  let showBus = !!(net && args.busStop !== undefined);
+  const stopLines = net && args.busStop !== undefined ? new Set(net.lines.filter((l) => l.stops.some((q) => q.s === args.busStop)).map((l) => l)) : null;
+  function drawBuses() {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const l of net.lines) {
+      const hi = !stopLines || stopLines.has(l);
+      ctx.strokeStyle = l.colour; ctx.globalAlpha = hi ? 0.9 : 0.18; ctx.lineWidth = hi ? Math.max(2.5, st.s * 3) : 1.5;
+      ctx.beginPath();
+      l.pts.forEach(([x, z], i) => { const [sx, sy] = toScreen(x, z); if (i) ctx.lineTo(sx, sy); else ctx.moveTo(sx, sy); });
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    net.stops.forEach((s, i) => {
+      if (stopLines && !net.lines.some((l) => stopLines.has(l) && l.stops.some((q) => q.s === i))) return;
+      const [sx, sy] = toScreen(s.x, s.z);
+      ctx.fillStyle = i === args.busStop ? '#ffd36b' : '#ffffff'; ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 2;
+      ctx.fillRect(sx - 3.5, sy - 3.5, 7, 7); ctx.strokeRect(sx - 3.5, sy - 3.5, 7, 7);
+      if (st.s > 1.2 || i === args.busStop) label(s.x, s.z, s.name, '#cfe0ff');
+    });
+    // the buses on the road now
+    for (const b of net.active()) {
+      if (stopLines && !stopLines.has(b.line)) continue;
+      const [sx, sy] = toScreen(b.x, b.z);
+      ctx.fillStyle = '#c8102e'; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '9px Tiny5, monospace'; ctx.textAlign = 'center'; ctx.fillText(b.line.ref, sx, sy + 3);
+    }
+    if (stopLines) {
+      // a legend of the stop's lines
+      let y = 14;
+      ctx.textAlign = 'left'; ctx.font = '11px Tiny5, monospace';
+      for (const l of stopLines) { ctx.fillStyle = l.colour; ctx.fillRect(8, y - 9, 22, 12); ctx.fillStyle = '#fff'; ctx.fillText(l.ref, 10, y); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,6,24,0.85)'; ctx.strokeText(l.to, 36, y); ctx.fillText(l.to, 36, y); y += 15; }
+    }
+  }
   const node = el(`<div class="screen scrim" data-screen="worldMap">
     <div class="panel wmap-panel">
       <div class="panel-head"><h2 class="panel-title">${esc(t(city ? 'wmap.cityTitle' : 'wmap.title', { name: city ? t('city.' + g.meta.city + '.name') : '' }))}</h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
-      <div class="wmap-bar"><span class="wmap-lives"></span><span class="faint wmap-hint"></span>${city ? '' : '<button class="btn small" data-act="soul" data-i18n="wmap.soulMap"></button>'}</div>
+      <div class="wmap-bar"><span class="wmap-lives"></span><span class="faint wmap-hint"></span>${city ? (g.buses ? '<button class="btn small" data-act="buses" data-i18n="bus.lines"></button>' : '') : '<button class="btn small" data-act="soul" data-i18n="wmap.soulMap"></button>'}</div>
       <div class="wmap-view"><canvas></canvas>
         <div class="wmap-tools">
           <button class="btn small icon-btn" data-z="in" aria-label="+">+</button>
@@ -164,6 +199,7 @@ export function worldMap(args, ui) {
       const pic = cityPicture(city);
       const [sx, sy] = toScreen(0, 0);
       ctx.drawImage(pic, sx, sy, pic.width * STEP * st.s, pic.height * STEP * st.s);
+      if (showBus) drawBuses();
       for (const pl of CITY_PLACES[g.meta.city] || []) { const q = city.toXZ(pl.lat, pl.lon); marker(q.x, q.z, '#ffd36b', 3); label(q.x, q.z, pl.name); }
     } else if (owPic) {
       // the cached picture, moved and scaled to the current view
@@ -273,6 +309,11 @@ export function worldMap(args, ui) {
   node.querySelector('[data-act="cancel"]').addEventListener('click', () => { ui.click(); st.pick = null; confirm.classList.add('hidden'); draw(); });
   node.querySelector('[data-act="go"]').addEventListener('click', () => { ui.click(); if (st.pick) g.mapTravel(st.pick.x, st.pick.z); });
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  const busBtn = node.querySelector('[data-act="buses"]');
+  if (busBtn) busBtn.addEventListener('click', () => { ui.click(); showBus = !showBus; busBtn.classList.toggle('primary', showBus); draw(); });
+  if (busBtn && showBus) busBtn.classList.add('primary');
+  // live buses move: redraw every second while the layer is on
+  const tick = setInterval(() => { if (!node.isConnected) { clearInterval(tick); return; } if (showBus) draw(); }, 1000);
   const soul = node.querySelector('[data-act="soul"]');
   if (soul) soul.addEventListener('click', () => { ui.click(); ui.open('map'); });
 
@@ -282,6 +323,7 @@ export function worldMap(args, ui) {
   // first layout: about 600 blocks across, centred on the player
   requestAnimationFrame(() => {
     st.s = clamp((view.clientWidth || 600) / 600, 0.2, 4);
+    if (net && args.busStop !== undefined) { const bs = net.stops[args.busStop]; st.cx = bs.x; st.cz = bs.z; st.s = clamp((view.clientWidth || 600) / 1400, 0.2, 4); }
     resize();
   });
   const ro = new ResizeObserver(() => resize());

@@ -24,12 +24,20 @@ import { QuestManager, newQuestState } from './quest/questManager.js';
 import { QUEST_SEED, QUEST_SPAWN } from './world/quest.js';
 import { CityData } from './world/city.js';
 import { MAX_LIVES } from './player/lives.js';
+import { BusNet } from './world/bus.js';
+import { BusManager } from './entities/buses.js';
 
 // real-city data, loaded once per city
 const cityCache = new Map();
 export function loadCityData(id) {
   if (!cityCache.has(id)) cityCache.set(id, CityData.load(id).catch((e) => { cityCache.delete(id); throw e; }));
   return cityCache.get(id);
+}
+
+const busCache = new Map();
+function loadBusNet(id) {
+  if (!busCache.has(id)) busCache.set(id, BusNet.load(id));
+  return busCache.get(id);
 }
 
 const DAY_SECONDS = 600; // one full day-night cycle
@@ -228,6 +236,9 @@ export class Game {
     this.quest = meta.mode === 'quest' ? new QuestManager(this) : null;
     this.layout = Layout.get(meta.seed);
     this.city = meta.city ? await loadCityData(meta.city) : null;
+    if (this.buses) this.buses.clear();
+    const busNet = this.city ? await loadBusNet(meta.city) : null;
+    this.buses = busNet ? new BusManager(this, busNet) : null;
     this.player = new Player();
     this.inventory = new Inventory(meta.inventory);
     this.inventory.onChange = () => this.ui.hud && this.ui.hud.refreshHotbar();
@@ -288,6 +299,7 @@ export class Game {
   async loadRealm(dim, onProgress, findGround = false) {
     if (this.world) this.world.dispose();
     this.entities.clear();
+    if (this.buses) this.buses.clear();
     this.bosses.clearActive();
     this.meta.dim = dim;
     if (!this.meta.edits[dim]) this.meta.edits[dim] = {};
@@ -372,6 +384,7 @@ export class Game {
     this.raf = null;
     if (this.world) { this.world.dispose(); this.world = null; }
     this.entities.clear();
+    if (this.buses) this.buses.clear();
     this.bosses.clearActive();
     this.ui.hud.hide();
     this.input.exitLock();
@@ -475,9 +488,11 @@ export class Game {
       // fixed-size physics steps, so jumps carry the same way at any frame rate
       const n = Math.min(6, Math.ceil(dt * 60 - 0.01));
       const still = n > 1 ? { ...inp, lookDX: 0, lookDY: 0 } : inp;
-      for (let i = 0; i < n; i++) pl.update(dt / n, i ? still : inp, this.world, this);
+      if (this.buses && this.buses.riding) { pl.yaw -= inp.lookDX; pl.pitch = Math.max(-1.55, Math.min(1.55, pl.pitch - inp.lookDY)); }
+      else for (let i = 0; i < n; i++) pl.update(dt / n, i ? still : inp, this.world, this);
     }
     else { pl.yaw -= inp.lookDX; pl.pitch = Math.max(-1.55, Math.min(1.55, pl.pitch - inp.lookDY)); }
+    if (this.buses && this.meta.dim === 'city') { this.buses.update(dt, inp); this.buses.afterPlayer(inp); }
     this.environmentDamage(dt);
     this.hunger(dt);
     this.interact(dt, inp);
@@ -638,6 +653,9 @@ export class Game {
     const h = this.inventory.held;
     const def = h && ITEMS[h.item];
     if (this.quest && hit && fresh && this.quest.interact(hit)) { this.useCooldown = 0.3; return; }
+    // city buses: board one standing at a stop, read the timetable at a stop sign
+    if (fresh && this.buses && this.buses.tryBoard()) { this.useCooldown = 0.3; return; }
+    if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }
     if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
     // villagers
     if (ent && ent.villager && fresh) { this.ui.openTrade(ent); this.useCooldown = 0.3; return; }

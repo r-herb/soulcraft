@@ -28,7 +28,7 @@ async function api(path, opts = {}) {
   });
   let data = {};
   try { data = await res.json(); } catch { /* not JSON: API missing */ }
-  if (!res.ok) { const e = new Error(data.error || 'http_' + res.status); e.status = res.status; e.code = data.error; throw e; }
+  if (!res.ok) { const e = new Error(data.error || 'http_' + res.status); e.status = res.status; e.code = data.error; e.data = data; throw e; }
   return data;
 }
 

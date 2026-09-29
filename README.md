@@ -112,6 +112,14 @@ friends like any other world.
 - The city lives: fish in the sea, the port and ponds, swimmers in the
   pools, sunbathers with parasols on the beach and people walking in the
   pedestrian streets (by day). They are scenery only.
+- City buses: the EMT lines that run through the area (from OpenStreetMap
+  route relations, `scripts/city/build-bus.mjs` -> `public/city/malaga-bus.json`)
+  drive their real routes on Malaga's clock (Europe/Madrid), with the real
+  timetable when the city data has the EMT GTFS feed and every 15 minutes
+  otherwise. Blue stop signs stand at the stops; using one shows the next
+  buses of each line and the lines on the map. A bus standing at a stop can
+  be boarded (jump gets off), and the ladder at the back leads to the roof,
+  where a player rides along.
 - Other cities can be added in `scripts/city/cities.mjs`.
 
 ## Performance
@@ -326,6 +334,9 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/bus.spec.js` (desktop): with the clock fixed, a stop shows its next
+  buses, a bus is boarded, carries the player and is left, and the roof of
+  a driving bus carries a player.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
