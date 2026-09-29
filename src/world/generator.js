@@ -3,6 +3,7 @@ import { CHUNK, HEIGHT, SEA, B } from './blocks.js';
 import { Layout, CHAMBER, ARENAS } from './structures.js';
 import { Noise, hash3 } from './noise.js';
 import { QUEST_BOXES } from './quest.js';
+import { genCity } from './city.js';
 
 const S = CHUNK;
 const idx = (x, y, z) => x + z * S + y * S * S;
@@ -66,6 +67,7 @@ function oreAt(seed, x, y, z, stoneId) {
 export function generateChunk(seed, dim, cx, cz, extra) {
   const data = new Uint8Array(S * S * HEIGHT);
   if (dim === 'quest') genQuest(cx, cz, data, extra);
+  else if (dim === 'city') genCity(cx, cz, data, extra);
   else if (dim === 'emberdeep') genEmberdeep(seed, cx, cz, data);
   else if (dim === 'void') genVoid(seed, cx, cz, data);
   else if (dim === 'soul') genSoul(seed, cx, cz, data);

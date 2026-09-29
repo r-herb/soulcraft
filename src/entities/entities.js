@@ -380,7 +380,7 @@ export class Mob extends Entity {
     const dx = foe.x - this.pos.x, dz = foe.z - this.pos.z, dy = foe.y - this.pos.y;
     const dist = Math.hypot(dx, dz);
     // burn in daylight
-    if (d.burns && g.meta.dim === 'overworld' && !isNight(g.meta.time) && g.world.skyExposed(this.pos.x, this.pos.y + 1.6, this.pos.z)) {
+    if (d.burns && g.outdoors && !isNight(g.meta.time) && g.world.skyExposed(this.pos.x, this.pos.y + 1.6, this.pos.z)) {
       this.burnT = (this.burnT || 0) - dt;
       if (this.burnT <= 0) { this.burnT = 0.8; this.damage(3, null); g.entities.particles.emit(this.pos.x, this.pos.y + 1, this.pos.z, 1, 0.5, 0.1, 6, 1.5, 0.6); }
     }
@@ -657,11 +657,20 @@ export class EntityManager {
     const cap = (diff === 'hard' ? 12 : 8) + (g.net ? g.net.players.size * 3 : 0);
     if (hostile >= cap) return;
     const dim = g.meta.dim;
-    const night = dim === 'overworld' && isNight(g.meta.time);
+    const night = g.outdoors && isNight(g.meta.time);
     const p = g.net ? g.net.spawnCentre() : g.player.pos;
     const a = Math.random() * Math.PI * 2, r = 18 + Math.random() * 18;
     const x = Math.floor(p.x + Math.cos(a) * r), z = Math.floor(p.z + Math.sin(a) * r);
-    if (dim === 'overworld') {
+    if (dim === 'city') {
+      // night monsters in the streets and parks (not on roofs or in the sea)
+      if (!night || !g.city) return;
+      const i = g.city.inside(x, z) ? z * g.city.w + x : -1;
+      if (i < 0 || g.city.bid[i] || (g.city.surf[i] & 0x7f) === 6) return;
+      const y = g.city.ground[i];
+      if (g.world.getBlock(x, y + 1, z) !== B.air || g.world.getBlock(x, y + 2, z) !== B.air) return;
+      const roll = Math.random();
+      this.spawnMob(roll < 0.6 ? 'hollow' : roll < 0.85 ? 'skitter' : 'gloomshot', x + 0.5, y + 1.05, z + 0.5);
+    } else if (dim === 'overworld') {
       // no spawns inside villages or the Trial Chamber
       if (g.layout.villageNear(x, z)) return;
       if (night) {

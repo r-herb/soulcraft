@@ -9,3 +9,6 @@ scratch/
 .DS_Store
 .env*
 .dev.vars
+
+# real-city build inputs (OSM extract comes from the city-data branch)
+data/city/

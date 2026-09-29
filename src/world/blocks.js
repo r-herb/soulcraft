@@ -21,6 +21,9 @@ export const TILES = [
   'sandstone_top', 'sandstone_side', 'cactus_top', 'cactus_side', 'dry_bush', 'ice', 'pine_leaves', 'glow_crystal',
   // Treasure Quest chapter 2
   'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent', 'frost_brick',
+  // real cities
+  'asphalt', 'paving', 'marble', 'plaster_white', 'plaster_cream', 'plaster_ochre', 'plaster_terra', 'roof_tiles',
+  'window', 'limestone', 'concrete',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -127,6 +130,18 @@ const LIST = [
   def(73, 'jet_lit', { tex: { top: 'jet_lit', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1, light: 11 }),
   def(74, 'vent', { tex: { top: 'vent', side: 'frost_brick', bottom: 'frost_brick' }, hardness: -1, light: 6 }),
   def(75, 'frost_brick', { tex: 'frost_brick', hardness: 2, tool: 'pick', tier: 1 }),
+  // real cities
+  def(76, 'asphalt', { tex: 'asphalt', hardness: 1.2, tool: 'pick' }),
+  def(77, 'paving', { tex: 'paving', hardness: 1.2, tool: 'pick' }),
+  def(78, 'marble', { tex: 'marble', hardness: 1.5, tool: 'pick' }),
+  def(79, 'plaster_white', { tex: 'plaster_white', hardness: 1, tool: 'pick' }),
+  def(80, 'plaster_cream', { tex: 'plaster_cream', hardness: 1, tool: 'pick' }),
+  def(81, 'plaster_ochre', { tex: 'plaster_ochre', hardness: 1, tool: 'pick' }),
+  def(82, 'plaster_terra', { tex: 'plaster_terra', hardness: 1, tool: 'pick' }),
+  def(83, 'roof_tiles', { tex: { top: 'roof_tiles', side: 'roof_tiles', bottom: 'plaster_white' }, hardness: 0.8, tool: 'pick' }),
+  def(84, 'window', { tex: 'window', hardness: 0.3 }),
+  def(85, 'limestone', { tex: 'limestone', hardness: 1.5, tool: 'pick' }),
+  def(86, 'concrete', { tex: 'concrete', hardness: 1.5, tool: 'pick' }),
   def(67, 'glow_crystal', { tex: 'glow_crystal', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0.8, light: 12 }),
 ];
 

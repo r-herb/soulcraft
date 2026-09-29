@@ -6,7 +6,7 @@ import { initLang, setLang, t } from './i18n/index.js';
 import { UI } from './ui/ui.js';
 import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
-import { Game } from './game.js';
+import { Game, loadCityData } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
 import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS } from './save/account.js';
 import { seedFromString } from './world/structures.js';
@@ -54,6 +54,15 @@ async function boot() {
       const data = await loadWorld(slot('quest'));
       if (!data) { await app.startQuest(); return; }
       await startGame(data);
+    },
+    // a world in a real city (Malaga)
+    async newCity(params) {
+      if (app.worlds.length >= MAX_WORLDS) { ui.toast(t('worlds.full', { n: MAX_WORLDS }), 'warn'); return; }
+      ui.showLoading(t('city.loading'));
+      try {
+        await loadCityData(params.city);
+      } catch (e) { console.warn('city', e); ui.showTitle(); ui.toast(t('city.loadFailed'), 'warn'); return; }
+      await startGame(app.game.newCityMeta(params));
     },
     async newGame(params) {
       if (app.worlds.length >= MAX_WORLDS) { ui.toast(t('worlds.full', { n: MAX_WORLDS }), 'warn'); return; }
@@ -109,8 +118,10 @@ async function boot() {
         const w = await net.waitFor('welcome');
         await net.waitFor('ready', 90_000);
         net.collect = null;
-        const meta = app.game.newMeta({ name: w.world.name, seed: w.world.seed, difficulty: w.world.difficulty, creative: w.world.creative });
-        Object.assign(meta, { worldId: 'mp-' + code, guest: true, time: w.world.time, day: w.world.day, edits: { overworld: edits }, starfallGiven: true, frostbrandGiven: true });
+        const meta = w.world.city
+          ? app.game.newCityMeta({ city: w.world.city, name: w.world.name, difficulty: w.world.difficulty, creative: w.world.creative })
+          : app.game.newMeta({ name: w.world.name, seed: w.world.seed, difficulty: w.world.difficulty, creative: w.world.creative });
+        Object.assign(meta, { worldId: 'mp-' + code, guest: true, time: w.world.time, day: w.world.day, edits: { [meta.dim]: edits }, starfallGiven: true, frostbrandGiven: true });
         if (w.you && w.you.player) { meta.player = w.you.player; meta.inventory = w.you.inventory || null; }
         net.game = app.game;
         app.game.net = net;

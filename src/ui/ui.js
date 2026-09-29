@@ -172,8 +172,8 @@ export class UI {
             <span><span data-i18n="title.continue"></span><span class="continue-meta">${save ? esc(save.name) + ' - ' + esc(t('hud.day', { n: save.day })) : esc(t('title.nosave'))}</span></span>
           </button>
           <div class="row"><button class="btn violet" style="flex:1" data-act="new" data-i18n="title.new"></button><button class="btn violet" style="flex:1" data-act="worlds" data-i18n="title.worlds"></button></div>
-          ${account.mp ? `<div class="row"><button class="btn gold" style="flex:1" data-act="quest" data-i18n="title.quest"></button><button class="btn" style="flex:1" data-act="join" data-i18n="title.join"></button></div>` : '<button class="btn gold" data-act="quest" data-i18n="title.quest"></button>'}
-          <div class="row"><button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
+          <div class="row"><button class="btn gold" style="flex:1" data-act="quest" data-i18n="title.quest"></button><button class="btn city-btn" style="flex:1" data-act="city" data-i18n="title.city"></button></div>
+          <div class="row">${account.mp ? '<button class="btn" style="flex:1" data-act="join" data-i18n="title.join"></button>' : ''}<button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
         </div>
       </div>
       <div class="title-foot">
@@ -207,6 +207,7 @@ export class UI {
     node.querySelector('[data-act="worlds"]').addEventListener('click', () => { this.click(); this.open('worlds'); });
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
     node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
+    node.querySelector('[data-act="city"]').addEventListener('click', () => { this.click(); this.open('cityIntro', { city: 'malaga' }); });
     const jn = node.querySelector('[data-act="join"]');
     if (jn) jn.addEventListener('click', () => { this.click(); this.open('join'); });
     const si = node.querySelector('[data-act="signin"]');
@@ -581,7 +582,10 @@ export class UI {
   // ---------- in-game overlays ----------
   openPause() { if (!this.game || this.game.player.dead) return; this.open('pause'); }
   openInventory() { this.open('inventory'); this.tutorialDone('craft'); }
-  openMap() { this.open(this.game && this.game.isQuest ? 'treasureMap' : 'map'); }
+  openMap() {
+    if (this.game && this.game.city) { this.toast(t('city.noMap')); return; }
+    this.open(this.game && this.game.isQuest ? 'treasureMap' : 'map');
+  }
   openTrade(v) { this.open('trade', { villager: v }); this.tutorialDone('village'); }
   openDeath(cause, source) { this.stack = [{ name: 'death', args: { cause, source } }]; this.render(); this.onOverlayChange(); }
 
@@ -610,6 +614,36 @@ export class UI {
     on('settings', () => this.open('settings'));
     on('save', () => this.game.save());
     on('quit', () => this.app.quitToTitle());
+    return node;
+  }
+
+  // ---------- real cities ----------
+  screen_cityIntro(args) {
+    const id = args.city || 'malaga';
+    let mode = 'creative';
+    const node = el(`<div class="screen solid" data-screen="cityIntro">
+      <div class="panel" style="width:min(560px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="city.${id}.name"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body col" style="gap:var(--sp-3)">
+          <p style="margin:0" data-i18n="city.${id}.intro"></p>
+          <div class="field"><span class="setting-label" data-i18n="newworld.mode"></span>
+            <div class="seg" data-seg="mode"><button data-v="creative" class="on" data-i18n="mode.creative"></button><button data-v="survival" data-i18n="mode.survival"></button></div></div>
+          <p class="faint" style="margin:0" data-mode-hint>${esc(t('city.creativeHint'))}</p>
+          <button class="btn primary wide" data-act="start" data-i18n="city.start"></button>
+          <p class="faint city-credit" style="margin:0" data-i18n="city.credit"></p>
+        </div>
+      </div></div>`);
+    node.querySelectorAll('[data-seg="mode"] button').forEach((b) => b.addEventListener('click', () => {
+      this.click(); mode = b.dataset.v;
+      node.querySelectorAll('[data-seg="mode"] button').forEach((x) => x.classList.toggle('on', x === b));
+      node.querySelector('[data-mode-hint]').textContent = t(mode === 'creative' ? 'city.creativeHint' : 'city.survivalHint');
+    }));
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelector('[data-act="start"]').addEventListener('click', () => {
+      this.click();
+      this.app.newCity({ city: id, name: t('city.' + id + '.name'), creative: mode === 'creative', difficulty: 'normal' });
+    });
     return node;
   }
 
@@ -736,7 +770,7 @@ export class UI {
     const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(b); }); };
     on('back', () => this.back());
     on('open', async (b) => {
-      if (g.meta.dim !== 'overworld') { this.open('room', { error: 'overworld' }, true); return; }
+      if (!g.outdoors) { this.open('room', { error: 'overworld' }, true); return; }
       if (g.bosses.active) { this.open('room', { error: 'boss' }, true); return; }
       b.disabled = true; b.textContent = t('mp.opening');
       try { await this.app.openRoom(); this.open('room', {}, true); } catch (e) { this.open('room', { error: e.code || 'network' }, true); }

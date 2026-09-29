@@ -69,6 +69,29 @@ screen and type it.
   that the Pages API reaches through the `ROOMS` binding after checking
   the player's session, so only signed-in players get in.
 
+## Malaga: a real city
+
+**Malaga** on the title screen opens a world built from the real centre of
+Malaga, from the Centro and the port to El Limonar, at 1 block = 1 metre:
+the hills (the Alcazaba and Gibralfaro), the streets, squares, parks and
+beach, and every building with its footprint and height. It can be played
+in creative mode (flying, all blocks) or in survival, and shared with
+friends like any other world.
+
+- Map data from [OpenStreetMap](https://www.openstreetmap.org/copyright)
+  (c) OpenStreetMap contributors, under the Open Database License (ODbL
+  1.0). Elevation from the Mapzen/AWS Terrain Tiles (open data). The city
+  file `public/city/malaga.bin.gz` is a derived database under the ODbL.
+- The **City data** workflow (Actions, run by hand) downloads the
+  OpenStreetMap extract with the Overpass API and commits it to the
+  `city-data` branch. `node scripts/city/build-city.mjs malaga --preview`
+  turns it into the city file (and a PNG preview in `data/city/`):
+  ground height, surfaces, city walls, trees and a table of buildings.
+- The game loads the file once and builds each chunk from it in the
+  worker (`src/world/city.js`). Heights are scaled by 0.82 so Gibralfaro
+  fits under the build limit.
+- Other cities can be added in `scripts/city/cities.mjs`.
+
 ## Performance
 
 Weak phones are limited by pixels (the GPU), not by JavaScript, so the
@@ -274,6 +297,8 @@ What the tests cover:
   the room code, avatars, block edits both ways, a host monster killed by
   the guest, a monster hurting the guest, the guest's saved things after
   leaving and rejoining, a wrong code, and the host closing the room.
+- `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
+  Constitucion and its buildings stand where the city file says.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
   through the real Soul Map, from the Void Dragon to the Soul Storm and the
   victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries
@@ -356,6 +381,7 @@ functions/api/       accounts and rooms API (Cloudflare Pages Function)
 mp/                  the rooms Worker (Durable Objects) for multiplayer
 server/              API helpers: hashing, sessions, validation
 migrations/          D1 schema
+scripts/city/        real-city builder: OpenStreetMap download, elevation, raster
 public/              manifest, icons, fonts, _headers
 tests/               Playwright tests
 ```
@@ -395,6 +421,11 @@ tests/               Playwright tests
 **Игра с друзьями:** до 4 игроков с аккаунтами в одном мире. Хозяин мира
 открывает его в меню паузы («Игра с друзьями») и получает код комнаты из 6
 знаков, друзья вводят его на главном экране («К другу»).
+
+**Малага:** кнопка «Малага» на главном экране открывает настоящий центр
+Малаги (от Centro и порта до El Limonar) в масштабе 1 блок = 1 метр: холмы,
+улицы, площади, пляж и все дома по данным OpenStreetMap (c) участники
+OpenStreetMap, ODbL. Можно играть в творческом режиме или на выживание.
 
 **Поиск сокровищ, глава 2:** после первой сокровищницы задняя дверь ведёт в
 Ледяной шпиль: 8 новых уровней и Ледяной страж.

@@ -184,7 +184,7 @@ export class World {
       const c = { cx, cz, data: null, solid: null, water: null, dirty: false, meshing: false, meshed: false };
       this.chunks.set(k, c);
       this.genInFlight++; budget.gen--;
-      this.pool.run({ type: 'gen', seed: this.seed, dim: this.dim, cx, cz, extra: this.genExtra ? this.genExtra() : null }).then((r) => {
+      this.pool.run({ type: 'gen', seed: this.seed, dim: this.dim, cx, cz, extra: this.genExtra ? this.genExtra(cx, cz) : null }).then((r) => {
         this.genInFlight--;
         if (gen !== this.generation || this.chunks.get(k) !== c) return;
         c.data = r.data;

@@ -397,3 +397,6 @@ body.touch .desktop-only { display: none !important; }
 .help-list { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--sp-3); margin: 0; }
 .help-list dt { font-weight: 700; color: var(--c-soul-300); white-space: nowrap; }
 .help-list dd { margin: 0; color: var(--c-text-dim); }
+/* real cities */
+.city-btn { background: linear-gradient(180deg, #e2b36e, #c1603c); color: var(--c-ink); border-color: #8a3f24; }
+.city-credit { font-size: var(--fs-xs); }

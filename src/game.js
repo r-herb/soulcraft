@@ -22,6 +22,14 @@ import { t } from './i18n/index.js';
 import { setIconAtlas } from './ui/icons.js';
 import { QuestManager, newQuestState } from './quest/questManager.js';
 import { QUEST_SEED, QUEST_SPAWN } from './world/quest.js';
+import { CityData } from './world/city.js';
+
+// real-city data, loaded once per city
+const cityCache = new Map();
+export function loadCityData(id) {
+  if (!cityCache.has(id)) cityCache.set(id, CityData.load(id).catch((e) => { cityCache.delete(id); throw e; }));
+  return cityCache.get(id);
+}
 
 const DAY_SECONDS = 600; // one full day-night cycle
 const REACH = 5;
@@ -187,6 +195,18 @@ export class Game {
     };
   }
 
+  // A world in a real city (see src/world/city.js): the map comes from the
+  // city file, not from a seed.
+  newCityMeta({ city, name, creative = false, difficulty = 'normal' }) {
+    const m = this.newMeta({ name, seed: 7, difficulty, creative });
+    m.city = city;
+    m.dim = 'city';
+    return m;
+  }
+
+  // realms with a sky, day and night (the generated overworld and cities)
+  get outdoors() { return !!this.meta && (this.meta.dim === 'overworld' || this.meta.dim === 'city'); }
+
   newQuestMeta() {
     const m = this.newMeta({ name: t('quest.name'), seed: QUEST_SEED, difficulty: 'normal' });
     m.mode = 'quest';
@@ -206,6 +226,7 @@ export class Game {
     if (meta.mode !== 'quest' && !meta.worldId) meta.worldId = newWorldId();
     this.quest = meta.mode === 'quest' ? new QuestManager(this) : null;
     this.layout = Layout.get(meta.seed);
+    this.city = meta.city ? await loadCityData(meta.city) : null;
     this.player = new Player();
     this.inventory = new Inventory(meta.inventory);
     this.inventory.onChange = () => this.ui.hud && this.ui.hud.refreshHotbar();
@@ -223,6 +244,9 @@ export class Game {
     } else if (this.quest) {
       this.player.pos.set(QUEST_SPAWN.x, QUEST_SPAWN.y, QUEST_SPAWN.z);
       this.player.yaw = -Math.PI / 2; // down the course (+x)
+    } else if (this.city) {
+      const s = this.city.spawnPoint();
+      this.player.pos.set(s.x, s.y, s.z);
     } else {
       const s = this.layout.spawnPoint();
       this.player.pos.set(s.x, s.y, s.z);
@@ -268,6 +292,7 @@ export class Game {
     if (!this.meta.edits[dim]) this.meta.edits[dim] = {};
     this.world = new World({ scene: this.scene, pool: this.pool, materials: this.materials, seed: this.meta.seed, dim, edits: this.meta.edits[dim] });
     if (this.quest) { this.world.genExtra = () => this.quest.genExtra(); this.quest.reset(); }
+    if (this.city && dim === 'city') this.world.genExtra = (cx, cz) => this.city.slice(cx, cz);
     this.world.onBlockChange = (x, y, z, prev, id) => {
       this.entities.onBlockChange(x, y, z, prev, id);
       if (this.net) this.net.blockChanged(x, y, z, id);
@@ -309,8 +334,9 @@ export class Game {
   blockTile(id) { const b = BLOCKS[id]; return b && b.tex ? b.tex.side : 0; }
 
   async travel(dim, where) {
-    // a shared world stays in the overworld
+    // a shared world stays in the overworld, a city world in its city
     if (this.net) { this.ui.toast(t('mp.noTravel'), 'warn'); return; }
+    if (this.city) { this.ui.toast(t('city.noTravel'), 'warn'); return; }
     this.ui.showLoading(t('toast.travel', { name: t('realm.' + (where === 'chamber' ? 'chamber' : dim)) }));
     this.paused = true;
     this.audio.sfx('portal');
@@ -412,7 +438,7 @@ export class Game {
   // Paused in a shared world: time, monsters and the other players go on.
   netTick(dt) {
     const m = this.meta;
-    if (this.net.isHost && m.dim === 'overworld') {
+    if (this.net.isHost && this.outdoors) {
       m.time += dt / DAY_SECONDS;
       if (m.time >= 1) { m.time -= 1; m.day++; }
     }
@@ -428,7 +454,7 @@ export class Game {
     if (this.creative) this.flyControl(inp);
     if (!this._movedOnce && (inp.move.x || inp.move.z)) { this._movedOnce = true; setTimeout(() => this.ui.tutorialDone('move'), 1500); }
     m.playTime += dt;
-    if (m.dim === 'overworld') {
+    if (this.outdoors) {
       const before = m.time;
       m.time += dt / DAY_SECONDS;
       if (m.time >= 1) { m.time -= 1; m.day++; this.ui.toast(t('toast.dayBegins', { n: m.day })); this.entities.onNewDay(); if (!pl.dead) this.daily.note('night'); }
@@ -461,7 +487,7 @@ export class Game {
     // footsteps
     if (pl.moving) { this.stepT -= dt; if (this.stepT <= 0) { this.audio.sfx('step'); this.stepT = 0.38; } }
     // music mood
-    this.audio.setMode(this.bosses.active ? 'boss' : (m.dim === 'overworld' && isNight(m.time)) ? 'night' : 'calm');
+    this.audio.setMode(this.bosses.active ? 'boss' : (this.outdoors && isNight(m.time)) ? 'night' : 'calm');
     // autosave every minute
     this.autosaveT += dt;
     if (this.autosaveT > 60) { this.autosaveT = 0; this.save(true); }
@@ -687,7 +713,7 @@ export class Game {
   // Seasonal event touches: drifting snow, petals or embers around the player.
   eventTick(dt) {
     const ev = this.event;
-    if (!ev || this.meta.dim !== 'overworld' || this.isQuest) return;
+    if (!ev || !this.outdoors || this.isQuest) return;
     this._evAcc = (this._evAcc || 0) + dt * (this.mobile ? 14 : 28);
     const p = this.player.pos, [r, g, b] = ev.particles;
     while (this._evAcc >= 1) {
@@ -782,6 +808,8 @@ export class Game {
     this.bosses.onPlayerDeath();
     if (this.quest) {
       this.quest.toCheckpoint();
+    } else if (dim === 'city' && this.city) {
+      const s = this.city.spawnPoint(); p.pos.set(s.x, s.y, s.z); await this.ensureLoaded(); this.placeOnGround();
     } else if (dim === 'overworld') {
       const inChamber = Math.abs(p.pos.x - CHAMBER.x) < 30 && Math.abs(p.pos.z - CHAMBER.z) < 30 && p.pos.y < CHAMBER.ceil + 2;
       if (inChamber) { p.pos.set(CHAMBER.x + 0.5, CHAMBER.floor + 1.1, CHAMBER.z + CHAMBER.z0 + 3.5); }

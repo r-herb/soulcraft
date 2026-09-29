@@ -298,7 +298,7 @@ export class Net {
     const g = this.game;
     if (!g || !edits) return;
     // before the world is built the edits simply join the save data
-    const dst = g.meta.edits.overworld || (g.meta.edits.overworld = {});
+    const dst = g.meta.edits[g.meta.dim] || (g.meta.edits[g.meta.dim] = {});
     for (const [k, v] of Object.entries(edits)) Object.assign(dst[k] || (dst[k] = {}), v);
   }
 
@@ -308,11 +308,11 @@ export class Net {
     const guest = (m.guests && m.guests[id]) || null;
     this.send({
       t: 'welcome', to: id,
-      world: { name: m.name, seed: m.seed, difficulty: m.difficulty, creative: !!m.creative, time: m.time, day: m.day },
+      world: { name: m.name, seed: m.seed, difficulty: m.difficulty, creative: !!m.creative, time: m.time, day: m.day, city: m.city || null },
       you: guest,
     });
     let batch = {}, size = 0;
-    for (const [k, v] of Object.entries(m.edits.overworld || {})) {
+    for (const [k, v] of Object.entries(m.edits[m.dim] || {})) {
       batch[k] = v;
       size += k.length + JSON.stringify(v).length;
       if (size > EDIT_BATCH) { this.send({ t: 'edits', to: id, edits: batch }); batch = {}; size = 0; }

@@ -210,6 +210,39 @@ const painters = {
       else p.set(x, y, shade(hex(p.r() < 0.35 ? '#1f5a3a' : '#2a6e46'), 0.85 + p.r() * 0.25));
     }
   },
+  // real cities
+  asphalt: (p) => { p.noise(['#4a4b50', '#434449', '#515257', '#3e3f44']); p.speckle('#6a6b70', 10); },
+  paving: (p) => {
+    p.noise(['#bdb8ae', '#c4bfb5', '#b6b1a7']);
+    const m = hex('#8f8a80');
+    for (let i = 0; i < T; i++) { p.set(i, 0, m); p.set(i, 8, m); p.set(0, i, m); p.set(8, i, m); }
+  },
+  marble: (p) => {
+    p.noise(['#ece5d6', '#e6ddcb', '#f2ece0']);
+    const v = hex('#cfc4ad');
+    let x = Math.floor(p.r() * 6);
+    for (let y = 0; y < T; y++) { p.set(x, y, v); if (p.r() < 0.4) x = Math.min(T - 1, x + 1); }
+    for (let i = 0; i < T; i++) { p.set(i, 0, hex('#d8cfbb')); p.set(0, i, hex('#d8cfbb')); }
+  },
+  plaster_white: (p) => { p.noise(['#f1f0ea', '#ebe9e2', '#f6f5f0']); p.speckle('#dcdad2', 6); },
+  plaster_cream: (p) => { p.noise(['#ecdcb8', '#e6d4ad', '#f1e3c4']); p.speckle('#d6c297', 6); },
+  plaster_ochre: (p) => { p.noise(['#e2b36e', '#dba965', '#e8bd7c']); p.speckle('#c69350', 6); },
+  plaster_terra: (p) => { p.noise(['#cf8a6c', '#c78063', '#d69677']); p.speckle('#b06b50', 6); },
+  roof_tiles: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+      const row = Math.floor(y / 4), wave = Math.sin(((x + (row % 2) * 2) / 4) * Math.PI);
+      const edge = y % 4 === 3;
+      p.set(x, y, shade(hex(edge ? '#8a3f24' : '#c1603c'), (0.85 + wave * 0.12) * (0.95 + p.r() * 0.1)));
+    }
+  },
+  window: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex(y < 7 ? '#5f86a8' : '#3f5f80'), 0.92 + p.r() * 0.1));
+    const f = hex('#f0efe8');
+    for (let i = 0; i < T; i++) { p.set(i, 0, f); p.set(i, T - 1, f); p.set(0, i, f); p.set(T - 1, i, f); p.set(i, 7, f); p.set(7, i, f); }
+    p.set(3, 3, hex('#b8d4ea')); p.set(4, 2, hex('#b8d4ea')); p.set(11, 3, hex('#b8d4ea'));
+  },
+  limestone: (p) => { p.bricks('#d9ccb0', '#b8a987', 16, 8); p.speckle('#c8b996', 8); },
+  concrete: (p) => { p.noise(['#b4b5b8', '#adaeb1', '#bbbcbf']); p.speckle('#9c9da0', 5); },
   frost_brick: (p) => { p.bricks('#9cc4dc', '#5f89a6', 8, 4); p.speckle('#e6f6ff', 5); },
   blink_on: (p) => { p.noise(['#b98bff', '#c9a2ff', '#a678f0']); p.border('#6d45d6'); for (let i = 4; i < 12; i++) { p.set(i, 4, hex('#f0e6ff')); p.set(i, 11, hex('#f0e6ff')); p.set(4, i, hex('#f0e6ff')); p.set(11, i, hex('#f0e6ff')); } },
   blink_off: (p) => { p.clear(); for (let i = 0; i < 16; i += 2) { p.set(i, 0, hex('#b98bff'), 150); p.set(i, 15, hex('#b98bff'), 150); p.set(0, i, hex('#b98bff'), 150); p.set(15, i, hex('#b98bff'), 150); } },
