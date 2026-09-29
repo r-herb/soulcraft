@@ -107,6 +107,7 @@ async function route(parts, method, request, env, secure) {
     }
     if (!user || !(await verifyPassword(String(password), user))) { await noteFailure(db, rlKey); return err(401, 'bad_credentials'); }
     if (user.disabled) return err(403, 'disabled');
+    if (user.banned_until && user.banned_until > Date.now()) return json({ error: 'banned', message: 'This account is banned.', until: user.banned_until, reason: user.ban_reason || '' }, 403);
     await clearFailures(db, rlKey);
     await db.prepare('UPDATE users SET last_login = ? WHERE id = ?').bind(Date.now(), user.id).run();
     await noteActive(db, user.id);
@@ -272,7 +273,15 @@ async function route(parts, method, request, env, secure) {
 
   // ---------- admin ----------
   if (a === 'admin') {
-    if (s.role !== 'superadmin') return err(403, 'forbidden');
+    const sup = s.role === 'superadmin';
+    if (!sup && !(s.role === 'user' && s.user.role === 'admin')) return err(403, 'forbidden');
+    const actor = sup ? { id: 0, name: 'Superadmin' } : { id: s.user.id, name: s.user.name };
+    const log = (action, target, detail = '') => db.prepare('INSERT INTO audit (at, actor_id, actor_name, action, target_id, target_name, detail) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(Date.now(), actor.id, actor.name, action, target ? target.id : null, target ? target.name : null, String(detail).slice(0, 300)).run();
+    if (b === 'audit' && method === 'GET') {
+      const { results } = await db.prepare('SELECT * FROM audit ORDER BY at DESC LIMIT 300').all();
+      return json({ entries: results.map((r) => ({ at: r.at, actorId: r.actor_id, actorName: r.actor_name, action: r.action, targetId: r.target_id, targetName: r.target_name, detail: r.detail })) });
+    }
     if (b === 'stats' && method === 'GET') return json(await stats(db, env));
     if (b === 'insights' && method === 'GET') return json(await insights(db));
     if (b === 'feedback') {
@@ -317,17 +326,48 @@ async function route(parts, method, request, env, secure) {
       const r = await db.prepare('INSERT INTO users (name, email, phone, username, pass_hash, pass_salt, pass_iter, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(name, email, phone, username, h.hash, h.salt, h.iter, now, now).run();
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(r.meta.last_row_id).first();
+      await log('user_add', u);
       return json({ user: publicUser(u) }, 201);
     }
     const id = Number(c);
     if (b === 'users' && id > 0) {
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
       if (!u) return err(404, 'no_user');
+      const readOnly = d === 'saves' && method === 'GET';
+      if (!sup && u.role === 'admin' && !readOnly) return err(403, 'forbidden', 'Only the superadmin can change an admin.');
       if (!d && method === 'PATCH') {
-        const r = await applyProfile(db, u, await body(request), true, env);
+        const inp = await body(request);
+        const r = await applyProfile(db, u, inp, true, env);
+        if (!(r instanceof Response)) await log('disabled' in inp && Object.keys(inp).length === 1 ? (inp.disabled ? 'disable' : 'enable') : 'user_edit', u);
         return r instanceof Response ? r : json({ user: publicUser(r) });
       }
+      if (d === 'ban' && method === 'POST') {
+        const inp = await body(request);
+        const minutes = Math.max(0, Math.min(525600, Number(inp.minutes) || 0));
+        const until = minutes ? Date.now() + minutes * 60e3 : 4102444800000; // "until lifted": the year 2100
+        const reason = String(inp.reason || '').trim().slice(0, 200);
+        await db.batch([
+          db.prepare('UPDATE users SET banned_until = ?, ban_reason = ?, updated_at = ? WHERE id = ?').bind(until, reason || null, Date.now(), id),
+          db.prepare('DELETE FROM sessions WHERE user_id = ? AND role = ?').bind(id, 'user'),
+        ]);
+        await log('ban', u, (minutes ? `${minutes} min` : 'until lifted') + (reason ? ': ' + reason : ''));
+        return json({ ok: true, until });
+      }
+      if (d === 'ban' && method === 'DELETE') {
+        await db.prepare('UPDATE users SET banned_until = NULL, ban_reason = NULL, updated_at = ? WHERE id = ?').bind(Date.now(), id).run();
+        await log('unban', u);
+        return json({ ok: true });
+      }
+      if (d === 'role' && method === 'POST') {
+        if (!sup) return err(403, 'forbidden', 'Only the superadmin can give or take admin rights.');
+        const role = (await body(request)).role === 'admin' ? 'admin' : 'player';
+        await db.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').bind(role, Date.now(), id).run();
+        await log('role', u, role);
+        return json({ ok: true, role });
+      }
       if (!d && method === 'DELETE') {
+        if (!sup) return err(403, 'forbidden', 'Only the superadmin can delete accounts.');
+        await log('user_delete', u);
         await db.batch([
           db.prepare('DELETE FROM saves WHERE user_id = ?').bind(id),
           db.prepare('DELETE FROM sessions WHERE user_id = ? AND role = ?').bind(id, 'user'),
@@ -340,6 +380,7 @@ async function route(parts, method, request, env, secure) {
         if (!pw) return err(400, 'weak_password', 'Password must be at least 6 characters.');
         await setPassword(db, id, pw);
         await db.prepare('DELETE FROM sessions WHERE user_id = ? AND role = ?').bind(id, 'user').run();
+        await log('password', u);
         return json({ ok: true });
       }
       if (d === 'saves' && method === 'GET') {

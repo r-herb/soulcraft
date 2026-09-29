@@ -283,6 +283,18 @@ in `server/lib.js`) backed by a D1 database (`migrations/`). Passwords are
 stored as PBKDF2-SHA256 hashes, sessions as SHA-256 token hashes, and
 repeated failed sign-ins are throttled.
 
+
+### Admins
+
+The superadmin can make any player an **admin** (Users > Make admin). An
+admin signs in to `/admin` with their own player account (the game's
+profile shows an Admin panel button) and can add and edit players, reset
+passwords, disable players and **ban** them for an hour, a day, a week,
+30 days or until lifted, with a reason the player sees when signing in.
+Only the superadmin deletes accounts and gives or takes admin rights, and
+admins cannot change other admins. Every admin action is kept in the
+**Log** tab.
+
 ## Run locally
 
 ```bash
@@ -315,7 +327,8 @@ What the tests cover:
   dies to the sword; eating works; death leads to respawn; villagers trade
   and friendship grows; the shop sells and equips a skin; the Russian UI fits.
 - `tests/accounts.spec.js`: the superadmin adds, edits, searches, disables
-  and deletes users; a player signs in with a phone number, edits the
+  and deletes users, and makes a player an admin who adds and bans players
+  within an admin's limits (with the log); a player signs in with a phone number, edits the
   profile, uploads a photo and changes the password; saves move to a second
   device; "keep me signed in" survives a reload; the admin resets a password.
 - `tests/quest.spec.js` (desktop): plays the Treasure Quest from the camp

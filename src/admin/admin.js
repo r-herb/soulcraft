@@ -1,5 +1,7 @@
 // Soulcraft admin panel (English only). The superadmin signs in with the
-// credentials kept in GitHub secrets, then manages player accounts.
+// credentials kept in GitHub secrets; admins (players the superadmin made
+// admins) sign in with their own account. Both manage player accounts;
+// only the superadmin deletes accounts and gives or takes admin rights.
 import '../ui/tokens.css';
 import '../ui/styles.css';
 import './admin.css';
@@ -11,6 +13,7 @@ const root = document.getElementById('admin');
 document.documentElement.style.overflow = 'auto';
 document.documentElement.style.height = 'auto';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let SUPER = false; // the signed-in person is the superadmin (else an admin)
 const fmt = (ms) => (ms ? new Date(ms).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '-');
 
 async function api(path, opts = {}) {
@@ -54,7 +57,8 @@ function renderLogin(message = '') {
     btn.disabled = true;
     try {
       const r = await api('auth/login', { method: 'POST', body: { login: root.querySelector('#a-login').value, password: root.querySelector('#a-pass').value, remember: root.querySelector('#a-remember').checked } });
-      if (r.role !== 'superadmin') { await api('auth/logout', { method: 'POST', body: {} }); renderLogin('This account is a player account. Players sign in inside the game.'); return; }
+      if (r.role !== 'superadmin' && !(r.user && r.user.role === 'admin')) { await api('auth/logout', { method: 'POST', body: {} }); renderLogin('This account is a player account. Players sign in inside the game.'); return; }
+      SUPER = r.role === 'superadmin';
       renderUsers();
     } catch (e) {
       renderLogin(e.status === 401 ? 'Wrong username or password.' : e.message);
@@ -67,7 +71,8 @@ let fbNew = 0; // unread ideas and problem reports (shown on the Feedback tab)
 function topBar(active) {
   const tab = (id, label) => `<button class="${active === id ? 'on' : ''}" data-nav="${id}">${label}</button>`;
   return `<div class="admin-top"><h1>Soulcraft Admin</h1>
-    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}</nav>
+    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('audit', 'Log')}</nav>
+    <span class="faint">${SUPER ? 'Superadmin' : 'Admin'}</span>
     <a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>`;
 }
 function setFbBadge(n) {
@@ -77,7 +82,7 @@ function setFbBadge(n) {
 }
 function bindTopBar() {
   root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
-  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback() };
+  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit() };
   root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => pages[b.dataset.nav]()));
 }
 
@@ -259,6 +264,7 @@ async function renderUsers() {
         </div>
       </div>
       <div class="admin-card"><table class="users"><thead><tr><th></th><th>Name</th><th>Email</th><th>Phone</th><th>Created</th><th>Last sign-in</th><th>Saves</th><th>Status</th><th></th></tr></thead><tbody><tr><td colspan="9" class="empty">Loading...</td></tr></tbody></table></div>
+      <p class="faint">${SUPER ? 'You can make a player an admin: admins add players, reset passwords, ban players and moderate the chats, but cannot delete accounts or change admins.' : 'As an admin you can add players, edit them, reset passwords and ban players. Deleting accounts and admin rights are for the superadmin.'}</p>
     </div>`;
   bindTopBar();
   root.querySelector('[data-act="add"]').addEventListener('click', () => userDialog(null));
@@ -279,14 +285,24 @@ async function loadUsers() {
       <td>${u.avatar ? `<img class="av" alt="" src="${esc(u.avatar)}">` : '<span class="av"></span>'}</td>
       <td><b>${esc(u.name)}</b>${u.username ? `<div class="faint">@${esc(u.username)}</div>` : ''}</td><td>${esc(u.email || '-')}</td><td>${esc(u.phone || '-')}</td>
       <td>${esc(fmt(u.createdAt))}</td><td>${esc(fmt(u.lastLogin))}</td><td>${u.saves}</td>
-      <td><span class="badge ${u.disabled ? 'off' : ''}">${u.disabled ? 'Disabled' : 'Active'}</span></td>
-      <td><div class="acts">
+      <td><span class="badge ${u.disabled || banned(u) ? 'off' : ''}">${u.disabled ? 'Disabled' : banned(u) ? `Banned${u.bannedUntil < 4e12 ? ' until ' + esc(fmt(u.bannedUntil)) : ''}` : 'Active'}</span>${u.role === 'admin' ? ' <span class="badge admin">Admin</span>' : ''}${banned(u) && u.banReason ? `<div class="faint">${esc(u.banReason)}</div>` : ''}</td>
+      <td><div class="acts">${u.role === 'admin' && !SUPER ? '<span class="faint">admin</span>' : `
         <button class="btn" data-a="edit">Edit</button><button class="btn" data-a="pw">Password</button><button class="btn" data-a="saves">Saves</button>
-        <button class="btn" data-a="toggle">${u.disabled ? 'Enable' : 'Disable'}</button><button class="btn ember" data-a="del">Delete</button>
+        <button class="btn" data-a="ban">${banned(u) ? 'Unban' : 'Ban'}</button><button class="btn" data-a="toggle">${u.disabled ? 'Enable' : 'Disable'}</button>
+        ${SUPER ? `<button class="btn" data-a="role">${u.role === 'admin' ? 'Remove admin' : 'Make admin'}</button><button class="btn ember" data-a="del">Delete</button>` : ''}`}
       </div></td>
     </tr>`).join('');
   tb.querySelectorAll('tr[data-id]').forEach((tr) => {
     const u = users.find((x) => x.id === Number(tr.dataset.id));
+    if (!tr.querySelector('[data-a="edit"]')) return;
+    tr.querySelector('[data-a="ban"]').addEventListener('click', async () => {
+      if (!banned(u)) { banDialog(u); return; }
+      try { await api('admin/users/' + u.id + '/ban', { method: 'DELETE' }); toast('Ban lifted'); loadUsers(); } catch (e) { toast(e.message, true); }
+    });
+    const roleBtn = tr.querySelector('[data-a="role"]');
+    if (roleBtn) roleBtn.addEventListener('click', async () => {
+      try { await api('admin/users/' + u.id + '/role', { method: 'POST', body: { role: u.role === 'admin' ? 'player' : 'admin' } }); toast(u.role === 'admin' ? 'Admin rights removed' : `${u.name} is now an admin`); loadUsers(); } catch (e) { toast(e.message, true); }
+    });
     tr.querySelector('[data-a="edit"]').addEventListener('click', () => userDialog(u));
     tr.querySelector('[data-a="pw"]').addEventListener('click', () => passwordDialog(u));
     tr.querySelector('[data-a="saves"]').addEventListener('click', () => savesDialog(u));
@@ -294,7 +310,7 @@ async function loadUsers() {
       try { await api('admin/users/' + u.id, { method: 'PATCH', body: { disabled: !u.disabled } }); toast(u.disabled ? 'User enabled' : 'User disabled and signed out'); loadUsers(); }
       catch (e) { toast(e.message, true); }
     });
-    tr.querySelector('[data-a="del"]').addEventListener('click', () => confirmDialog(`Delete ${u.name}?`, 'This removes the account and all of its cloud saves. It cannot be undone.', async () => {
+    if (tr.querySelector('[data-a="del"]')) tr.querySelector('[data-a="del"]').addEventListener('click', () => confirmDialog(`Delete ${u.name}?`, 'This removes the account and all of its cloud saves. It cannot be undone.', async () => {
       await api('admin/users/' + u.id, { method: 'DELETE' }); toast('User deleted'); loadUsers();
     }));
   });
@@ -349,6 +365,37 @@ function userDialog(u) {
   });
 }
 
+const banned = (u) => !!(u.bannedUntil && u.bannedUntil > Date.now());
+
+function banDialog(u) {
+  const d = dialog(`
+    <h2>Ban ${esc(u.name)}</h2>
+    <form novalidate>
+      <p class="dim" style="margin:0">A banned player is signed out and cannot sign in, play with friends or chat until the ban ends.</p>
+      <div class="field"><label>For how long</label><select class="input" name="minutes">
+        <option value="60">1 hour</option><option value="1440" selected>1 day</option><option value="10080">1 week</option><option value="43200">30 days</option><option value="0">Until lifted</option>
+      </select></div>
+      <div class="field"><label>Reason (the player sees it)</label><input class="input" name="reason" maxlength="200" placeholder="e.g. rude messages in the chat"></div>
+      <p class="form-error" role="alert"></p>
+      <div class="dlg-actions"><button type="button" class="btn ghost" data-a="cancel">Cancel</button><button class="btn ember" type="submit">Ban</button></div>
+    </form>`);
+  d.querySelector('form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try { await api('admin/users/' + u.id + '/ban', { method: 'POST', body: { minutes: Number(ev.target.minutes.value), reason: ev.target.reason.value } }); d.close(); toast(`${u.name} is banned`); loadUsers(); }
+    catch (e) { d.querySelector('.form-error').textContent = e.message; }
+  });
+}
+
+// ---------- audit log ----------
+const ACTIONS = { user_add: 'added a user', user_edit: 'edited a user', user_delete: 'deleted a user', password: 'set a password', ban: 'banned', unban: 'lifted the ban of', role: 'changed the role of', disable: 'disabled', enable: 'enabled', chat_delete: 'deleted a message of', chat_mute: 'muted', channel: 'changed a channel', report: 'handled a report' };
+async function renderAudit() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('audit')}<div class="admin-card"><h2>What admins did</h2><div class="audit-list"><p class="empty">Loading...</p></div></div></div>`;
+  bindTopBar();
+  let list;
+  try { list = (await api('admin/audit')).entries; } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  root.querySelector('.audit-list').innerHTML = list.length ? `<table class="users"><thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead><tbody>${list.map((a) => `<tr><td>${esc(fmt(a.at))}</td><td><b>${esc(a.actorName)}</b></td><td>${esc(ACTIONS[a.action] || a.action)} ${esc(a.targetName || '')}</td><td class="faint">${esc(a.detail || '')}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nothing yet.</p>';
+}
+
 function passwordDialog(u) {
   const d = dialog(`
     <h2>Set password</h2>
@@ -386,7 +433,8 @@ function confirmDialog(title, text, action) {
 (async () => {
   try {
     const me = await api('me');
-    if (me.role === 'superadmin') renderUsers();
+    SUPER = me.role === 'superadmin';
+    if (SUPER || (me.user && me.user.role === 'admin')) renderUsers();
     else renderLogin();
   } catch (e) {
     renderLogin(e.status === 503 ? 'Accounts are not configured on this server yet.' : '');

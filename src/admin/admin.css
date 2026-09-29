@@ -16,6 +16,7 @@ table.users .btn { min-height: 34px; padding: 0 var(--sp-2); font-size: var(--fs
 .av { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; background: var(--c-night-500); display: block; }
 .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: var(--fs-xs); background: var(--c-ok); color: var(--c-ink); }
 .badge.off { background: var(--c-danger); }
+.badge.admin { background: var(--c-gold-500); }
 .empty { color: var(--c-text-faint); text-align: center; padding: var(--sp-5); }
 dialog.admin-dlg { background: var(--surface-panel); color: var(--c-text); border: var(--px) solid var(--border-panel); border-radius: var(--r-md); padding: var(--sp-4); width: min(520px, calc(100vw - 32px)); box-shadow: var(--shadow-panel); }
 dialog.admin-dlg::backdrop { background: rgba(5, 4, 15, 0.7); }

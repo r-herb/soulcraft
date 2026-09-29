@@ -280,3 +280,48 @@ test('a player sends an idea from the pause menu and the admin reads it', async 
   await page.locator('[data-chart="quest"] .hit').first().hover();
   await shot(page, 'admin-insights');
 });
+
+test('the superadmin makes a player an admin; admins add and ban players but cannot delete or change admins', async ({ page, playwright, baseURL }) => {
+  const sup = await playwright.request.newContext({ baseURL });
+  expect((await sup.post('/api/auth/login', { data: ADMIN })).ok()).toBeTruthy();
+  const mk = async (u) => { const r = await sup.post('/api/admin/users', { data: u }); expect([201, 409]).toContain(r.status()); };
+  await mk({ name: 'Moda', username: 'moda', password: 'moda-pass-1' });
+  await mk({ name: 'Rowdy', username: 'rowdy', password: 'rowdy-pass-1' });
+  const users = (await (await sup.get('/api/admin/users?q=')).json()).users;
+  const moda = users.find((u) => u.username === 'moda'), rowdy = users.find((u) => u.username === 'rowdy');
+  expect((await sup.post(`/api/admin/users/${moda.id}/role`, { data: { role: 'admin' } })).ok()).toBeTruthy();
+
+  // the new admin signs in with the player account and uses the admin API
+  const adm = await playwright.request.newContext({ baseURL });
+  const me = await (await adm.post('/api/auth/login', { data: { login: 'moda', password: 'moda-pass-1' } })).json();
+  expect(me.user.role).toBe('admin');
+  expect((await adm.get('/api/admin/users?q=')).ok()).toBeTruthy();
+  expect((await adm.post('/api/admin/users', { data: { name: 'Newbie', username: 'newbie', password: 'newbie-pass' } })).status()).toBe(201);
+  // bans: the player cannot sign in, and is told why
+  expect((await adm.post(`/api/admin/users/${rowdy.id}/ban`, { data: { minutes: 60, reason: 'rude in the chat' } })).ok()).toBeTruthy();
+  const blocked = await (await playwright.request.newContext({ baseURL })).post('/api/auth/login', { data: { login: 'rowdy', password: 'rowdy-pass-1' } });
+  expect(blocked.status()).toBe(403);
+  expect(await blocked.json()).toMatchObject({ error: 'banned', reason: 'rude in the chat' });
+  // limits of an admin
+  expect((await adm.delete(`/api/admin/users/${rowdy.id}`)).status()).toBe(403);
+  expect((await adm.post(`/api/admin/users/${rowdy.id}/role`, { data: { role: 'admin' } })).status()).toBe(403);
+  expect((await adm.patch(`/api/admin/users/${moda.id}`, { data: { name: 'x' } })).status()).toBe(403);
+  // the ban is lifted; the log shows who did what
+  expect((await adm.delete(`/api/admin/users/${rowdy.id}/ban`)).ok()).toBeTruthy();
+  expect((await (await playwright.request.newContext({ baseURL })).post('/api/auth/login', { data: { login: 'rowdy', password: 'rowdy-pass-1' } })).ok()).toBeTruthy();
+  const log = (await (await sup.get('/api/admin/audit')).json()).entries;
+  expect(log.some((e) => e.action === 'ban' && e.actorName === 'Moda' && e.targetName === 'Rowdy')).toBe(true);
+  expect(log.some((e) => e.action === 'role' && e.actorName === 'Superadmin')).toBe(true);
+
+  // the admin panel works for the admin (without the superadmin's buttons)
+  await page.goto('/admin');
+  await page.fill('#a-login', 'moda');
+  await page.fill('#a-pass', 'moda-pass-1');
+  await page.click('form[data-form="login"] button[type=submit]');
+  await expect(page.locator('table.users')).toBeVisible();
+  await expect(page.locator('tr', { hasText: 'Rowdy' }).locator('[data-a="ban"]')).toBeVisible();
+  await expect(page.locator('[data-a="del"]')).toHaveCount(0);
+  await page.click('[data-nav="audit"]');
+  await expect(page.locator('.audit-list')).toContainText('Moda');
+  await shot(page, 'admin-audit');
+});
