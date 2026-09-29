@@ -1,9 +1,13 @@
 // Tiny i18n: t('key', {vars}), live language switching without reload.
 import en from './en.json';
 import ru from './ru.json';
+import es from './es.json';
+import lv from './lv.json';
 
-const DICTS = { en, ru };
-export const LANGS = ['en', 'ru'];
+const DICTS = { en, ru, es, lv };
+export const LANGS = ['en', 'ru', 'es', 'lv'];
+// each language's name in itself (for the pickers)
+export const LANG_NAMES = { en: 'English', ru: 'Русский', es: 'Español', lv: 'Latviešu' };
 let lang = 'en';
 const listeners = new Set();
 
@@ -20,8 +24,10 @@ export function t(key, vars) {
   return s;
 }
 
-// Russian plural forms: one (1, 21), few (2-4, 22-24), many (5-20, 25...)
+// Plural forms. Russian: one (1, 21), few (2-4, 22-24), many (5-20, 25...);
+// Latvian: one (1, 21, 31 but not 11), many (the rest).
 export function plural(n, forms) {
+  if (lang === 'lv') return n % 10 === 1 && n % 100 !== 11 ? forms.one : forms.many;
   if (lang !== 'ru') return n === 1 ? forms.one : forms.many;
   const m10 = n % 10, m100 = n % 100;
   if (m10 === 1 && m100 !== 11) return forms.one;
@@ -31,8 +37,12 @@ export function plural(n, forms) {
 
 export function detectLang() {
   try {
-    const n = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
-    return /^ru/i.test(n) ? 'ru' : 'en';
+    const list = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en']);
+    for (const n of list) {
+      const code = String(n).slice(0, 2).toLowerCase();
+      if (DICTS[code]) return code;
+    }
+    return 'en';
   } catch { return 'en'; }
 }
 

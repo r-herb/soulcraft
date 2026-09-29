@@ -69,6 +69,13 @@ screen and type it.
   that the Pages API reaches through the `ROOMS` binding after checking
   the player's session, so only signed-in players get in.
 
+## Languages
+
+The game speaks English, Russian, Spanish and Latvian (`src/i18n/*.json`,
+one flat file per language with the same keys). It starts in the browser's
+language when it has it, and the language can be changed on the title
+screen or in Settings. The admin panel is in English.
+
 ## Malaga: a real city
 
 **Malaga** on the title screen opens a world built from the real centre of
@@ -297,6 +304,10 @@ What the tests cover:
   the room code, avatars, block edits both ways, a host monster killed by
   the guest, a monster hurting the guest, the guest's saved things after
   leaving and rejoining, a wrong code, and the host closing the room.
+- `tests/languages.spec.js`: English, Russian, Spanish and Latvian have
+  every text with the same placeholders; each language's title, inventory,
+  pause and settings screens fit on a phone and a desktop; the browser's
+  language picks the game's.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression

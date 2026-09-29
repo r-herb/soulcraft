@@ -1,7 +1,7 @@
 // Screen manager: title, loading, new world, settings, pause, death, plus
 // toasts, tutorial hints and fullscreen. Panels (inventory, trading, shop,
 // map, victory) live in panels.js.
-import { t, getLang, setLang, onLangChange, applyI18n } from '../i18n/index.js';
+import { t, getLang, setLang, onLangChange, applyI18n, LANGS, LANG_NAMES } from '../i18n/index.js';
 import { settings, setSetting } from '../save/settings.js';
 import { SVG } from './icons.js';
 import { Hud } from './hud.js';
@@ -13,6 +13,8 @@ import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar }
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
+// the short language buttons (title screen, error screens)
+const langButtons = (cur) => LANGS.map((l) => `<button data-lang="${l}" lang="${l}" title="${LANG_NAMES[l]}" class="${cur === l ? 'on' : ''}">${l.toUpperCase()}</button>`).join('');
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export class UI {
@@ -179,8 +181,7 @@ export class UI {
       <div class="title-foot">
         <div class="row">
         <div class="lang-switch" role="group" aria-label="Language">
-          <button data-lang="en" class="${lang === 'en' ? 'on' : ''}">EN</button>
-          <button data-lang="ru" class="${lang === 'ru' ? 'on' : ''}">RU</button>
+          ${langButtons(lang)}
         </div>
         ${account.available ? (account.user
     ? `<button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
@@ -524,7 +525,7 @@ export class UI {
         <div class="panel-body"><div class="settings-grid">
           <div class="setting-section" data-i18n="settings.section.general"></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.language"></span>
-            <div class="seg" data-seg="lang"><button data-v="en" class="${getLang() === 'en' ? 'on' : ''}">English</button><button data-v="ru" class="${getLang() === 'ru' ? 'on' : ''}">Русский</button></div></div>
+            <div class="seg seg-langs" data-seg="lang">${LANGS.map((l) => `<button data-v="${l}" lang="${l}" class="${getLang() === l ? 'on' : ''}">${LANG_NAMES[l]}</button>`).join('')}</div></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.fps"></span>${toggle('fps')}</div>
           <div class="setting-section" data-i18n="settings.section.graphics"></div>
           <div class="setting"><span class="setting-label" data-i18n="settings.textures"></span>
@@ -867,7 +868,7 @@ export class UI {
       <h2 class="panel-title" data-i18n="${args.titleKey}"></h2>
       <p data-i18n="${args.bodyKey}"></p>
       <div class="row"><button class="btn primary" data-act="retry" data-i18n="${args.retry ? 'nogl.retry' : 'error.reload'}"></button>
-      <div class="lang-switch"><button data-lang="en" class="${getLang() === 'en' ? 'on' : ''}">EN</button><button data-lang="ru" class="${getLang() === 'ru' ? 'on' : ''}">RU</button></div></div>
+      <div class="lang-switch">${langButtons(getLang())}</div></div>
     </div>`);
     node.querySelector('[data-act="retry"]').addEventListener('click', () => location.reload());
     node.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lang); setSetting('lang', b.dataset.lang); }));

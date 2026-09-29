@@ -96,7 +96,7 @@ button { font-family: var(--font-body); touch-action: manipulation; }
 .title-menu .btn { width: 100%; }
 .title-foot { position: absolute; bottom: calc(var(--sp-2) + var(--safe-b)); left: calc(var(--sp-4) + var(--safe-l)); right: calc(var(--sp-4) + var(--safe-r)); display: flex; justify-content: space-between; align-items: center; }
 .lang-switch { display: inline-flex; border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); overflow: hidden; }
-.lang-switch button { min-width: 52px; min-height: 44px; border: 0; background: var(--c-night-700); color: var(--c-text-dim); font-weight: 700; font-size: var(--fs-md); cursor: pointer; }
+.lang-switch button { min-width: 48px; min-height: 44px; border: 0; background: var(--c-night-700); color: var(--c-text-dim); font-weight: 700; font-size: var(--fs-md); cursor: pointer; }
 .lang-switch button.on { background: var(--c-soul-500); color: var(--c-ink); }
 .continue-meta { font-size: var(--fs-xs); color: var(--c-text-dim); font-weight: 400; display: block; }
 .btn:disabled .continue-meta { color: var(--c-text); }
@@ -110,6 +110,8 @@ button { font-family: var(--font-body); touch-action: manipulation; }
 .seg button { flex: 1; min-height: 44px; min-width: 48px; border: 0; background: var(--c-night-700); color: var(--c-text-dim); font-weight: 700; font-size: var(--fs-sm); cursor: pointer; padding: 0 var(--sp-2); }
 .seg button + button { border-left: 2px solid var(--c-ink); }
 .seg button.on { background: var(--c-soul-500); color: var(--c-ink); }
+.seg-langs { flex-wrap: wrap; }
+.seg-langs button { flex: 1 1 45%; }
 .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3) var(--sp-5); }
 .setting { display: flex; flex-direction: column; gap: var(--sp-1); min-width: 0; }
 .setting-section { grid-column: 1 / -1; font-family: var(--font-display); font-size: var(--fs-xs); color: var(--c-violet-400); margin-top: var(--sp-2); }
@@ -355,7 +357,7 @@ body.touch .desktop-only { display: none !important; }
 .hidden { display: none !important; }
 .nw-opts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--sp-3); }
 .invisible { visibility: hidden; }
-.title-menu .row .btn { white-space: nowrap; padding: 0 var(--sp-2); }
+.title-menu .row .btn { white-space: normal; text-wrap: balance; line-height: 1.15; padding: 2px var(--sp-2); overflow-wrap: anywhere; }
 .btn.primary .continue-meta { color: rgba(5, 4, 15, 0.72); }
 #hud.creative .hearts, #hud.creative .foods { display: none; }
 @media (max-height: 420px) { .title-menu .row .btn { font-size: var(--fs-sm); } [data-mode-hint] { margin: 0; font-size: var(--fs-xs); } }
