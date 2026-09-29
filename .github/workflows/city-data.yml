@@ -9,6 +9,10 @@ on:
       city:
         description: City id (see scripts/city/cities.mjs)
         default: malaga
+  # a change to the download scripts or the city list fetches the data again
+  push:
+    branches: [main]
+    paths: ['scripts/city/cities.mjs', 'scripts/city/fetch-*.mjs', '.github/workflows/city-data.yml']
 
 permissions:
   contents: write
@@ -23,18 +27,23 @@ jobs:
         with:
           node-version: 22
       - name: Download from Overpass
-        run: node scripts/city/fetch-osm.mjs "${{ inputs.city }}"
+        run: node scripts/city/fetch-osm.mjs "${{ inputs.city || 'malaga' }}"
+      - name: Download the bus timetable (GTFS)
+        continue-on-error: true
+        run: node scripts/city/fetch-gtfs.mjs "${{ inputs.city || 'malaga' }}"
       - name: Commit to the city-data branch
         run: |
           set -e
-          cp "data/city/${{ inputs.city }}-osm.json.gz" /tmp/osm.json.gz
+          cp "data/city/${{ inputs.city || 'malaga' }}-osm.json.gz" /tmp/osm.json.gz
+          if [ -f "data/city/${{ inputs.city || 'malaga' }}-gtfs.zip" ]; then cp "data/city/${{ inputs.city || 'malaga' }}-gtfs.zip" /tmp/gtfs.zip; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin city-data || true
           if git rev-parse --verify origin/city-data >/dev/null 2>&1; then git checkout -B city-data origin/city-data; else git checkout --orphan city-data && git rm -rf . >/dev/null; fi
           mkdir -p data/city
-          cp /tmp/osm.json.gz "data/city/${{ inputs.city }}-osm.json.gz"
-          printf 'OpenStreetMap extracts for the real-city worlds.\nMap data (c) OpenStreetMap contributors, available under the Open Database License (ODbL 1.0): https://www.openstreetmap.org/copyright\n' > data/city/README.txt
+          cp /tmp/osm.json.gz "data/city/${{ inputs.city || 'malaga' }}-osm.json.gz"
+          if [ -f /tmp/gtfs.zip ]; then cp /tmp/gtfs.zip "data/city/${{ inputs.city || 'malaga' }}-gtfs.zip"; fi
+          printf 'OpenStreetMap extracts for the real-city worlds.\nMap data (c) OpenStreetMap contributors, available under the Open Database License (ODbL 1.0): https://www.openstreetmap.org/copyright\nBus timetables (GTFS): EMT Malaga, open data of the Ayuntamiento de Malaga (datosabiertos.malaga.eu).\n' > data/city/README.txt
           git add data/city
-          git commit -m "City data: ${{ inputs.city }} ($(date -u +%Y-%m-%d))" || echo "no change"
+          git commit -m "City data: ${{ inputs.city || 'malaga' }} ($(date -u +%Y-%m-%d))" || echo "no change"
           git push origin city-data

@@ -7,5 +7,11 @@ export const CITIES = {
     // and La Malagueta to La Caleta and El Limonar
     bbox: [36.7105, -4.4290, 36.7320, -4.3880],
     spawn: [36.72108, -4.42195], // Plaza de la Constitucion
+    // city buses (EMT Malaga) from the city's open data portal
+    gtfs: {
+      ckan: 'https://datosabiertos.malaga.eu',
+      urls: ['https://datosabiertos.malaga.eu/recursos/transporte/EMT/lineasYHorarios/google_transit.zip'],
+      search: ['gtfs EMT', 'google transit', 'EMT lineas horarios'],
+    },
   },
 };
