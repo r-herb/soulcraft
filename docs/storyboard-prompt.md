@@ -1,0 +1,327 @@
+# Uzdevums aģentam: interaktīvs Soulcraft storyboard
+
+## Tava loma un mērķis
+
+Tu esi spēļu prezentāciju dizainers un frontend izstrādātājs. Uztaisi **interaktīvu, animētu storyboard** spēlei **Soulcraft** (https://soulcraft.8nomads.com). Tam jāparāda, kas šajā spēlē notiek un kā to spēlē, no pirmās minūtes līdz beigu bosam un dzīvei īstajā Malagas pilsētā.
+
+Storyboard skatās cilvēks, kurš spēli vēl nav spēlējis. Pēc tā izskatīšanas viņam jāsaprot:
+1. kas ir Soulcraft un ar ko tas atšķiras no citām blokveida spēlēm;
+2. kā spēlē (vadība, izdzīvošana, būvēšana);
+3. kādi ir galvenie mērķi (pieci sargi, Dārgumu meklējumi);
+4. ko var darīt Malagā (īsta pilsēta, autobusi, banka, restorāni);
+5. kā spēlēt kopā ar draugiem.
+
+## Kas jāuztaisa (tehniskās prasības)
+
+- **Viena pašpietiekama HTML lapa** (HTML + CSS + JavaScript vienā failā, bez būvēšanas soļa). Ārējās bibliotēkas drīkst ielādēt tikai no CDN (piemēram, GSAP vai anime.js animācijām), bet lapai jāstrādā arī bez tām, tikai vienkāršākā izskatā.
+- **Ainas (scenes)**, pa kurām lietotājs pārvietojas ar pogām "Atpakaļ" un "Tālāk", ar tastatūras bultiņām un ar pavilkšanu (swipe) telefonā. Augšā vai apakšā ir progresa josla ar nodaļām, uz kurām var uzklikšķināt.
+- Katrā ainā ir:
+  - virsraksts;
+  - 1-3 īsi teikumi;
+  - **animēta ilustrācija**, kas parāda darbību, nevis tikai statisks attēls. Zīmē ar SVG, Canvas vai CSS no vienkāršiem kubiņiem un pikseļu formām. Nekādus attēlus no interneta un nekādus Minecraft zīmolus neizmanto.
+- Vēlams: poga "Atskaņot automātiski", kas pati iet cauri ainām (apmēram 6-8 sekundes katrā), ar pauzi.
+- Jāstrādā gan telefonā (ainava un portrets), gan datorā. Teksts ir salasāms, pogas pietiekami lielas pirkstam.
+- Jāievēro `prefers-reduced-motion`: tad animācijas ir mierīgākas vai statiskas.
+- **Valoda:** latviešu. Spēles nosaukumus raksti tā, kā tie ir latviešu versijā (tie doti zemāk), ar oriģinālo angļu nosaukumu iekavās, kur tas palīdz.
+- **Tipogrāfija:** nekad nelieto garās domuzīmes (Unicode U+2014 un U+2013), tikai parasto defisi (-).
+
+### Vizuālais stils
+
+- Spēle ir pikseļu un kubu stilā, bet ar savu identitāti: tumši nakts zili fona toņi, ciānzilais "dvēseļu" mirdzums (soul crystals), zelts naudai un dārgumiem, sarkanīgi oranžā "kvēle" (ember) uguns pasaulei.
+- Virsrakstu fonts pikseļu stilā (spēlē izmanto "Press Start 2P", ar latviešu burtu atbalstu), teksts vienkāršā bezserifu fontā.
+- Animāciju idejas:
+  - bloki, kas lūst un parādās;
+  - diennakts maiņa (debesis kļūst tumšas, parādās monstri);
+  - kristāli, kas mirdz;
+  - autobuss, kas brauc pa Malagas ielu;
+  - monētas, kas ieslīd makā;
+  - bosa uzbrukumi ar brīdinājuma zīmēm.
+
+## Svarīgs noteikums par faktiem
+
+Izmanto **tikai** zemāk aprakstīto spēles saturu. Neizdomā funkcijas, kuru nav.
+
+Sadaļā "Idejas nākotnei" ir lietas, kuru spēlē **vēl nav**. Ja tās rādi, liec tās atsevišķā pēdējā nodaļā ar skaidru atzīmi "Drīzumā", nekad kā esošu spēles daļu.
+
+---
+
+# SPĒLES ROKASGRĀMATA (avota materiāls)
+
+## 1. Kas ir Soulcraft
+
+Soulcraft ir 3D blokveida smilšu kastes spēle pārlūkā (pirmās personas skatā), veidota vispirms telefonam (ainavas režīmā), bet strādā arī datorā.
+- Spēlētājs rok un būvē, izdzīvo naktis, tirgojas ar ciematniekiem, atver jaunus izskatus (skinus) un pieveic piecus sargus, lai atbrīvotu dvēseles.
+- Visa grafika, vārdi, tēli un skaņas ir oriģināli un ģenerēti kodā.
+- Spēle ir 4 valodās: angļu, krievu, spāņu, latviešu.
+
+**Ekrāns un HUD:**
+- augšā pa kreisi: sirdis (veselība), stilbiņi (izsalkums), dvēseļu kristālu skaits, diennakts skaitītājs, dzīvību skaits (3) un monētas;
+- stūrī: apaļa minikarte;
+- apakšā: rīku josla (hotbar) ar 9 vietām.
+
+## 2. Vadība
+
+| Darbība | Telefons | Dators |
+|---|---|---|
+| Iet | vilkt ekrāna kreiso pusi (virtuāla kursorsvira) | W A S D |
+| Skatīties | vilkt ekrāna labo pusi | pele |
+| Lēkt, peldēt augšup | bultas poga | atstarpe |
+| Lauzt, sist | turēt āmura/zobena pogu | kreisā peles poga |
+| Likt bloku, ēst, tirgoties, izmantot | kuba poga | labā peles poga vai F |
+| Inventārs un amatniecība | režģa poga | E |
+| Karte | kartes poga | M |
+| Pauze | pauzes poga | Esc |
+
+Pirmajā reizē apmācība parāda soli pa solim: iet, skatīties, lauzt, likt, izveidot dēļus, un brīdina, ka naktī nāk ienaidnieki.
+
+## 3. Pasaules un režīmi
+
+- Līdz 6 pasaulēm. Pierakstītam spēlētājam tās glabājas mākonī un ir pieejamas no jebkuras ierīces.
+- **Izdzīvošana (Survival):** vākt, taisīt lietas, izdzīvot naktis, pelnīt dvēseļu kristālus.
+- **Radošais (Creative):** nav bojājumu un izsalkuma, bloki lūst uzreiz, ir visi bloki. Var lidot (divreiz lēkt). Kristāli šeit nekrājas.
+- **Biomi:** tālāk no sākuma vietas ir tuksneši (kāpas, smilšakmens, kaktusi, kas dur) un sniega lauki (sasaluši ezeri, sniegotas priedes). Alās ir daudz rūdas, lavas baseini un mirdzoši kristāli uz grīdas.
+- **Rūdas:** ogles, dzelzs, zelts, dvēseļu rūda un dziļi pazemē (zem y 20) dimanti.
+
+## 4. Izdzīvošana
+
+- **Diena un nakts.** Naktī parādās monstri:
+  - **Tukšulis** (Hollow), sadeg saulē;
+  - **Čabulis** (Skitter), ātrs rāpulis;
+  - **Drūmais strēlnieks** (Gloomshot), šauj no attāluma.
+- Pret tiem var uzbūvēt patvērumu vai izgatavot zobenu.
+- **Izsalkums:** jāēd (saules auglis, maize, cepetis, mirdzošā zupa, kā arī Malagas ēdieni, sk. 10. nodaļu).
+- **Amatniecība:** 3x3 režģis ar receptēm. Recepšu grāmata pati saliek vajadzīgo.
+  - rīki: koka, akmens, dzelzs un emberīta cērtes;
+  - ieroči: zobeni, loks un bultas, šķēps;
+  - būvmateriāli un lukturi.
+- **Nāve:** parādās atdzimšanas ekrāns, un spēlētājs atdzimst mājas punktā.
+
+## 5. Ciemati, tirdzniecība un Dvēseļu veikals
+
+- **Ciemati:** mājas ar durvīm uz centru un aka vidū. Ciematnieki tirgojas: dod, piemēram, 6 baļķus pret 2 maizēm. Jo biežāk tirgojies, jo lielāka draudzība un jo labāki piedāvājumi.
+- Pie akas stāv **Bankomāts**, **Tirgus stends** un **Restorāns** (ciemata krogs) (sk. 10. nodaļu).
+- **Dvēseļu kristāli** ir spēles "dvēseles valūta". Tos dod dienas uzdevumi, sargi, Dārgumu meklējumi un reizēm monstri.
+- **Dvēseļu veikals:**
+  - Skini: Klejotājs (bez maksas), Sūnu sargs (40), Kvēles izlūks (80), Sala meistars (80), Saules bruņinieks (150), Bezdibeņa gājējs (200), Garu lukturis (300), Vētras jātnieks (500).
+  - Pavadoņi: **Uguns lapsa** (60) kož monstriem, **Ledus pūce** (120) lido un šauj ledus šķembas, **Sūnu golems** (200) atsit monstrus. Līdzi nāk viens; ja to notriec, tas atpūšas 30 sekundes.
+
+## 6. Galvenais stāsts: pieci sargi un Dvēseļu karte
+
+1. Spēlētājs izgatavo **Bezdibeņa lukturi** (stikls, dzelzs, ogles un 12 dvēseļu kristāli), kas atver **Dvēseļu karti**.
+2. Uz kartes ir pasaules (realms) un sargi, kas jāpieveic pēc kārtas. Katra uzvara atslēdz nākamo:
+   1. **Bezdibeņa pūķis** (Void Dragon), pasaulē **Bezdibenis**: salauz tukšuma kristālus, tad sit, kad tas nirst lejup.
+   2. **Gliemežvāku karalis** (Shell King), **Dvēseļu valstībā**: izvairies no tumšajiem gliemežvākiem, mirdzošos atsit viņam atpakaļ.
+   3. **Viesuļu karalis** (Whirlwind King), **Pārbaudījumu zālē**: vēju var ievainot tikai vējš, tāpēc vāc **Vēja lādiņus** un met tos.
+   4. **Kvēles sargs** (Ember Warden), **Kvēles dzīlēs**: emberīta un zelta asmeņi kož visdziļāk, uzmanies no Uguns gariem.
+   5. **Dvēseļu vētra** (Soul Storm), **Dvēseļu valstībā**: visas pazudušās dvēseles vienā vētrā.
+3. Bosiem ir fāzes, brīdinājumi ("Nirst - kusties!") un veselības josla.
+4. Pēc pēdējā sarga: **"Vētra ir norimusi"** ekrāns ar statistiku (spēles laiks, izdzīvotās dienas, salauztie un noliktie bloki, uzvarētie ienaidnieki, nāves, nopelnītie kristāli). Pasaule paliek tava, un tajā var turpināt būvēt.
+
+## 7. Dārgumu meklējumi (atsevišķs piedzīvojumu režīms)
+
+Leģenda vēsta par apslēptu dārgumu glabātuvi. Spēlētājs drupās atrod dārgumu karti un iziet 12 pārbaudījumus. Ir kontrolpunkti: nokrītot, spēlētājs atgriežas pie pēdējā.
+
+1. **Kartes drupas:** labirints, kurā paslēpta karte.
+2. **Debesu pakāpieni:** lēkšana pār tukšumu.
+3. **Bultu zāle:** sienu slazdi iedegas sarkani, pirms šauj.
+4. **Briesmoņu midzenis:** vārti aizcērtas, līdz visi monstri pieveikti.
+5. **Sviru mīkla:** katra svira pārslēdz savu lampu un kaimiņus, jāiededz visas četras.
+6. **Drūpošais tilts:** bloki krīt magmā zem kājām.
+7. **Atslēgu birzs:** trīs zelta atslēgas (dzīvžoga labirintā, dīķī, tornī).
+8. **Atmiņas flīzes:** atkārto gaismas secību.
+9. **Ēnu labirints:** tumšs labirints ar monstriem.
+10. **Lēciena plāksnes:** zaļie paliktņi aizmet pāri spraugām.
+11. **Būvnieka aiza:** pats uzbūvē dēļu tiltu.
+12. **Dārgumu golems** (Hoard Golem): izvairies no uzskrējiena, tad sit atsegto mirdzošo kodolu.
+
+**Atlīdzība:** skins **Dārgumu mednieks**, **Zvaigžņkrituma asmens** un 250 dvēseļu kristāli. Tie parādās arī visās parastajās pasaulēs.
+
+**2. nodaļa: Ledus smaile** (durvis glabātuves aizmugurē):
+1. Ledus slidkalniņš;
+2. Mirgojošais tilts;
+3. Vēju tornis;
+4. Sala plāksnes;
+5. Sala strūklas;
+6. Lodu sacīkste (6 sala lodes pret laiku);
+7. Sala midzenis;
+8. **Ledus sargs** (Frost Warden): izkāp no lēciena apļa; kad tā kājas sasalušas, sitieni skaitās divkārši.
+
+**Atlīdzība:** skins **Ledus valdnieks**, zobens **Sala asmens** (Frostbrand) un 300 kristālu.
+
+## 8. Dienas uzdevumi un sezonas notikumi
+
+- Katru dienu **3 uzdevumi** (vieni un tie paši visiem): salauz N blokus, noliec N blokus, pieveic N monstrus, izroc N rūdas, tirgojies N reizes, izgatavo N lietas, apēd N maltītes, noej N blokus, izdzīvo nakti.
+- Par izpildītu uzdevumu dod kristālus, par visiem trim ir bonuss.
+- Izpildītie uzdevumi skaitās arī **pilsētas algai** (sk. 11. nodaļu).
+- Sezonas notikumi:
+  - **Ziedu dienas** (1.-20. aprīlis): lido ziedlapiņas, uzdevumi maksā divreiz vairāk.
+  - **Ražas mirdzums** (15. oktobris - 5. novembris): krēslā ceļas dzirksteles, monstri kristālus met 3 reizes biežāk.
+  - **Sniegputenis** (10. decembris - 6. janvāris): visur snieg, un pirmais ciematnieks katru dienu uzdāvina dāvanu.
+
+## 9. Pasaules karte, dzīvības un minikarte
+
+- **Pasaules karte** (M vai minikarte): reljefs, ciemati, draugi, atdzimšanas punkts. Karti var vilkt un pietuvināt.
+- **Ceļošana:** uzsit uz vietas uz kartes un apstiprini, lai tur nokļūtu. Šī vieta kļūst par jauno atdzimšanas punktu.
+  - Izdzīvošanā viens ceļojums maksā **1 no 3 dzīvībām**, un katru jaunu spēles dienu 1 dzīvība atgriežas.
+  - Radošajā režīmā ceļošana ir bez maksas.
+- **Minikarte** stūrī rāda apkārtni ar ziemeļiem augšā, spēlētāja bultu, ciematus, pieturas un autobusus.
+
+## 10. MALAGA: īsta pilsēta spēlē
+
+Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malagas centra** (Spānija) mērogā **1 bloks = 1 metrs**.
+- Teritorija: no Centro un ostas līdz El Limonar rajonam.
+- Ir īstie pakalni (Alcazaba un Gibralfaro), ielas, laukumi, parki, pludmale un **ap 20 000 ēku** ar īstajām kontūrām un augstumiem.
+- Dati nāk no OpenStreetMap.
+- Var spēlēt radošajā režīmā (lidot, visi bloki) vai izdzīvošanā (naktī nāk monstri) un kopā ar draugiem.
+
+### Kur sāc un ko redzi
+
+- Spēle sākas **Plaza de la Constitución** laukumā vecpilsētā.
+- Orientieri kartē:
+  - **Calle Larios** (galvenā iepirkšanās iela);
+  - **Katedrāle**;
+  - **Alcazaba** (mauru cietoksnis);
+  - **Gibralfaro** (pils kalna galā);
+  - **Muelle Uno** (osta);
+  - **La Malagueta** (pludmale);
+  - **Plaza de la Merced**;
+  - **Paseo del Parque**;
+  - **El Limonar**;
+  - **Banco de España** (centrālā banka).
+- **Ielu nosaukumi** uzkrāsoti uz brauktuves ar lieliem bloku burtiem (C/, AV., PZA.), lai tos var izlasīt, lidojot virs pilsētas.
+- **Māju numuri:** zili balti numuru plāksnītes virs durvīm, kā īstajā Malagā. Ap 8 900 mājām ir numurs.
+- **Pilsēta dzīvo:**
+  - zivis jūrā un ostā;
+  - peldētāji baseinos;
+  - sauļotāji ar saulessargiem pludmalē;
+  - gājēji gājēju ielās dienas laikā.
+
+### Autobusi (īstie EMT maršruti un saraksti)
+
+- Pa pilsētu brauc **īstās EMT Malaga autobusu līnijas** pa saviem īstajiem maršrutiem, pēc **īstā saraksta** un Malagas laika. Visi spēlētāji redz to pašu autobusu tajā pašā vietā.
+- Līnijas: 72 no 74 virzieniem ar īsto sarakstu; ir arī nakts līnijas, piemēram, N1.
+- **Pieturas:** 184 zilas pieturas zīmes. Izmantojot zīmi, redzi nākamos autobusus katrai līnijai (pēc minūtēm un pulksteņa laika) un vari parādīt līnijas uz kartes.
+- **Iekāpšana:**
+  - kad autobuss stāv pieturā, izmanto to un iekāp; biļete maksā **2 monētas**;
+  - lēciens izkāpj;
+  - pa kāpnītēm autobusa aizmugurē var **uzrāpties uz jumta** un braukt līdzi bez maksas.
+- Pasaules kartē ir slānis **Autobusi** ar līnijām, pieturām un kustīgiem autobusiem.
+
+### Nauda, banka un birža
+
+- Katram pierakstītam spēlētājam ir maks: **20 monētas** sākumā, monētas kabatā un bankā.
+- **Bankomāti:** 29 pie īstajām Malagas bankām un pa vienam pie katra ciemata akas. Tie atver ekrānu **Banka un birža** ar cilnēm:
+  - **Birža:** pārdod savākto (pārtiku, kokus, akmeni, stiklu, stieņus, dimantus) pret monētām vai pērc. Cenas kustas: jo vairāk spēlētāji kaut ko pārdod, jo lētāks tas kļūst, un pirkšana to sadārdzina. Bultiņas rāda tendenci.
+  - **Tirgus:** izliec savas mantas pārdošanā citiem spēlētājiem par savu cenu. Tās gaida tirgū, līdz kāds nopērk (pārdevējs saņem ziņu), vai paņem atpakaļ.
+  - **Banka:** noguldi un izņem monētas, redzi pēdējās darbības.
+  - **Loterija:** biļete 5 monētas, līdz 10 mēnesī. Mēneša beigās viena biļete laimē banku (pilsēta patur desmito daļu).
+  - **Pilsēta:** Soulcraft kalendārs, alga un centrālā banka (zelta rezerves, zelta cena, monētas apgrozībā, zelta nodrošinājums).
+- **Centrālā banka** glabā pilsētas bagātību zeltā. Zelta stieņi, ko pārdod biržā, papildina rezerves.
+- Lai neviens nevarētu pārpludināt pilsētu ar izdomātām mantām, katram spēlētājam dienā ir pārdošanas limits katrai precei (piemēram, 8 dimanti).
+
+### Ēdiens: veikali, gatavošana, restorāni
+
+- **Tirgus stendi:** 135 pie īstajiem Malagas pārtikas veikaliem un pa vienam katrā ciematā. Tur pārdod tomātus, apelsīnus, rīsus, sardīnes, olīveļļu, miltus, maizi un ogles.
+- **Gatavošana pie darbgalda** (ogles ir uguns):
+  - **Espetos**: sardīne, iesms, ogles. Tās ir sardīnes uz iesma, Malagas specialitāte.
+  - **Gaspačo**: 3 tomāti un olīveļļa.
+  - **Paelja**: rīsi, sardīne, tomāti, olīveļļa, ogles; iznāk 2 porcijas.
+  - **Čurrosi**: milti, olīveļļa, ogles; iznāk 2.
+- **Restorāni:** 475 Malagas restorāni, kafejnīcas un bāri, kā arī ciemata krogs. Tur šos ēdienus pasniedz uzreiz: ātrāk un sātīgāk, bet 2-3 reizes dārgāk. Paēdušam neko nepasniedz.
+
+### Ko Malagā var darīt (aktivitātes)
+
+Spēlē **nav atsevišķu scenārija misiju tikai Malagai**. Pilsēta ir atvērta pasaule, kurā dari:
+1. **Izpēti orientierus:** aizej no Plaza de la Constitución pa Calle Larios līdz Katedrālei, uzkāp Alcazaba un Gibralfaro, nonāc pludmalē La Malagueta un ostā Muelle Uno.
+2. **Brauc ar autobusu:** atrodi pieturu, apskati sarakstu, iekāp un aizbrauc uz citu rajonu, vai brauc uz jumta.
+3. **Ceļo ar karti:** aizlido uz jebkuru vietu, izdzīvošanā tas maksā dzīvību.
+4. **Nopelni un tērē naudu:** pārdod savākto biržā, noguldi bankā, pērc produktus, gatavo paelju, paēd restorānā, spēlē loteriju, tirgojies ar citiem spēlētājiem.
+5. **Pildi dienas uzdevumus** izdzīvošanas pasaulē un saņem mēnešalgu no pilsētas.
+6. **Būvē** jebkur pilsētā, arī radošajā režīmā.
+7. **Spēlē kopā ar draugiem** tajā pašā Malagas pasaulē.
+8. **Izdzīvo nakti** pilsētā, kur monstri nāk no ielām.
+
+## 11. Pilsētas dzīve: kalendārs, alga, loterija
+
+- **Soulcraft kalendārs:** laiks iet 24 reizes ātrāk. Soulcraft diena ir 1 īsta stunda, mēnesis ir 1 īsta diennakts (beidzas pusnaktī pēc UTC), gads ir 12 dienas.
+  - Mēnešiem ir nosaukumi: Salnu, Sējas, Lietus, Ausmas, Ziedoņa, Saulgriežu, Kvēles, Ražas, Zeltlapu, Miglas, Dvēseļu, Zvaigžņu mēnesis.
+- **Mēnešalga no pašvaldības** par tā mēneša kvestiem: 6 monētas par dienas uzdevumu, 40 par sargu, 8 par Dārgumu meklējumu līmeni, līdz 300. To izmaksā mēneša beigās.
+- **Loterija:** izloze notiek katra mēneša beigās, un uzvarētājs saņem ziņu.
+
+## 12. Kopā ar draugiem
+
+- **Konts:** reģistrācija un pieteikšanās; pasaules glabājas mākonī.
+- **Draugi:** pievieno pēc lietotājvārda. Draugu sarakstā redzams, kurš ir tiešsaistē un kurā pasaulē, un ar pogu **Pievienoties** var ielēkt drauga pasaulē.
+- **Kopīga pasaule:**
+  - līdz 4 spēlētājiem;
+  - saimnieks atver pasauli un saņem 6 zīmju istabas kodu;
+  - visi redz tās pašas izmaiņas un tos pašus monstrus.
+- **Čats:**
+  - privātas sarunas ar draugiem;
+  - publiskais **Lobijs** (Lobby) un kanāli, kuros admins ielaiž;
+  - nelasīto skaits;
+  - drauga ziņa parādās spēles laikā.
+- **Zvani:** datorā ar video un skaņu, telefonā tikai ar skaņu. Zvanā var pievienot vairākus draugus. Zvana logs peld stūrī virs spēles.
+- **Admini** moderē čatu, bloķē pārkāpējus un uzrauga ekonomiku.
+
+---
+
+# STORYBOARD STRUKTŪRA (ieteicamā ainu secība)
+
+Vari pielāgot, bet saglabā nodaļas un loģisko secību. Katrai ainai ir norādīta animācijas ideja.
+
+**1. nodaļa: Sveiks, Soulcraft**
+1. **Titula aina:** logo "Soulcraft", zem tā "Būvē. Izdzīvo. Atbrīvo dvēseles." Kubi saplūst logo, ciānzili kristāli mirdz.
+2. **Tavs ekrāns:** HUD elementi parādās pa vienam ar norādēm (sirdis, izsalkums, kristāli, dzīvības, monētas, minikarte, rīku josla).
+3. **Vadība:** telefona siluets ar kursorsviru kreisajā pusē un pogām labajā; pirksts demonstrē vilkšanu. Blakus datora tastatūra ar izgaismotiem W A S D.
+
+**2. nodaļa: Rok, būvē, izdzīvo**
+4. **Lauz un liec:** cērte sit bloku, tas saplaisā un pazūd, tad jauns bloks nostājas vietā.
+5. **Amatniecība:** 3x3 režģis, baļķis kļūst par dēļiem, dēļi par nūjām, tad par cērti.
+6. **Nakts nāk:** debesis satumst, iznirst Tukšulis, Čabulis un Drūmais strēlnieks. Spēlētājs uzceļ patvērumu, rītausmā Tukšulis sadeg saulē.
+7. **Biomi un alas:** ātra panorāma: zaļš mežs, tuksnesis ar kaktusiem, sniega lauki, ala ar lavu un mirdzošiem kristāliem, dimanta rūda dziļumā.
+
+**3. nodaļa: Ciemati un kristāli**
+8. **Ciematnieki:** tirdzniecības apmaiņa (6 baļķi pret 2 maizēm) un draudzības josla, kas pieaug.
+9. **Dvēseļu veikals:** skinu karuselis un pavadoņi (Uguns lapsa, Ledus pūce, Sūnu golems) cīņā.
+10. **Dienas uzdevumi:** trīs kartītes ar atzīmēm, kristāli ieplūst skaitītājā, un sezonas notikumu ikonas.
+
+**4. nodaļa: Pieci sargi**
+11. **Bezdibeņa lukturis un Dvēseļu karte:** lukturis iedegas, atveras karte ar 5 pasaulēm, pirmā ir atslēgta.
+12-16. **Viens sargs katrā ainā:** tā pasaule, galvenais triks (piemēram, atsisti gliemežvāku vai met vēja lādiņu) un brīdinājuma zīme.
+17. **Vētra norimusi:** uzvaras ekrāns ar statistikas skaitītājiem, kas skrien uz augšu.
+
+**5. nodaļa: Dārgumu meklējumi**
+18. **Leģenda:** vecā karte atritinās.
+19. **12 pārbaudījumu montāža:** mazas kartītes pēc kārtas, katrai 1 sekundes animācija (bultas lido, tilts brūk, flīzes iedegas...).
+20. **Dārgumu golems un glabātuve:** zelta lāde atveras, izlido skins, zobens un 250 kristāli.
+21. **Ledus smaile:** zilgana nodaļa ar ledu, strūklām un Ledus sargu.
+
+**6. nodaļa: Malaga**
+22. **Īsta pilsēta:** lidojums virs Malagas; parādās uzraksts "1 bloks = 1 metrs"; kamera nolaižas Plaza de la Constitución.
+23. **Orientieri:** maršruts uz kartes, punkti iedegas pa vienam (Calle Larios, Katedrāle, Alcazaba, Gibralfaro, La Malagueta, Muelle Uno).
+24. **Ielas dzīvo:** uzkrāsots ielas nosaukums no augšas, māju numuri, peldētāji, sauļotāji, zivis.
+25. **Autobuss:** pieturas zīme ar sarakstu (līnija, "pēc 3 min"), autobuss piebrauc, spēlētājs iekāp (-2 monētas), cits uzrāpjas uz jumta un brauc līdzi.
+26. **Banka un birža:** bankomāts, cenu grafiks, kas krīt, kad daudz pārdod, monētas ieslīd makā, zelts centrālajā bankā.
+27. **Pārtika:** tirgus stends, tad gatavošana (tomāti un olīveļļa kļūst par gaspačo), tad restorāns (paelja uz galda, cena).
+28. **Pilsētas dzīve:** kalendārs, kas griežas (diena = stunda), algas josla, kas pieaug no uzdevumiem, loterijas bumbiņas.
+
+**7. nodaļa: Kopā ar draugiem**
+29. **Draugi un istabas kods:** 6 zīmju kods, draugi ielec pasaulē, kopā būvē.
+30. **Čats un zvani:** ziņu burbuļi, zvana logs stūrī ar video kvadrātiem.
+
+**8. nodaļa: Beigu aina**
+31. "Spēlē tagad: soulcraft.8nomads.com", poga, kas ved uz spēli, un aicinājums spēlēt telefonā ainavas režīmā.
+
+**(Neobligāti) 9. nodaļa: Drīzumā** (skaidri atzīmēta kā nākotne):
+- bankas aplaupīšana (kvesti un apsardze);
+- dārzeņu audzēšana un mājlopi, ko pārdot biržā;
+- vairāk pilsētu.
+
+## Kvalitātes pārbaude pirms nodošanas
+
+- Katrai ainai ir redzama animācija, un tā neaizsedz tekstu.
+- Navigācija strādā ar pogām, bultiņām un vilkšanu. Automātiskā atskaņošana apstājas, kad lietotājs pats pārslēdz ainu.
+- Telefonā portreta režīmā nekas neiziet ārpus ekrāna, un nav horizontālas ritināšanas.
+- Visi fakti sakrīt ar šo rokasgrāmatu; skaitļi (cenas, limiti, daudzumi) nav izdomāti.
+- Tekstā nav garo domuzīmju (U+2014, U+2013), tikai defises.
