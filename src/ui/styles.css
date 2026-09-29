@@ -432,3 +432,15 @@ body.touch .desktop-only { display: none !important; }
 .bus-times b { font-weight: 700; white-space: nowrap; }
 .bus-times small { opacity: 0.7; font-weight: 400; }
 @media (max-width: 560px) { .bus-row { grid-template-columns: 44px 1fr; } .bus-times { grid-column: 1 / -1; } }
+
+/* ---------- friends ---------- */
+.friends-panel { width: min(560px, 100%); display: flex; flex-direction: column; gap: var(--sp-2); }
+.fr-add .input { flex: 1; min-width: 0; }
+.fr-list { display: flex; flex-direction: column; gap: 6px; max-height: 58vh; overflow: auto; }
+.fr-row { display: flex; gap: var(--sp-2); align-items: center; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 6px 8px; }
+.fr-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.fr-sub { font-size: var(--fs-xs); color: var(--c-text-dim); }
+.fr-acts { display: flex; gap: 6px; }
+.fr-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #666; margin-right: 5px; vertical-align: middle; }
+.fr-dot.on { background: #6fe39a; box-shadow: 0 0 6px #6fe39a; }
+.badge-ok { display: inline-block; padding: 1px 5px; border-radius: 3px; background: var(--c-soul-500); color: var(--c-ink); font-size: var(--fs-xs); }

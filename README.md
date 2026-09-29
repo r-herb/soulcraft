@@ -122,6 +122,14 @@ friends like any other world.
   where a player rides along.
 - Other cities can be added in `scripts/city/cities.mjs`.
 
+## Friends
+
+Signed-in players add friends by username (**Friends** on the title screen
+or in the pause menu). The other player accepts or declines the request.
+The friends list shows who is online and in which world, and when a
+friend's world is open to friends a **Join** button takes you straight in,
+without typing the room code. Only friends see where a player is.
+
 ## Performance
 
 Weak phones are limited by pixels (the GPU), not by JavaScript, so the
@@ -352,6 +360,8 @@ What the tests cover:
   a driving bus carries a player.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
+- `tests/friends.spec.js`: a friend request by username, accepting it, the
+  friend shown online in a world, and joining that world from the list.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
   through the real Soul Map, from the Void Dragon to the Soul Storm and the
   victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries

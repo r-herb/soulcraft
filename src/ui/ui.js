@@ -8,6 +8,7 @@ import { Hud } from './hud.js';
 import * as panels from './panels.js';
 import { worldMap } from './worldmap.js';
 import { busStop } from './busui.js';
+import { friends, social, refreshSocial } from './social.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
@@ -63,7 +64,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -186,7 +187,7 @@ export class UI {
           ${langButtons(lang)}
         </div>
         ${account.available ? (account.user
-    ? `<button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
+    ? `<button class="btn small ghost" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button><button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
     : '<button class="btn small ghost acct-btn" data-act="signin" data-i18n="acct.signIn"></button>') : ''}
         </div>
         <span class="faint">${esc(t('title.version', { v: VERSION }))}</span>
@@ -215,6 +216,9 @@ export class UI {
     if (jn) jn.addEventListener('click', () => { this.click(); this.open('join'); });
     const si = node.querySelector('[data-act="signin"]');
     if (si) si.addEventListener('click', () => { this.click(); this.open('signin'); });
+    const fr = node.querySelector('[data-act="friends"]');
+    if (fr) fr.addEventListener('click', () => { this.click(); this.open('friends'); });
+    if (account.user && !this._socialT) { this._socialT = setInterval(() => refreshSocial(), 60000); refreshSocial(); social.listeners.add(() => { if (this.top && this.top.name === 'title') this.render(); }); }
     const pr = node.querySelector('[data-act="profile"]');
     if (pr) pr.addEventListener('click', () => { this.click(); this.open('profile'); });
     node.querySelector('[data-act="settings"]').addEventListener('click', () => { this.click(); this.open('settings'); });
@@ -610,6 +614,7 @@ export class UI {
           <div class="row"><button class="btn" style="flex:1" data-act="settings" data-i18n="pause.settings"></button><button class="btn" style="flex:1" data-act="save" data-i18n="pause.save"></button></div>
           <div class="row"><button class="btn" style="flex:1" data-act="help" data-i18n="help.title"></button>${account.available ? '<button class="btn" style="flex:1" data-act="feedback" data-i18n="fb.button"></button>' : ''}</div>
           ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
+          ${account.user ? `<button class="btn" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button>` : ''}
           ${account.user && account.mp && !this.game.isQuest ? `<button class="btn violet" data-act="room"><span data-i18n="mp.title"></span>${this.game.net ? `<span class="dot">${this.game.net.count}</span>` : ''}</button>` : ''}
           <button class="btn ember" data-act="quit" data-i18n="${this.game.isGuest ? 'mp.leave' : 'pause.quit'}"></button>
         </div>
@@ -617,6 +622,7 @@ export class UI {
     const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(); }); };
     on('daily', () => this.open('daily'));
     on('room', () => this.open('room'));
+    on('friends', () => this.open('friends'));
     on('feedback', () => this.open('feedback'));
     on('help', () => this.open('help'));
     on('resume', () => this.closeAll());

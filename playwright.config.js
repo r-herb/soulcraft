@@ -60,17 +60,17 @@ export default defineConfig({
   ] : [
     {
       name: 'accounts',
-      testMatch: /(accounts|multiplayer)\.spec\.js/,
+      testMatch: /(accounts|multiplayer|friends)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:8788', viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
     {
       name: 'mobile',
-      testIgnore: /(live|accounts|multiplayer)\.spec\.js/,
+      testIgnore: /(live|accounts|multiplayer|friends)\.spec\.js/,
       use: { viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: devices['Pixel 7'].userAgent, launchOptions: launch },
     },
     {
       name: 'desktop',
-      testIgnore: /(live|accounts|multiplayer)\.spec\.js/,
+      testIgnore: /(live|accounts|multiplayer|friends)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
   ],

@@ -236,6 +236,67 @@ async function route(parts, method, request, env, secure) {
     return err(404, 'not_found');
   }
 
+  // ---------- friends and presence ----------
+  if (a === 'presence' && method === 'POST') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    const p = await body(request);
+    const presence = { world: p.world ? String(p.world).slice(0, 40) : null, room: /^[A-Z0-9]{6}$/.test(String(p.room || '')) ? String(p.room) : null, city: p.city ? String(p.city).slice(0, 20) : null };
+    await db.prepare('UPDATE users SET last_seen = ?, presence = ? WHERE id = ?').bind(Date.now(), JSON.stringify(presence), s.user.id).run();
+    return json({ ok: true });
+  }
+  if (a === 'friends') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    const me = s.user.id;
+    const pair = (x, y) => (x < y ? [x, y] : [y, x]);
+    if (!b && method === 'GET') {
+      const { results } = await db.prepare(`SELECT f.*, u.id AS uid, u.name, u.username, u.avatar, u.last_seen, u.presence FROM friends f
+        JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END WHERE f.a = ? OR f.b = ?`).bind(me, me, me).all();
+      const now = Date.now();
+      const person = (r) => {
+        const online = !!(r.last_seen && now - r.last_seen < 150e3);
+        const pr = online && r.status === 'accepted' && r.presence ? JSON.parse(r.presence) : null;
+        return { id: r.uid, name: r.name, username: r.username || null, avatar: r.avatar || null, online, world: pr ? pr.world : null, room: pr ? pr.room : null, city: pr ? pr.city : null };
+      };
+      return json({
+        friends: results.filter((r) => r.status === 'accepted').map(person).sort((x, y) => (y.online - x.online) || x.name.localeCompare(y.name)),
+        incoming: results.filter((r) => r.status === 'pending' && r.requested_by !== me).map(person),
+        outgoing: results.filter((r) => r.status === 'pending' && r.requested_by === me).map(person),
+      });
+    }
+    if (!b && method === 'POST') {
+      const username = normUsername((await body(request)).username);
+      if (!username) return err(400, 'bad_username', 'Type a username.');
+      const other = await db.prepare('SELECT id, name FROM users WHERE username = ? AND disabled = 0').bind(username).first();
+      if (!other) return err(404, 'no_user', 'There is no player with that username.');
+      if (other.id === me) return err(400, 'self', 'That is you.');
+      const [x, y] = pair(me, other.id);
+      const f = await db.prepare('SELECT * FROM friends WHERE a = ? AND b = ?').bind(x, y).first();
+      if (f && f.status === 'accepted') return err(409, 'already_friends', 'You are already friends.');
+      if (f && f.requested_by === me) return err(409, 'already_asked', 'You have already asked.');
+      if (f) { // they asked first: this accepts
+        await db.prepare("UPDATE friends SET status = 'accepted' WHERE a = ? AND b = ?").bind(x, y).run();
+        return json({ ok: true, status: 'accepted', name: other.name });
+      }
+      const pending = await db.prepare("SELECT COUNT(*) AS n FROM friends WHERE requested_by = ? AND status = 'pending'").bind(me).first();
+      if (pending.n >= 50) return err(429, 'too_many_requests', 'Too many open requests.');
+      await db.prepare('INSERT INTO friends (a, b, requested_by, status, created_at) VALUES (?, ?, ?, ?, ?)').bind(x, y, me, 'pending', Date.now()).run();
+      return json({ ok: true, status: 'pending', name: other.name }, 201);
+    }
+    const other = Number(b);
+    if (other > 0) {
+      const [x, y] = pair(me, other);
+      if (c === 'accept' && method === 'POST') {
+        const r = await db.prepare("UPDATE friends SET status = 'accepted' WHERE a = ? AND b = ? AND status = 'pending' AND requested_by != ?").bind(x, y, me).run();
+        return r.meta.changes ? json({ ok: true }) : err(404, 'no_request');
+      }
+      if (!c && method === 'DELETE') {
+        await db.prepare('DELETE FROM friends WHERE a = ? AND b = ?').bind(x, y).run();
+        return json({ ok: true });
+      }
+    }
+    return err(404, 'not_found');
+  }
+
   // ---------- saves ----------
   if (a === 'saves') {
     if (s.role !== 'user') return err(403, 'forbidden');

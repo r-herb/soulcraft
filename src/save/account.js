@@ -89,6 +89,14 @@ export async function updateProfile(fields) {
 
 // Forgotten password: the server emails a one-time link (?reset=token).
 // an idea or a problem report from the pause menu (guests may send too)
+// friends and where they are
+export const friends = {
+  list: () => api('friends'),
+  add: (username) => api('friends', { method: 'POST', body: { username } }),
+  accept: (id) => api(`friends/${id}/accept`, { method: 'POST', body: {} }),
+  remove: (id) => api(`friends/${id}`, { method: 'DELETE' }),
+};
+export async function sendPresence(p) { if (account.user) await api('presence', { method: 'POST', body: p }).catch(() => {}); }
 export async function sendFeedback(kind, text, ctx) { await api('feedback', { method: 'POST', body: { kind, text, ctx } }); }
 export async function forgotPassword(email, lang) { await api('auth/forgot', { method: 'POST', body: { email, lang } }); }
 export async function resetPassword(token, password) { await api('auth/reset', { method: 'POST', body: { token, password } }); }

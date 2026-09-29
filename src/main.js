@@ -8,7 +8,7 @@ import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
 import { Game, loadCityData } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
-import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS } from './save/account.js';
+import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount } from './save/account.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -94,6 +94,12 @@ async function boot() {
       app.game.held.setSkin(app.profile.skin);
       await app.refreshInfo();
     },
+    // where this player is, for friends (every minute, and when it changes)
+    presence() {
+      const g = app.game;
+      const on = g && g.running;
+      sendPresence({ world: on ? g.meta.name : null, room: on && g.net && g.net.isHost ? g.net.code : null, city: on ? g.meta.city || null : null });
+    },
     // ---------- multiplayer ----------
     // Open the running world to friends; resolves with the room code.
     async openRoom() {
@@ -103,6 +109,7 @@ async function boot() {
       const net = new Net(app, code, 'host');
       await net.connect();
       net.attach(g);
+      app.presence();
       return code;
     },
     closeRoom() { const g = app.game; if (g.net && g.net.isHost) g.net.leave(); },
@@ -150,6 +157,7 @@ async function boot() {
       if (g.running) { await g.save(true); g.stop(); }
       await app.refreshInfo();
       ui.showTitle();
+      app.presence();
     },
   };
   const ui = new UI({ app, input, audio });
@@ -179,6 +187,7 @@ async function boot() {
     try {
       await app.game.start(meta, (f) => ui.setLoading(0.1 + f * 0.9, t('loading.chunks')));
       ui.closeAll();
+      app.presence();
       if (!(settings().tutorialDone || {}).move) setTimeout(() => ui.tutorial('move'), 800);
       else if (meta.mode === 'quest' && !meta.player) setTimeout(() => ui.toast(t('quest.obj.0'), 'soul'), 800);
     } catch (e) {
@@ -252,6 +261,9 @@ async function boot() {
   if (new URLSearchParams(location.search).get('dev') === '1') initDevPanel(app, ui);
 
   // test / debug handle
+  setInterval(() => app.presence(), 60_000);
+  app.presence();
+  onAccount(() => app.presence());
   window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, get game() { return app.game; } };
 
   registerSW();
