@@ -6,6 +6,7 @@ import { settings, setSetting } from '../save/settings.js';
 import { SVG } from './icons.js';
 import { Hud } from './hud.js';
 import * as panels from './panels.js';
+import { worldMap } from './worldmap.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
@@ -61,7 +62,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name];
+    const fn = this['screen_' + top.name] || panels[top.name] || (top.name === 'worldMap' ? worldMap : null);
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -583,9 +584,11 @@ export class UI {
   // ---------- in-game overlays ----------
   openPause() { if (!this.game || this.game.player.dead) return; this.open('pause'); }
   openInventory() { this.open('inventory'); this.tutorialDone('craft'); }
+  // the world map where it can be used (overworld, cities), else the Soul Map
   openMap() {
-    if (this.game && this.game.city) { this.toast(t('city.noMap')); return; }
-    this.open(this.game && this.game.isQuest ? 'treasureMap' : 'map');
+    const g = this.game;
+    if (g && g.mapTravelOk) { this.open('worldMap'); return; }
+    this.open(g && g.isQuest ? 'treasureMap' : 'map');
   }
   openTrade(v) { this.open('trade', { villager: v }); this.tutorialDone('village'); }
   openDeath(cause, source) { this.stack = [{ name: 'death', args: { cause, source } }]; this.render(); this.onOverlayChange(); }
@@ -610,7 +613,7 @@ export class UI {
     on('feedback', () => this.open('feedback'));
     on('help', () => this.open('help'));
     on('resume', () => this.closeAll());
-    on('map', () => this.open('map'));
+    on('map', () => this.openMap());
     on('shop', () => this.open('shop'));
     on('settings', () => this.open('settings'));
     on('save', () => this.game.save());

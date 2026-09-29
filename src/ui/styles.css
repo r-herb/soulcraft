@@ -402,3 +402,22 @@ body.touch .desktop-only { display: none !important; }
 /* real cities */
 .city-btn { background: linear-gradient(180deg, #e2b36e, #c1603c); color: var(--c-ink); border-color: #8a3f24; }
 .city-credit { font-size: var(--fs-xs); }
+
+/* ---------- world map and minimap ---------- */
+.minimap { position: absolute; top: calc(var(--sp-2) + var(--safe-t) + 60px); right: calc(var(--sp-3) + var(--safe-r)); width: 116px; height: 116px; padding: 0; border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 50%; overflow: hidden; background: #1f4690; cursor: pointer; box-shadow: 0 2px 0 var(--c-ink); }
+.minimap canvas { width: 100%; height: 100%; display: block; }
+.minimap .mm-n { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 10px; font-weight: 700; color: #fff; text-shadow: var(--text-shadow); }
+@media (max-height: 460px) { .minimap { width: 86px; height: 86px; top: calc(var(--sp-2) + var(--safe-t) + 54px); } }
+#hud.overlay-open .minimap { display: none !important; }
+.life { display: inline-block; width: 12px; height: 12px; transform: rotate(45deg) scale(0.8); background: rgba(255, 255, 255, 0.18); border: 2px solid var(--c-ink); }
+.life.on { background: var(--c-gold-500); box-shadow: var(--glow-gold); }
+.wmap-panel { width: min(960px, 100%); display: flex; flex-direction: column; gap: var(--sp-2); max-height: 100%; }
+.wmap-bar { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); align-items: center; font-size: var(--fs-sm); }
+.wmap-lives { display: inline-flex; gap: 6px; align-items: center; }
+.wmap-view { position: relative; flex: 1 1 auto; height: min(62vh, 560px); min-height: 170px; border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); overflow: hidden; touch-action: none; background: #1f4690; }
+.wmap-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+.wmap-tools { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.wmap-tools .btn { min-width: 44px; min-height: 44px; font-size: var(--fs-md); }
+.wmap-confirm { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; justify-content: space-between; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: var(--sp-2); }
+.wmap-bar .btn { margin-left: auto; }
+@media (max-height: 460px) { .wmap-view { height: calc(100vh - 150px); } .wmap-panel { gap: 4px; } }

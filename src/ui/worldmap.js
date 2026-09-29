@@ -1,0 +1,290 @@
+// The world map: a top-down map of the city (from the city file) or of the
+// overworld (from the terrain layout), with the player, the respawn point and
+// villages or landmarks on it. Picking a place and confirming travels there;
+// in survival that costs one of the player's lives (see Game.mapTravel).
+import { t } from '../i18n/index.js';
+import { SVG } from './icons.js';
+import { SEA } from '../world/blocks.js';
+import { Layout } from '../world/structures.js';
+import { CITY_PLACES } from '../world/city.js';
+import { MAX_LIVES } from '../player/lives.js';
+
+const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rgb = (hex) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+
+// ---------- the city picture (built once per city, 2 m per pixel) ----------
+const CITY_SURF = ['#bdb393', '#55555a', '#aaa59b', '#e9e3d5', '#80b06a', '#e9d8a6', '#4a86c8', '#9a9486', '#6b5d53',
+  '#d2c9b6', '#4d7b3e', '#9aa0a6', '#bdb5a4', '#9daa6c', '#88b872', '#707074', '#c9a66b', '#62a254'].map(rgb);
+const CITY_WALL = ['#eeede8', '#eadfc4', '#dcb670', '#c97d5c', '#dad1ba', '#a6583f', '#86abc8', '#b3b3b0', '#d6b685'].map(rgb);
+const ROOF_TILES = rgb('#c2663e'), ROOF_STONE = rgb('#d9c8a2'), SEA_RGB = rgb('#2f6db3'), TREE_RGB = rgb('#3f7033');
+export const CITY_STEP = 2;
+const STEP = CITY_STEP;
+
+export function cityPicture(city) {
+  if (city._mapPic) return city._mapPic;
+  const W = Math.ceil(city.w / STEP), D = Math.ceil(city.d / STEP);
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = D;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(W, D);
+  const px = img.data, cw = city.w;
+  for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+    const gx = x * STEP, gz = z * STEP, i = gz * cw + gx;
+    const g = city.ground[i], s = city.surf[i] & 0x7f, b = city.bid[i];
+    let c;
+    if (s === 6 && g < city.seaY) c = SEA_RGB;
+    else if (b) {
+      const roof = city.table[b * 4 + 3];
+      c = roof === 1 ? ROOF_TILES : roof === 2 ? ROOF_STONE : CITY_WALL[city.table[b * 4 + 2]] || CITY_WALL[0];
+    } else c = (city.surf[i] & 0x80) ? TREE_RGB : CITY_SURF[s] || CITY_SURF[0];
+    // light from the north-west: slopes and building edges
+    const iw = gz > 0 && gx > 0 ? i - cw * STEP - STEP : i;
+    let shade = 1 + (g - city.ground[iw]) * 0.05;
+    if (b && city.bid[iw] !== b) shade *= 1.12;
+    if (b && gx + STEP < city.w && gz + STEP < city.d && city.bid[i + cw * STEP + STEP] !== b) shade *= 0.72;
+    shade = clamp(shade, 0.62, 1.3);
+    const o = (z * W + x) * 4;
+    px[o] = clamp(c[0] * shade, 0, 255); px[o + 1] = clamp(c[1] * shade, 0, 255); px[o + 2] = clamp(c[2] * shade, 0, 255); px[o + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  city._mapPic = cv;
+  return cv;
+}
+
+// ---------- overworld colours from the terrain layout ----------
+const OW = { deep: rgb('#1f4690'), shallow: rgb('#3f7fd0'), sand: rgb('#dccf95'), desert: rgb('#e5d59c'), snow: rgb('#eef2f6'),
+  grass: rgb('#5f9e3c'), high: rgb('#7c9a58'), rock: rgb('#8e8e8a'), village: rgb('#9b6b3e') };
+export function owColour(L, x, z, h) {
+  if (h < SEA) { const d = clamp((SEA - h) / 14, 0, 1); return OW.shallow.map((v, i) => v * (1 - d) + OW.deep[i] * d); }
+  if (L.villageNear(x, z)) return OW.village;
+  const biome = L.biome(x, z);
+  if (h <= SEA + 1) return OW.sand;
+  if (biome === 'desert') return OW.desert;
+  if (biome === 'snow' || h > 90) return OW.snow;
+  if (h > 74) return OW.rock;
+  const k = clamp((h - SEA) / 30, 0, 1);
+  return OW.grass.map((v, i) => v * (1 - k) + OW.high[i] * k);
+}
+
+export function worldMap(args, ui) {
+  const g = ui.game;
+  const city = g.city && g.meta.dim === 'city' ? g.city : null;
+  const L = city ? null : Layout.get(g.meta.seed);
+  const creative = !!g.creative;
+  const node = el(`<div class="screen scrim" data-screen="worldMap">
+    <div class="panel wmap-panel">
+      <div class="panel-head"><h2 class="panel-title">${esc(t(city ? 'wmap.cityTitle' : 'wmap.title', { name: city ? t('city.' + g.meta.city + '.name') : '' }))}</h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="wmap-bar"><span class="wmap-lives"></span><span class="faint wmap-hint"></span>${city ? '' : '<button class="btn small" data-act="soul" data-i18n="wmap.soulMap"></button>'}</div>
+      <div class="wmap-view"><canvas></canvas>
+        <div class="wmap-tools">
+          <button class="btn small icon-btn" data-z="in" aria-label="+">+</button>
+          <button class="btn small icon-btn" data-z="out" aria-label="-">-</button>
+          <button class="btn small icon-btn" data-act="me" data-i18n-aria="wmap.me">${SVG.target || '&#9678;'}</button>
+        </div>
+      </div>
+      <div class="wmap-confirm hidden"><span class="wmap-q"></span><div class="row"><button class="btn primary" data-act="go"></button><button class="btn" data-act="cancel" data-i18n="common.cancel"></button></div></div>
+    </div></div>`);
+  const view = node.querySelector('.wmap-view');
+  const cv = node.querySelector('canvas');
+  const ctx = cv.getContext('2d');
+  const confirm = node.querySelector('.wmap-confirm');
+
+  // lives
+  const livesEl = node.querySelector('.wmap-lives');
+  if (creative) livesEl.textContent = t('wmap.freeTravel');
+  else {
+    let icons = '';
+    for (let i = 0; i < MAX_LIVES; i++) icons += `<i class="life ${i < g.lives ? 'on' : ''}"></i>`;
+    livesEl.innerHTML = `<b>${esc(t('wmap.lives'))}</b> ${icons}`;
+  }
+  node.querySelector('.wmap-hint').textContent = t(creative ? 'wmap.hintFree' : 'wmap.hint');
+
+  // view state: centre (world blocks) and pixels per block
+  const p = g.player.pos;
+  const st = { cx: p.x, cz: p.z, s: 1, pick: null, W: 0, H: 0, dpr: Math.min(2, window.devicePixelRatio || 1) };
+  let minS = 0.15, maxS = 8;
+
+  // overworld: the terrain is sampled for the current view and cached
+  let owPic = null, owKey = '', owTimer = 0;
+  function renderOverworld() {
+    const k = 3; // screen pixels per sample
+    const sw = Math.ceil(st.W / k), sh = Math.ceil(st.H / k);
+    const pic = document.createElement('canvas');
+    pic.width = sw; pic.height = sh;
+    const c2 = pic.getContext('2d');
+    const img = c2.createImageData(sw, sh);
+    const bpp = k / st.s; // blocks per sample
+    const x0 = st.cx - st.W / 2 / st.s, z0 = st.cz - st.H / 2 / st.s;
+    const hs = new Float32Array(sw * sh);
+    for (let j = 0; j < sh; j++) for (let i = 0; i < sw; i++) hs[j * sw + i] = L.height(Math.floor(x0 + i * bpp), Math.floor(z0 + j * bpp));
+    for (let j = 0; j < sh; j++) for (let i = 0; i < sw; i++) {
+      const h = hs[j * sw + i];
+      const c = owColour(L, Math.floor(x0 + i * bpp), Math.floor(z0 + j * bpp), h);
+      const hn = hs[Math.max(0, j - 1) * sw + Math.max(0, i - 1)];
+      const shade = h < SEA ? 1 : clamp(1 + (h - hn) * 0.06 / Math.max(0.5, bpp / 2), 0.7, 1.3);
+      const o = (j * sw + i) * 4;
+      img.data[o] = clamp(c[0] * shade, 0, 255); img.data[o + 1] = clamp(c[1] * shade, 0, 255); img.data[o + 2] = clamp(c[2] * shade, 0, 255); img.data[o + 3] = 255;
+    }
+    c2.putImageData(img, 0, 0);
+    owPic = { pic, cx: st.cx, cz: st.cz, s: st.s };
+    owKey = `${st.cx},${st.cz},${st.s},${st.W},${st.H}`;
+  }
+  function scheduleOverworld() {
+    clearTimeout(owTimer);
+    owTimer = setTimeout(() => { if (owKey !== `${st.cx},${st.cz},${st.s},${st.W},${st.H}`) { renderOverworld(); draw(); } }, 120);
+  }
+
+  const toScreen = (x, z) => [(x - st.cx) * st.s + st.W / 2, (z - st.cz) * st.s + st.H / 2];
+  const toWorld = (sx, sy) => [st.cx + (sx - st.W / 2) / st.s, st.cz + (sy - st.H / 2) / st.s];
+
+  function marker(x, z, colour, r) {
+    const [sx, sy] = toScreen(x, z);
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fillStyle = colour; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#0b0a1f'; ctx.stroke();
+  }
+  function label(x, z, text, colour = '#fff') {
+    const [sx, sy] = toScreen(x, z);
+    if (sx < -60 || sy < -20 || sx > st.W + 60 || sy > st.H + 20) return;
+    ctx.font = '11px Tiny5, monospace';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,6,24,0.85)'; ctx.strokeText(text, sx, sy - 9);
+    ctx.fillStyle = colour; ctx.fillText(text, sx, sy - 9);
+  }
+
+  function draw() {
+    const { W, H } = st;
+    ctx.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
+    ctx.fillStyle = city ? '#2f6db3' : '#1f4690';
+    ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = st.s < 1;
+    if (city) {
+      const pic = cityPicture(city);
+      const [sx, sy] = toScreen(0, 0);
+      ctx.drawImage(pic, sx, sy, pic.width * STEP * st.s, pic.height * STEP * st.s);
+      for (const pl of CITY_PLACES[g.meta.city] || []) { const q = city.toXZ(pl.lat, pl.lon); marker(q.x, q.z, '#ffd36b', 3); label(q.x, q.z, pl.name); }
+    } else if (owPic) {
+      // the cached picture, moved and scaled to the current view
+      const f = st.s / owPic.s;
+      const [sx, sy] = toScreen(owPic.cx - (owPic.pic.width * 3 / owPic.s) / 2, owPic.cz - (owPic.pic.height * 3 / owPic.s) / 2);
+      ctx.drawImage(owPic.pic, sx, sy, owPic.pic.width * 3 * f, owPic.pic.height * 3 * f);
+      const [wx0, wz0] = toWorld(0, 0), [wx1, wz1] = toWorld(W, H);
+      for (const v of L.villagesAround((wx0 + wx1) / 2, (wz0 + wz1) / 2, Math.max(wx1 - wx0, wz1 - wz0) / 2 + 40)) { marker(v.x, v.z, '#e0a45a', 4); label(v.x, v.z, t('wmap.village'), '#ffe6c0'); }
+    }
+    // the respawn point
+    if (g.homeHere()) { marker(g.meta.home.x, g.meta.home.z, '#7cf0a0', 5); label(g.meta.home.x, g.meta.home.z, t('wmap.home'), '#b8ffd0'); }
+    // other players
+    if (g.net && g.net.players) for (const o of g.net.players.values()) { if (o.object && o.seen) { marker(o.object.position.x, o.object.position.z, '#b48cff', 4); label(o.object.position.x, o.object.position.z, o.name || '', '#e2d4ff'); } }
+    // the player: an arrow pointing where they look
+    const [px, py] = toScreen(p.x, p.z);
+    const fx = -Math.sin(g.player.yaw), fz = -Math.cos(g.player.yaw);
+    ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(fz, fx));
+    ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-7, 6); ctx.lineTo(-3, 0); ctx.lineTo(-7, -6); ctx.closePath();
+    ctx.fillStyle = '#5ce1e6'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#0b0a1f'; ctx.stroke(); ctx.restore();
+    // the picked place
+    if (st.pick) {
+      const [sx, sy] = toScreen(st.pick.x + 0.5, st.pick.z + 0.5);
+      ctx.strokeStyle = '#ff5a6e'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(sx, sy, 9, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx - 14, sy); ctx.lineTo(sx + 14, sy); ctx.moveTo(sx, sy - 14); ctx.lineTo(sx, sy + 14); ctx.stroke();
+    }
+    if (!city) scheduleOverworld();
+  }
+
+  function resize() {
+    const w = view.clientWidth, h = view.clientHeight;
+    if (!w || !h) return;
+    st.W = w; st.H = h;
+    cv.width = Math.round(w * st.dpr); cv.height = Math.round(h * st.dpr);
+    if (city) minS = Math.min(st.W / city.w, st.H / city.d) * 0.9;
+    draw();
+  }
+
+  // a place a player can stand on, near where they tapped
+  function landing(x, z) {
+    x = Math.floor(x); z = Math.floor(z);
+    if (city) return city.openCellNear(x, z, 40);
+    for (let r = 0; r <= 48; r += 2) for (let dz = -r; dz <= r; dz += 2) for (let dx = -r; dx <= r; dx += 2) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      if (L.height(x + dx, z + dz) > SEA) return { x: x + dx, z: z + dz };
+    }
+    return null;
+  }
+
+  function pick(sx, sy) {
+    const [wx, wz] = toWorld(sx, sy);
+    const spot = landing(wx, wz);
+    if (!spot) { ui.toast(t('wmap.cantLand'), 'warn'); return; }
+    st.pick = spot;
+    confirm.classList.remove('hidden');
+    confirm.querySelector('.wmap-q').textContent = creative ? t('wmap.askFree') : g.lives > 0 ? t('wmap.ask', { n: g.lives, max: MAX_LIVES }) : t('wmap.noLives');
+    const go = confirm.querySelector('[data-act="go"]');
+    go.textContent = t('wmap.go');
+    go.disabled = !creative && g.lives <= 0;
+    draw();
+  }
+
+  // ---------- panning, zooming, picking ----------
+  const ptrs = new Map();
+  let drag = null, pinch = null;
+  function zoomAt(f, sx = st.W / 2, sy = st.H / 2) {
+    const [wx, wz] = toWorld(sx, sy);
+    st.s = clamp(st.s * f, minS, maxS);
+    st.cx = wx - (sx - st.W / 2) / st.s; st.cz = wz - (sy - st.H / 2) / st.s;
+    draw();
+  }
+  const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', (e) => {
+    cv.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, local(e));
+    if (ptrs.size === 1) drag = { start: local(e), cx: st.cx, cz: st.cz, moved: false };
+    else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: st.s }; if (drag) drag.moved = true; }
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, local(e));
+    if (pinch && ptrs.size >= 2) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      zoomAt((pinch.s * d / pinch.d) / st.s, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    } else if (drag) {
+      const [x, y] = local(e);
+      if (Math.hypot(x - drag.start[0], y - drag.start[1]) > 6) drag.moved = true;
+      if (drag.moved) { st.cx = drag.cx - (x - drag.start[0]) / st.s; st.cz = drag.cz - (y - drag.start[1]) / st.s; draw(); }
+    }
+  });
+  const up = (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 0) {
+      if (drag && !drag.moved && e.type === 'pointerup') pick(...local(e));
+      drag = null;
+    }
+  };
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, ...local(e)); }, { passive: false });
+  node.querySelector('[data-z="in"]').addEventListener('click', () => { ui.click(); zoomAt(1.5); });
+  node.querySelector('[data-z="out"]').addEventListener('click', () => { ui.click(); zoomAt(1 / 1.5); });
+  node.querySelector('[data-act="me"]').addEventListener('click', () => { ui.click(); st.cx = p.x; st.cz = p.z; draw(); });
+  node.querySelector('[data-act="cancel"]').addEventListener('click', () => { ui.click(); st.pick = null; confirm.classList.add('hidden'); draw(); });
+  node.querySelector('[data-act="go"]').addEventListener('click', () => { ui.click(); if (st.pick) g.mapTravel(st.pick.x, st.pick.z); });
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  const soul = node.querySelector('[data-act="soul"]');
+  if (soul) soul.addEventListener('click', () => { ui.click(); ui.open('map'); });
+
+  // for tests and the dev panel: pick a world position directly
+  node._pickWorld = (x, z) => { const [sx, sy] = toScreen(x, z); pick(sx, sy); };
+
+  // first layout: about 600 blocks across, centred on the player
+  requestAnimationFrame(() => {
+    st.s = clamp((view.clientWidth || 600) / 600, 0.2, 4);
+    resize();
+  });
+  const ro = new ResizeObserver(() => resize());
+  ro.observe(view);
+  return node;
+}

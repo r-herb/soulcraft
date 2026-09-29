@@ -24,6 +24,22 @@ const NATURAL = new Set([SURF.ground, SURF.park, SURF.forest, SURF.scrub, SURF.g
 const WALLS = [B.plaster_white, B.plaster_cream, B.plaster_ochre, B.plaster_terra, B.limestone, B.brick, B.window, B.concrete, B.sandstone];
 const ROOFS = [B.paving, B.roof_tiles, B.limestone];
 
+// Well-known places shown on the world map (latitude, longitude).
+export const CITY_PLACES = {
+  malaga: [
+    { name: 'Plaza de la Constitución', lat: 36.72108, lon: -4.42195 },
+    { name: 'Calle Larios', lat: 36.71900, lon: -4.42170 },
+    { name: 'Catedral', lat: 36.72017, lon: -4.41961 },
+    { name: 'Alcazaba', lat: 36.72112, lon: -4.41593 },
+    { name: 'Gibralfaro', lat: 36.72344, lon: -4.41174 },
+    { name: 'Muelle Uno', lat: 36.71800, lon: -4.41338 },
+    { name: 'La Malagueta', lat: 36.71711, lon: -4.41085 },
+    { name: 'Plaza de la Merced', lat: 36.72340, lon: -4.41810 },
+    { name: 'Paseo del Parque', lat: 36.71910, lon: -4.41700 },
+    { name: 'El Limonar', lat: 36.72700, lon: -4.40000 },
+  ],
+};
+
 // ---------- main thread: loading and slicing ----------
 export class CityData {
   static async load(id) {
@@ -80,6 +96,18 @@ export class CityData {
       if (b && !bl[b]) bl[b] = Array.from(this.table.subarray(b * 4, b * 4 + 4));
     }
     return { city: true, seaY: this.seaY, ground, surf, wall, bid, bl };
+  }
+
+  // An open cell (not a building, the sea or a wall) near (x, z), or null.
+  openCellNear(x, z, radius = 40) {
+    for (let r = 0; r <= radius; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const cx = x + dx, cz = z + dz;
+      if (!this.inside(cx, cz)) continue;
+      const i = cz * this.w + cx;
+      if (!this.bid[i] && !this.wall[i] && (this.surf[i] & 0x7f) !== SURF.water) return { x: cx, z: cz };
+    }
+    return null;
   }
 
   // Where a new player starts: the spawn square, off any building.

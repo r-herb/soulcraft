@@ -25,7 +25,9 @@ test.describe('Boss progression', () => {
 
     for (const id of ORDER) {
       // the next guardian is ready on the Soul Map; the ones after it are locked
+      // M opens the world map in the overworld (the Soul Map is one button away) and the Soul Map in the realms
       await page.keyboard.press('KeyM');
+      if (await page.evaluate(() => window.__sc.game.mapTravelOk)) await page.locator('[data-screen="worldMap"] [data-act="soul"]').click();
       await expect(page.locator('[data-screen="map"]')).toBeVisible();
       const node = page.locator(`.map-node[data-boss="${id}"]`);
       await expect(node).toHaveClass(/ready/);

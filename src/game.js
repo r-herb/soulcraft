@@ -23,6 +23,7 @@ import { setIconAtlas } from './ui/icons.js';
 import { QuestManager, newQuestState } from './quest/questManager.js';
 import { QUEST_SEED, QUEST_SPAWN } from './world/quest.js';
 import { CityData } from './world/city.js';
+import { MAX_LIVES } from './player/lives.js';
 
 // real-city data, loaded once per city
 const cityCache = new Map();
@@ -457,7 +458,10 @@ export class Game {
     if (this.outdoors) {
       const before = m.time;
       m.time += dt / DAY_SECONDS;
-      if (m.time >= 1) { m.time -= 1; m.day++; this.ui.toast(t('toast.dayBegins', { n: m.day })); this.entities.onNewDay(); if (!pl.dead) this.daily.note('night'); }
+      if (m.time >= 1) {
+        m.time -= 1; m.day++; this.ui.toast(t('toast.dayBegins', { n: m.day })); this.entities.onNewDay(); if (!pl.dead) this.daily.note('night');
+        if (this.lives < MAX_LIVES) { m.lives = this.lives + 1; this.ui.toast(t('wmap.lifeBack', { n: m.lives, max: MAX_LIVES })); }
+      }
       if (!isNight(before) && isNight(m.time)) {
         this.ui.toast(t('toast.nightFalls'), 'warn');
         this.ui.tutorial('night');
@@ -659,7 +663,7 @@ export class Game {
       this.useCooldown = 0.4;
       return;
     }
-    if (def && def.special === 'map' && fresh) { this.ui.openMap(); this.useCooldown = 0.3; return; }
+    if (def && def.special === 'map' && fresh) { this.ui.open(this.isQuest ? 'treasureMap' : 'map'); this.useCooldown = 0.3; return; }
     if (def && def.weapon === 'bow' && fresh) {
       const free = this.player.god || this.creative;
       if (this.inventory.count('arrow') <= 0 && !free) { this.ui.toast(t('desc.bow'), 'warn'); return; }
@@ -808,6 +812,8 @@ export class Game {
     this.bosses.onPlayerDeath();
     if (this.quest) {
       this.quest.toCheckpoint();
+    } else if (this.homeHere()) {
+      const h = this.meta.home; p.pos.set(h.x + 0.5, 126, h.z + 0.5); await this.ensureLoaded(); this.placeOnGround();
     } else if (dim === 'city' && this.city) {
       const s = this.city.spawnPoint(); p.pos.set(s.x, s.y, s.z); await this.ensureLoaded(); this.placeOnGround();
     } else if (dim === 'overworld') {
@@ -825,6 +831,36 @@ export class Game {
     await this.ensureLoaded();
     this.paused = false;
     this.bosses.onArrive(dim, null, true);
+  }
+
+  // ---------- the world map: travel to a place picked on it ----------
+  get lives() { return this.meta.lives ?? MAX_LIVES; }
+  // the world map works in the overworld and in cities
+  get mapTravelOk() { return !this.isQuest && (this.meta.dim === 'overworld' || this.meta.dim === 'city'); }
+  homeHere() { const h = this.meta.home; return !!(h && h.dim === this.meta.dim && !this.isQuest); }
+
+  // Moves the player to column (x, z) and makes it the respawn point. Costs a
+  // life in survival. Returns false when it cannot go.
+  async mapTravel(x, z) {
+    if (!this.mapTravelOk || this.player.dead) return false;
+    const free = !!this.creative;
+    if (!free && this.lives <= 0) { this.ui.toast(t('wmap.noLives'), 'warn'); return false; }
+    if (!free) this.meta.lives = this.lives - 1;
+    this.ui.closeAll();
+    this.ui.showLoading(t('wmap.travelling'));
+    this.paused = true;
+    this.audio.sfx('portal');
+    const p = this.player;
+    p.pos.set(Math.floor(x) + 0.5, 126, Math.floor(z) + 0.5);
+    p.vel.set(0, 0, 0);
+    p.fallStart = null;
+    await this.ensureLoaded();
+    this.placeOnGround();
+    this.meta.home = { dim: this.meta.dim, x: Math.floor(x), z: Math.floor(z) };
+    this.ui.hideLoading();
+    this.save(true);
+    this.ui.toast(free ? t('wmap.arrived') : t('wmap.arrivedLives', { n: this.lives, max: MAX_LIVES }));
+    return true;
   }
 
   async ensureLoaded() {

@@ -1,4 +1,6 @@
 // In-game HUD: health, hunger, crystals, hotbar, boss bar, touch controls.
+import { Minimap } from './minimap.js';
+import { MAX_LIVES } from '../player/lives.js';
 import { t } from '../i18n/index.js';
 import { iconInto, statSprite, SVG } from './icons.js';
 import { settings } from '../save/settings.js';
@@ -37,7 +39,7 @@ export class Hud {
       <div class="hud-top-left">
         <div class="bar-row hearts"></div>
         <div class="bar-row foods"></div>
-        <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span><span class="stat-chip room-chip hidden" data-i18n-title="mp.roomChip"></span></div>
+        <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span><span class="stat-chip room-chip hidden" data-i18n-title="mp.roomChip"></span><span class="stat-chip lives-chip hidden" data-i18n-title="wmap.lives"><i class="life on"></i><span class="lives-n"></span></span></div>
       </div>
       <div class="hud-top-right">
         <span class="fps hidden"></span>
@@ -46,6 +48,7 @@ export class Hud {
         <button class="hud-btn pe" data-b="fullscreen" data-i18n-aria="hud.fullscreen">${SVG.fullscreen}</button>
         <button class="hud-btn pe" data-b="pause" data-i18n-aria="hud.pause">${SVG.pause}</button>
       </div>
+      <button class="minimap pe hidden" data-b="map" data-i18n-aria="hud.map"><canvas></canvas><i class="mm-n">N</i></button>
       <div class="quest-obj hidden"><b></b><span></span></div>
       <div class="boss-bar hidden"><div class="boss-name"></div><div class="boss-hp"><i></i></div><div class="boss-hint"></div></div>
       <div class="held-name"></div>
@@ -69,6 +72,8 @@ export class Hud {
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
     this.questObj = q('.quest-obj');
     this.roomChip = q('.room-chip');
+    this.livesChip = q('.lives-chip'); this.livesN = q('.lives-n');
+    this.minimap = new Minimap(q('.minimap'));
     this.clickToPlay = q('.click-to-play');
     const buttons = {};
     this.el.querySelectorAll('[data-a]').forEach((b) => { buttons[b.dataset.a] = b; });
@@ -173,6 +178,9 @@ export class Hud {
     const free = !this.input.touchMode && !this.input.pointerLocked && !p.dead;
     if (free !== this._free) { this._free = free; this.clickToPlay.classList.toggle('hidden', !free); }
     const L = this.last;
+    this.minimap.update(g, dt);
+    const lv = g.mapTravelOk && !g.creative ? `${g.lives}/${MAX_LIVES}` : '';
+    if (L.lv !== lv) { L.lv = lv; this.livesChip.classList.toggle('hidden', !lv); this.livesN.textContent = lv; }
     const hp = Math.ceil(p.health), mh = p.maxHealth;
     if (L.hp !== hp || L.mh !== mh) {
       L.hp = hp; L.mh = mh;

@@ -76,6 +76,15 @@ one flat file per language with the same keys). It starts in the browser's
 language when it has it, and the language can be changed on the title
 screen or in Settings. The admin panel is in English.
 
+## World map and lives
+
+**M**, the map button or the minimap in the corner opens the world map in the
+overworld and in cities: the terrain (or the city, with its landmarks), the
+player, villages, friends and the respawn point. Tap a place and confirm to
+travel there; it becomes the respawn point. In survival a trip costs one of
+3 lives, and a life comes back each new day; in creative mode trips are free.
+The Soul Map is one button away (and the Void Lantern still opens it).
+
 ## Malaga: a real city
 
 **Malaga** on the title screen opens a world built from the real centre of
@@ -308,6 +317,9 @@ What the tests cover:
   every text with the same placeholders; each language's title, inventory,
   pause and settings screens fit on a phone and a desktop; the browser's
   language picks the game's.
+- `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
+  no lives means no trip, a new day gives a life back, creative trips are
+  free, and in Malaga the map takes the player up to Gibralfaro.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
