@@ -43,6 +43,7 @@ export class Hud {
       </div>
       <div class="hud-top-right">
         <span class="fps hidden"></span>
+        <button class="hud-btn pe hidden" data-b="chat" data-i18n-aria="chat.title">${SVG.chat}<span class="dot hidden"></span></button>
         <button class="hud-btn pe" data-b="help" data-i18n-aria="help.title">${SVG.help}</button>
         <button class="hud-btn pe" data-b="map" data-i18n-aria="hud.map">${SVG.map}</button>
         <button class="hud-btn pe" data-b="fullscreen" data-i18n-aria="hud.fullscreen">${SVG.fullscreen}</button>
@@ -72,6 +73,7 @@ export class Hud {
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
     this.questObj = q('.quest-obj');
     this.roomChip = q('.room-chip');
+    this.chatBtn = q('[data-b="chat"]');
     this.livesChip = q('.lives-chip'); this.livesN = q('.lives-n');
     this.minimap = new Minimap(q('.minimap'));
     this.clickToPlay = q('.click-to-play');
@@ -84,6 +86,7 @@ export class Hud {
         const k = b.dataset.b;
         if (k === 'pause') ui.openPause();
         else if (k === 'help') ui.open('help');
+        else if (k === 'chat') ui.open('chat');
         else if (k === 'map') ui.openMap();
         else if (k === 'fullscreen') ui.toggleFullscreen();
       });
@@ -94,6 +97,13 @@ export class Hud {
     this.applyControlSettings();
     this.el.classList.add('hidden');
   }
+
+  // the chat button shows for signed-in players, with the unread count
+  setChatBadge(n) {
+    const d = this.chatBtn.querySelector('.dot');
+    d.textContent = n; d.classList.toggle('hidden', !n);
+  }
+  showChat(on) { this.chatBtn.classList.toggle('hidden', !on); }
 
   applyControlSettings() {
     const s = settings();

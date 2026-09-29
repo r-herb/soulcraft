@@ -71,7 +71,7 @@ let fbNew = 0; // unread ideas and problem reports (shown on the Feedback tab)
 function topBar(active) {
   const tab = (id, label) => `<button class="${active === id ? 'on' : ''}" data-nav="${id}">${label}</button>`;
   return `<div class="admin-top"><h1>Soulcraft Admin</h1>
-    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('audit', 'Log')}</nav>
+    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('chats', 'Chats')}${tab('reports', 'Reports')}${tab('audit', 'Log')}</nav>
     <span class="faint">${SUPER ? 'Superadmin' : 'Admin'}</span>
     <a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>`;
 }
@@ -82,7 +82,7 @@ function setFbBadge(n) {
 }
 function bindTopBar() {
   root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
-  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit() };
+  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit(), chats: () => renderChats(), reports: () => renderReports() };
   root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => pages[b.dataset.nav]()));
 }
 
@@ -383,6 +383,64 @@ function banDialog(u) {
     ev.preventDefault();
     try { await api('admin/users/' + u.id + '/ban', { method: 'POST', body: { minutes: Number(ev.target.minutes.value), reason: ev.target.reason.value } }); d.close(); toast(`${u.name} is banned`); loadUsers(); }
     catch (e) { d.querySelector('.form-error').textContent = e.message; }
+  });
+}
+
+// ---------- chats: channels and who may use them ----------
+async function renderChats() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('chats')}
+    <div class="admin-card"><h2>Channels</h2>
+      <p class="faint">Players only see a channel after an admin lets them in. The Lobby is the main public chat. Admins see every channel and can delete messages and mute players from the game's chat too.</p>
+      <form class="toolbar" data-form="new"><input class="input" name="name" maxlength="40" placeholder="New channel name"><button class="btn primary" type="submit">+ Add channel</button></form>
+      <div class="ch-list"><p class="empty">Loading...</p></div></div></div>`;
+  bindTopBar();
+  root.querySelector('[data-form="new"]').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try { await api('admin/channels', { method: 'POST', body: { name: ev.target.name.value } }); toast('Channel added'); renderChats(); } catch (e) { toast(e.message, true); }
+  });
+  let list;
+  try { list = (await api('admin/channels')).channels; } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  const box = root.querySelector('.ch-list');
+  box.innerHTML = list.map((c) => `<div class="ch-item" data-id="${c.id}">
+    <div class="toolbar"><b>#${esc(c.name)}</b><span class="faint">${c.members} member${c.members === 1 ? '' : 's'}${c.archived ? ', archived' : ''}</span>
+      ${c.id === 1 ? '' : `<button class="btn small" data-a="arch">${c.archived ? 'Restore' : 'Archive'}</button>`}</div>
+    <div class="ch-members faint">Loading...</div>
+    <form class="toolbar" data-a="add"><input class="input" name="username" placeholder="Username to let in"><button class="btn" type="submit">Let in</button></form>
+  </div>`).join('');
+  for (const c of list) {
+    const item = box.querySelector(`.ch-item[data-id="${c.id}"]`);
+    const loadMembers = async () => {
+      const { members } = await api(`admin/channels/${c.id}/members`);
+      const m = item.querySelector('.ch-members');
+      m.innerHTML = members.length ? members.map((u) => `<span class="chip">${esc(u.name)}${u.username ? ' @' + esc(u.username) : ''} <button class="linkish" data-rm="${u.id}">remove</button></span>`).join(' ') : 'Nobody yet.';
+      m.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', async () => { await api(`admin/channels/${c.id}/members/${b.dataset.rm}`, { method: 'DELETE' }); loadMembers(); }));
+    };
+    loadMembers();
+    item.querySelector('[data-a="add"]').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try { await api(`admin/channels/${c.id}/members`, { method: 'POST', body: { username: ev.target.username.value.replace(/^@/, '') } }); ev.target.username.value = ''; loadMembers(); } catch (e) { toast(e.message, true); }
+    });
+    const arch = item.querySelector('[data-a="arch"]');
+    if (arch) arch.addEventListener('click', async () => { await api(`admin/channels/${c.id}`, { method: 'PATCH', body: { archived: !c.archived } }); renderChats(); });
+  }
+}
+
+// ---------- reported chat messages ----------
+async function renderReports() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('reports')}<div class="admin-card"><h2>Reported messages</h2><div class="rp-list"><p class="empty">Loading...</p></div></div></div>`;
+  bindTopBar();
+  let list;
+  try { list = (await api('admin/reports')).reports; } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  const box = root.querySelector('.rp-list');
+  box.innerHTML = list.length ? `<table class="users"><thead><tr><th>When</th><th>Message</th><th>By</th><th>Reported by</th><th></th></tr></thead><tbody>${list.map((r) => `<tr class="${r.done ? 'off' : ''}" data-id="${r.id}">
+    <td>${esc(fmt(r.at))}</td><td>${r.deleted ? '<i class="faint">deleted</i> ' : ''}${esc(r.text)}</td><td><b>${esc(r.author)}</b></td><td>${esc(r.reporter || '-')}${r.reason ? `<div class="faint">${esc(r.reason)}</div>` : ''}</td>
+    <td><div class="acts">${r.deleted ? '' : '<button class="btn" data-a="del">Delete message</button>'}<button class="btn" data-a="mute">Mute 1 day</button><button class="btn" data-a="done">${r.done ? 'Reopen' : 'Done'}</button></div></td></tr>`).join('')}</tbody></table>` : '<p class="empty">No reports.</p>';
+  box.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const r = list.find((x) => x.id === Number(tr.dataset.id));
+    const on = (a, fn) => { const b = tr.querySelector(`[data-a="${a}"]`); if (b) b.addEventListener('click', async () => { try { await fn(); renderReports(); } catch (e) { toast(e.message, true); } }); };
+    on('del', () => api('admin/messages/' + r.messageId, { method: 'DELETE' }));
+    on('mute', async () => { await api(`admin/users/${r.authorId}/mute`, { method: 'POST', body: { minutes: 1440 } }); toast(`${r.author} muted for a day`); });
+    on('done', () => api('admin/reports/' + r.id, { method: 'PATCH', body: { done: !r.done } }));
   });
 }
 

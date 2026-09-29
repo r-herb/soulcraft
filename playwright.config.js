@@ -18,7 +18,7 @@ const withApi = !process.env.NO_API && !(/(quest2?|bosses)\.spec/.test(args) && 
 // HTTP proxy in the environment breaks that, so they run without it
 const noProxy = 'env -u HTTPS_PROXY -u HTTP_PROXY -u https_proxy -u http_proxy ';
 
-const launch = { executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] };
+const launch = { executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] };
 
 export default defineConfig({
   testDir: './tests',
@@ -60,17 +60,17 @@ export default defineConfig({
   ] : [
     {
       name: 'accounts',
-      testMatch: /(accounts|multiplayer|friends)\.spec\.js/,
+      testMatch: /(accounts|multiplayer|friends|chat|call)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:8788', viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
     {
       name: 'mobile',
-      testIgnore: /(live|accounts|multiplayer|friends)\.spec\.js/,
+      testIgnore: /(live|accounts|multiplayer|friends|chat|call)\.spec\.js/,
       use: { viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: devices['Pixel 7'].userAgent, launchOptions: launch },
     },
     {
       name: 'desktop',
-      testIgnore: /(live|accounts|multiplayer|friends)\.spec\.js/,
+      testIgnore: /(live|accounts|multiplayer|friends|chat|call)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
   ],

@@ -236,6 +236,111 @@ async function route(parts, method, request, env, secure) {
     return err(404, 'not_found');
   }
 
+  // ---------- chat ----------
+  // the live connection for new chat messages (the hub Durable Object)
+  if (a === 'hub' && !b && method === 'GET') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    if (!env.ROOMS) return err(503, 'chat_unavailable');
+    if ((request.headers.get('upgrade') || '').toLowerCase() !== 'websocket') return err(426, 'websocket_required');
+    const origin = request.headers.get('origin');
+    if (origin && origin !== new URL(request.url).origin) return err(403, 'bad_origin');
+    const h = new Headers(request.headers);
+    h.set('X-User-Id', String(s.user.id));
+    return hubStub(env).fetch(new Request('https://hub/hub/ws', { headers: h }));
+  }
+  if (a === 'chat') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    const me = s.user, admin = me.role === 'admin';
+    const dm = (x, y) => `d${Math.min(x, y)}:${Math.max(x, y)}`;
+    const lastRead = async (conv) => ((await db.prepare('SELECT last_id FROM chat_reads WHERE user_id = ? AND conv = ?').bind(me.id, conv).first()) || { last_id: 0 }).last_id;
+    const summary = async (conv) => {
+      const last = await db.prepare('SELECT id, user_id, name, text, created_at, deleted_by FROM messages WHERE conv = ? ORDER BY id DESC LIMIT 1').bind(conv).first();
+      const lr = await lastRead(conv);
+      const unread = (await db.prepare('SELECT COUNT(*) AS n FROM messages WHERE conv = ? AND id > ? AND user_id != ? AND deleted_by IS NULL').bind(conv, lr, me.id).first()).n;
+      return { last: last ? { name: last.name, text: last.deleted_by ? '' : last.text, at: last.created_at } : null, unread };
+    };
+    // the conversation a path names, if this player may use it
+    const open = async (kind, id) => {
+      if (kind === 'd') {
+        const f = await db.prepare("SELECT 1 FROM friends WHERE a = ? AND b = ? AND status = 'accepted'").bind(Math.min(me.id, id), Math.max(me.id, id)).first();
+        return f ? { conv: dm(me.id, id), to: [me.id, id] } : null;
+      }
+      const ch = await db.prepare('SELECT * FROM channels WHERE id = ? AND archived = 0').bind(id).first();
+      if (!ch) return null;
+      if (!admin && !(await db.prepare('SELECT 1 FROM channel_members WHERE channel_id = ? AND user_id = ?').bind(id, me.id).first())) return null;
+      return { conv: 'c' + id, channel: ch, to: null };
+    };
+    const recipients = async (o) => {
+      if (o.to) return o.to;
+      const { results } = await db.prepare("SELECT user_id AS id FROM channel_members WHERE channel_id = ? UNION SELECT id FROM users WHERE role = 'admin'").bind(o.channel.id).all();
+      return results.map((r) => r.id);
+    };
+    const pub = (m) => ({ id: m.id, userId: m.user_id, name: m.name, text: m.deleted_by ? '' : m.text, at: m.created_at, deleted: !!m.deleted_by });
+    if (!b && method === 'GET') {
+      const { results: fr } = await db.prepare(`SELECT u.id, u.name, u.avatar FROM friends f JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END
+        WHERE (f.a = ? OR f.b = ?) AND f.status = 'accepted' ORDER BY u.name`).bind(me.id, me.id, me.id).all();
+      const { results: ch } = admin
+        ? await db.prepare('SELECT id, name FROM channels WHERE archived = 0 ORDER BY id').all()
+        : await db.prepare('SELECT c.id, c.name FROM channels c JOIN channel_members m ON m.channel_id = c.id WHERE m.user_id = ? AND c.archived = 0 ORDER BY c.id').bind(me.id).all();
+      const convs = [];
+      for (const c of ch) convs.push({ kind: 'c', id: c.id, conv: 'c' + c.id, name: c.name, ...(await summary('c' + c.id)) });
+      for (const f of fr) convs.push({ kind: 'd', id: f.id, conv: dm(me.id, f.id), name: f.name, avatar: f.avatar || null, ...(await summary(dm(me.id, f.id))) });
+      const muted = me.muted_until && me.muted_until > Date.now() ? me.muted_until : null;
+      return json({ convs, admin, muted });
+    }
+    if ((b === 'c' || b === 'd') && Number(c) > 0) {
+      const o = await open(b, Number(c));
+      if (!o) return err(403, 'no_access', 'You cannot use this chat.');
+      if (method === 'GET') {
+        const before = Number(new URL(request.url).searchParams.get('before')) || 2 ** 53;
+        const { results } = await db.prepare('SELECT * FROM messages WHERE conv = ? AND id < ? ORDER BY id DESC LIMIT 60').bind(o.conv, before).all();
+        return json({ conv: o.conv, messages: results.reverse().map(pub) });
+      }
+      if (method === 'POST') {
+        if (me.muted_until && me.muted_until > Date.now()) return json({ error: 'muted', message: 'You are muted.', until: me.muted_until }, 403);
+        const text = String((await body(request)).text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+        if (!text) return err(400, 'empty');
+        const recent = await db.prepare('SELECT COUNT(*) AS n FROM messages WHERE user_id = ? AND created_at > ?').bind(me.id, Date.now() - 10e3).first();
+        if (recent.n >= 5) return err(429, 'slow_down', 'Slow down a little.');
+        const now = Date.now();
+        const r = await db.prepare('INSERT INTO messages (conv, user_id, name, text, created_at) VALUES (?, ?, ?, ?, ?)').bind(o.conv, me.id, me.name, text, now).run();
+        const msg = { id: r.meta.last_row_id, userId: me.id, name: me.name, text, at: now, deleted: false };
+        await db.prepare('INSERT INTO chat_reads (user_id, conv, last_id) VALUES (?, ?, ?) ON CONFLICT(user_id, conv) DO UPDATE SET last_id = excluded.last_id').bind(me.id, o.conv, msg.id).run();
+        await push(env, await recipients(o), { t: 'msg', conv: o.conv, kind: b, id: Number(c), from: me.id, msg });
+        return json({ message: msg }, 201);
+      }
+    }
+    if (b === 'read' && method === 'POST') {
+      const { conv, lastId } = await body(request);
+      if (!/^(c\d+|d\d+:\d+)$/.test(String(conv))) return err(400, 'bad_conv');
+      await db.prepare('INSERT INTO chat_reads (user_id, conv, last_id) VALUES (?, ?, ?) ON CONFLICT(user_id, conv) DO UPDATE SET last_id = MAX(last_id, excluded.last_id)').bind(me.id, conv, Number(lastId) || 0).run();
+      return json({ ok: true });
+    }
+    if (b === 'report' && method === 'POST') {
+      const { messageId, reason } = await body(request);
+      const m = await db.prepare('SELECT * FROM messages WHERE id = ?').bind(Number(messageId)).first();
+      if (!m) return err(404, 'no_message');
+      await db.prepare('INSERT INTO reports (message_id, reporter_id, reason, created_at) VALUES (?, ?, ?, ?)').bind(m.id, me.id, String(reason || '').slice(0, 200) || null, Date.now()).run();
+      return json({ ok: true });
+    }
+    return err(404, 'not_found');
+  }
+
+  // ---------- calls: the messages that set up a call, only between friends ----------
+  if (a === 'call' && b === 'signal' && method === 'POST') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    const { to, data } = await body(request);
+    const other = Number(to);
+    if (!(other > 0) || !data || typeof data !== 'object') return err(400, 'bad_signal');
+    const text = JSON.stringify(data);
+    if (text.length > 20000) return err(413, 'too_big');
+    const f = await db.prepare("SELECT 1 FROM friends WHERE a = ? AND b = ? AND status = 'accepted'").bind(Math.min(s.user.id, other), Math.max(s.user.id, other)).first();
+    if (!f) return err(403, 'not_friends');
+    if (s.user.banned_until && s.user.banned_until > Date.now()) return err(403, 'banned');
+    await push(env, [other], { t: 'call', from: s.user.id, name: s.user.name, data });
+    return json({ ok: true });
+  }
+
   // ---------- friends and presence ----------
   if (a === 'presence' && method === 'POST') {
     if (s.role !== 'user') return err(403, 'forbidden');
@@ -360,6 +465,76 @@ async function route(parts, method, request, env, secure) {
         return json({ ok: true });
       }
     }
+    // ---- chat moderation ----
+    if (b === 'channels' && !c && method === 'GET') {
+      const { results } = await db.prepare('SELECT c.*, (SELECT COUNT(*) FROM channel_members m WHERE m.channel_id = c.id) AS members FROM channels c ORDER BY c.archived, c.id').all();
+      return json({ channels: results.map((r) => ({ id: r.id, name: r.name, archived: !!r.archived, members: r.members, createdAt: r.created_at })) });
+    }
+    if (b === 'channels' && !c && method === 'POST') {
+      const name = String((await body(request)).name || '').trim().slice(0, 40);
+      if (!name) return err(400, 'bad_name', 'Give the channel a name.');
+      const r = await db.prepare('INSERT INTO channels (name, created_by, created_at) VALUES (?, ?, ?)').bind(name, actor.id, Date.now()).run();
+      await log('channel', null, `created "${name}"`);
+      return json({ id: r.meta.last_row_id }, 201);
+    }
+    const chId = b === 'channels' ? Number(c) : 0;
+    if (chId > 0) {
+      const ch = await db.prepare('SELECT * FROM channels WHERE id = ?').bind(chId).first();
+      if (!ch) return err(404, 'no_channel');
+      if (!d && method === 'PATCH') {
+        const inp = await body(request);
+        const name = 'name' in inp ? String(inp.name || '').trim().slice(0, 40) || ch.name : ch.name;
+        const archived = 'archived' in inp ? (inp.archived ? 1 : 0) : ch.archived;
+        if (chId === 1 && archived) return err(400, 'lobby', 'The Lobby cannot be archived.');
+        await db.prepare('UPDATE channels SET name = ?, archived = ? WHERE id = ?').bind(name, archived, chId).run();
+        await log('channel', null, `"${ch.name}" ${archived ? 'archived' : 'saved'}${name !== ch.name ? ` as "${name}"` : ''}`);
+        return json({ ok: true });
+      }
+      if (d === 'members' && method === 'GET') {
+        const { results } = await db.prepare('SELECT u.id, u.name, u.username FROM channel_members m JOIN users u ON u.id = m.user_id WHERE m.channel_id = ? ORDER BY u.name').bind(chId).all();
+        return json({ members: results });
+      }
+      if (d === 'members' && method === 'POST') {
+        const inp = await body(request);
+        const username = normUsername(inp.username);
+        const u = inp.userId ? await db.prepare('SELECT id, name FROM users WHERE id = ?').bind(Number(inp.userId)).first() : username ? await db.prepare('SELECT id, name FROM users WHERE username = ?').bind(username).first() : null;
+        if (!u) return err(404, 'no_user', 'There is no player with that username.');
+        await db.prepare('INSERT OR IGNORE INTO channel_members (channel_id, user_id, added_by, added_at) VALUES (?, ?, ?, ?)').bind(chId, u.id, actor.id, Date.now()).run();
+        await log('channel', u, `let into "${ch.name}"`);
+        await push(env, [u.id], { t: 'channels' });
+        return json({ ok: true });
+      }
+      const memberId = Number(parts[4]);
+      if (d === 'members' && memberId > 0 && method === 'DELETE') {
+        await db.prepare('DELETE FROM channel_members WHERE channel_id = ? AND user_id = ?').bind(chId, memberId).run();
+        const u = await db.prepare('SELECT id, name FROM users WHERE id = ?').bind(memberId).first();
+        await log('channel', u, `removed from "${ch.name}"`);
+        await push(env, [memberId], { t: 'channels' });
+        return json({ ok: true });
+      }
+    }
+    if (b === 'messages' && Number(c) > 0 && method === 'DELETE') {
+      const m = await db.prepare('SELECT * FROM messages WHERE id = ?').bind(Number(c)).first();
+      if (!m) return err(404, 'no_message');
+      await db.prepare('UPDATE messages SET deleted_by = ? WHERE id = ?').bind(actor.id || -1, m.id).run();
+      await db.prepare('UPDATE reports SET done = 1 WHERE message_id = ?').bind(m.id).run();
+      await log('chat_delete', { id: m.user_id, name: m.name }, m.text.slice(0, 120));
+      let to;
+      if (m.conv[0] === 'd') to = m.conv.slice(1).split(':').map(Number);
+      else { const { results } = await db.prepare("SELECT user_id AS id FROM channel_members WHERE channel_id = ? UNION SELECT id FROM users WHERE role = 'admin'").bind(Number(m.conv.slice(1))).all(); to = results.map((r) => r.id); }
+      await push(env, to, { t: 'del', conv: m.conv, id: m.id });
+      return json({ ok: true });
+    }
+    if (b === 'reports' && !c && method === 'GET') {
+      const { results } = await db.prepare(`SELECT r.*, m.text, m.name AS author, m.user_id AS author_id, m.conv, m.deleted_by, u.name AS reporter FROM reports r
+        JOIN messages m ON m.id = r.message_id LEFT JOIN users u ON u.id = r.reporter_id ORDER BY r.done, r.created_at DESC LIMIT 200`).all();
+      return json({ reports: results.map((r) => ({ id: r.id, messageId: r.message_id, text: r.text, author: r.author, authorId: r.author_id, conv: r.conv, deleted: !!r.deleted_by, reporter: r.reporter, reason: r.reason, at: r.created_at, done: !!r.done })) });
+    }
+    if (b === 'reports' && Number(c) > 0 && method === 'PATCH') {
+      await db.prepare('UPDATE reports SET done = ? WHERE id = ?').bind((await body(request)).done ? 1 : 0, Number(c)).run();
+      await log('report', null, `report ${c}`);
+      return json({ ok: true });
+    }
     if (b === 'users' && !c && method === 'GET') {
       const q = (new URL(request.url).searchParams.get('q') || '').trim().toLowerCase();
       const like = '%' + q.replace(/[%_]/g, '') + '%';
@@ -419,6 +594,18 @@ async function route(parts, method, request, env, secure) {
         await log('unban', u);
         return json({ ok: true });
       }
+      if (d === 'mute' && method === 'POST') {
+        const minutes = Math.max(1, Math.min(43200, Number((await body(request)).minutes) || 60));
+        const until = Date.now() + minutes * 60e3;
+        await db.prepare('UPDATE users SET muted_until = ? WHERE id = ?').bind(until, id).run();
+        await log('chat_mute', u, `${minutes} min`);
+        return json({ ok: true, until });
+      }
+      if (d === 'mute' && method === 'DELETE') {
+        await db.prepare('UPDATE users SET muted_until = NULL WHERE id = ?').bind(id).run();
+        await log('chat_mute', u, 'lifted');
+        return json({ ok: true });
+      }
       if (d === 'role' && method === 'POST') {
         if (!sup) return err(403, 'forbidden', 'Only the superadmin can give or take admin rights.');
         const role = (await body(request)).role === 'admin' ? 'admin' : 'player';
@@ -451,6 +638,13 @@ async function route(parts, method, request, env, secure) {
     }
   }
   return err(404, 'not_found');
+}
+
+// the chat hub (one Durable Object) and a push of an event to some players
+const hubStub = (env) => env.ROOMS.get(env.ROOMS.idFromName('~hub'));
+async function push(env, to, event) {
+  if (!env.ROOMS || !to || !to.length) return;
+  try { await hubStub(env).fetch('https://hub/hub/push', { method: 'POST', body: JSON.stringify({ to: to.map(String), event }) }); } catch { /* the chat hub is optional */ }
 }
 
 const USERNAME_RULE = 'A username is 2-24 letters or digits (also _ . -) with at least one letter.';

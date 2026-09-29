@@ -96,6 +96,17 @@ export const friends = {
   accept: (id) => api(`friends/${id}/accept`, { method: 'POST', body: {} }),
   remove: (id) => api(`friends/${id}`, { method: 'DELETE' }),
 };
+export const chat = {
+  list: () => api('chat'),
+  messages: (kind, id, before) => api(`chat/${kind}/${id}` + (before ? `?before=${before}` : '')),
+  send: (kind, id, text) => api(`chat/${kind}/${id}`, { method: 'POST', body: { text } }),
+  read: (conv, lastId) => api('chat/read', { method: 'POST', body: { conv, lastId } }).catch(() => {}),
+  report: (messageId, reason) => api('chat/report', { method: 'POST', body: { messageId, reason } }),
+  // admins
+  del: (id) => api(`admin/messages/${id}`, { method: 'DELETE' }),
+  mute: (userId, minutes) => api(`admin/users/${userId}/mute`, { method: 'POST', body: { minutes } }),
+};
+export function callSignal(to, data) { return api('call/signal', { method: 'POST', body: { to, data } }); }
 export async function sendPresence(p) { if (account.user) await api('presence', { method: 'POST', body: p }).catch(() => {}); }
 export async function sendFeedback(kind, text, ctx) { await api('feedback', { method: 'POST', body: { kind, text, ctx } }); }
 export async function forgotPassword(email, lang) { await api('auth/forgot', { method: 'POST', body: { email, lang } }); }

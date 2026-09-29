@@ -2,7 +2,7 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
   Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' wss://soulcraft.8nomads.com https://cloudflareinsights.com; manifest-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'
 

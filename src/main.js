@@ -1,4 +1,8 @@
 // Boot: settings, language, WebGL check, UI, game, service worker.
+import { CallManager } from './net/call.js';
+import { CallUI } from './ui/callui.js';
+import { startHub } from './net/hub.js';
+import { startChatWatch, refreshChat } from './ui/chat.js';
 import './ui/tokens.css';
 import './ui/styles.css';
 import { loadSettings, settings, onSetting, setSetting } from './save/settings.js';
@@ -8,7 +12,7 @@ import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
 import { Game, loadCityData } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
-import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount } from './save/account.js';
+import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount, account } from './save/account.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -264,6 +268,13 @@ async function boot() {
   setInterval(() => app.presence(), 60_000);
   app.presence();
   onAccount(() => app.presence());
+  startHub();
+  startChatWatch(ui);
+  app.calls = new CallManager();
+  new CallUI(app.calls, ui);
+  const chatBtn = () => ui.hud && ui.hud.showChat && ui.hud.showChat(!!(account.user && account.mp));
+  onAccount(() => { chatBtn(); refreshChat(); });
+  chatBtn();
   window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, get game() { return app.game; } };
 
   registerSW();

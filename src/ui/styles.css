@@ -444,3 +444,50 @@ body.touch .desktop-only { display: none !important; }
 .fr-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #666; margin-right: 5px; vertical-align: middle; }
 .fr-dot.on { background: #6fe39a; box-shadow: 0 0 6px #6fe39a; }
 .badge-ok { display: inline-block; padding: 1px 5px; border-radius: 3px; background: var(--c-soul-500); color: var(--c-ink); font-size: var(--fs-xs); }
+
+/* ---------- chat ---------- */
+.chat-panel { width: min(900px, 100%); height: min(620px, 100%); display: flex; flex-direction: column; gap: var(--sp-2); }
+.chat-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 230px 1fr; gap: var(--sp-2); }
+.chat-convs { overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.chat-conv { display: grid; grid-template-columns: 1fr auto; text-align: left; gap: 2px 6px; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 6px 8px; color: var(--c-text); cursor: pointer; }
+.chat-conv.on { border-color: var(--c-soul-500); }
+.chat-conv .cc-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-conv .cc-last { grid-column: 1 / -1; font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-room { display: flex; flex-direction: column; min-height: 0; gap: 6px; }
+.chat-head { font-weight: 700; }
+.chat-msgs { flex: 1; min-height: 120px; overflow: auto; background: rgba(5, 4, 15, 0.45); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.chat-msg { font-size: var(--fs-sm); line-height: 1.35; word-break: break-word; }
+.chat-msg .cm-name { font-weight: 700; margin-right: 6px; }
+.chat-msg .cm-time { font-size: var(--fs-xs); margin-right: 6px; }
+.chat-msg .cm-acts { margin-left: 8px; opacity: 0.6; }
+.chat-msg:hover .cm-acts { opacity: 1; }
+.linkish { background: none; border: 0; color: var(--c-soul-300); cursor: pointer; font-size: var(--fs-xs); padding: 0 4px; text-decoration: underline; }
+.chat-send { display: flex; gap: 6px; }
+.chat-send .input { flex: 1; min-width: 0; }
+.chat-back { margin-right: 6px; }
+.hud-btn .dot { position: absolute; top: -4px; right: -4px; }
+.hud-btn { position: relative; }
+@media (max-width: 700px) {
+  .chat-body { grid-template-columns: 1fr; }
+  .chat-panel:not(.in-room) .chat-room { display: none; }
+  .chat-panel.in-room .chat-convs { display: none; }
+  .chat-panel.in-room .chat-back { display: inline-flex !important; }
+}
+
+/* ---------- calls ---------- */
+.call-root { position: fixed; right: calc(var(--sp-3) + var(--safe-r)); bottom: calc(var(--sp-3) + var(--safe-b) + 70px); z-index: 60; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.call-root > * { pointer-events: auto; }
+.call-ring, .call-box { background: var(--surface-panel); border: 2px solid var(--c-soul-500); border-radius: var(--r-md); box-shadow: var(--glow-soul); padding: 8px; display: flex; flex-direction: column; gap: 6px; max-width: min(560px, 92vw); }
+.call-ring { animation: popIn var(--t-med); }
+.call-tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+.call-tile { position: relative; width: 150px; height: 112px; background: #05040f; border-radius: 4px; overflow: hidden; display: grid; place-items: center; }
+.call-box:not(.video) .call-tile { width: auto; height: auto; padding: 6px 10px; }
+.call-tile video { width: 100%; height: 100%; object-fit: cover; }
+.call-tile.me video { transform: scaleX(-1); }
+.call-tile video.audio-only { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.call-box:not(.video) .call-tile video { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.call-name { position: absolute; left: 4px; bottom: 3px; font-size: var(--fs-xs); text-shadow: var(--text-shadow); }
+.call-box:not(.video) .call-name, .call-tile.ringing .call-name { position: static; }
+.call-bar, .call-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.chat-head-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+@media (max-height: 460px) { .call-tile { width: 110px; height: 82px; } .call-root { bottom: calc(var(--sp-2) + var(--safe-b) + 58px); } }

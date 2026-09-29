@@ -43,7 +43,7 @@ export function friends(args, ui) {
     let html = '';
     if (r.incoming.length) html += `<div class="section-label">${esc(t('fr.incoming'))}</div>` + r.incoming.map((p) => row(p, `<button class="btn small primary" data-a="accept" data-i18n="fr.accept"></button><button class="btn small ghost" data-a="remove" data-i18n="fr.decline"></button>`, esc(t('fr.wantsToBe')))).join('');
     html += `<div class="section-label">${esc(t('fr.list', { n: r.friends.length }))}</div>`;
-    html += r.friends.length ? r.friends.map((p) => row(p, `${p.room ? '<button class="btn small primary" data-a="join" data-i18n="fr.join"></button>' : ''}<button class="btn small ghost" data-a="remove" data-i18n="fr.remove"></button>`, where(p))).join('') : `<p class="faint">${esc(t('fr.none'))}</p>`;
+    html += r.friends.length ? r.friends.map((p) => row(p, `${p.online && ui.app.calls ? '<button class="btn small" data-a="call" data-i18n="call.call"></button>' : ''}${p.room ? '<button class="btn small primary" data-a="join" data-i18n="fr.join"></button>' : ''}<button class="btn small ghost" data-a="remove" data-i18n="fr.remove"></button>`, where(p))).join('') : `<p class="faint">${esc(t('fr.none'))}</p>`;
     if (r.outgoing.length) html += `<div class="section-label">${esc(t('fr.outgoing'))}</div>` + r.outgoing.map((p) => row(p, `<button class="btn small ghost" data-a="remove" data-i18n="fr.cancel"></button>`, esc(t('fr.waiting')))).join('');
     list.innerHTML = html;
     const all = [...r.incoming, ...r.friends, ...r.outgoing];
@@ -55,6 +55,7 @@ export function friends(args, ui) {
         try {
           if (a === 'accept') { await api.accept(p.id); ui.toast(t('fr.nowFriends', { name: p.name }), 'ok'); }
           else if (a === 'remove') await api.remove(p.id);
+          else if (a === 'call') { await ui.app.calls.start(p); return; }
           else if (a === 'join') {
             if (g && g.running) await ui.app.quitToTitle();
             ui.app.joinRoom(p.room);

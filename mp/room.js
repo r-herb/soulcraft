@@ -22,6 +22,7 @@ export class Room extends DurableObject {
 
   async fetch(req) {
     const url = new URL(req.url);
+    if (url.pathname.startsWith('/hub/')) return this.hub(req, url);
     if (url.pathname === '/create' && req.method === 'POST') {
       const { host, name } = await req.json();
       const old = await this.ctx.storage.get('room');
@@ -89,6 +90,7 @@ export class Room extends DurableObject {
 
   async webSocketMessage(ws, data) {
     const a = ws.deserializeAttachment();
+    if (a && a.hub) { if (data === 'ping') this.send(ws, 'pong'); return; }
     if (!a || a.replaced || typeof data !== 'string' || data.length > 1_000_000) return;
     let msg;
     try { msg = JSON.parse(data); } catch { return; }
@@ -116,6 +118,8 @@ export class Room extends DurableObject {
 
   async left(ws) {
     if (this.gone.has(ws)) return;
+    const h = ws.deserializeAttachment();
+    if (h && h.hub) { this.gone.add(ws); return; }
     this.gone.add(ws);
     const a = ws.deserializeAttachment();
     if (!a) return;
@@ -127,6 +131,41 @@ export class Room extends DurableObject {
       for (const s of this.ctx.getWebSockets()) if (s !== ws) { try { s.close(4003, 'closed'); } catch { /* gone */ } }
       await this.ctx.storage.deleteAll();
     } else this.broadcast({ t: 'leave', id: a.uid });
+  }
+
+  // The chat hub: one instance (named "~hub") that every signed-in player
+  // connects to; the Pages API pushes new chat messages and other events
+  // to the players they are for, and asks who is connected.
+  async hub(req, url) {
+    if (url.pathname === '/hub/push' && req.method === 'POST') {
+      const { to, event } = await req.json();
+      const want = new Set((to || []).map(String));
+      const text = JSON.stringify(event);
+      let n = 0;
+      for (const ws of this.ctx.getWebSockets('hub')) {
+        if (this.gone.has(ws)) continue;
+        const a = ws.deserializeAttachment();
+        if (a && want.has(a.uid)) { this.send(ws, text); n++; }
+      }
+      return Response.json({ delivered: n });
+    }
+    if (url.pathname === '/hub/online' && req.method === 'POST') {
+      const { ids } = await req.json();
+      const on = new Set();
+      for (const ws of this.ctx.getWebSockets('hub')) { const a = ws.deserializeAttachment(); if (a && !this.gone.has(ws)) on.add(a.uid); }
+      return Response.json({ online: (ids || []).map(String).filter((i) => on.has(i)) });
+    }
+    if (url.pathname === '/hub/ws') {
+      if (req.headers.get('Upgrade') !== 'websocket') return new Response('expected a websocket', { status: 426 });
+      const uid = String(req.headers.get('X-User-Id') || '');
+      if (!uid) return new Response('no user', { status: 400 });
+      const [client, server] = Object.values(new WebSocketPair());
+      this.ctx.acceptWebSocket(server, ['hub']);
+      server.serializeAttachment({ hub: true, uid });
+      server.send(JSON.stringify({ t: 'hello' }));
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    return new Response('not found', { status: 404 });
   }
 
   async alarm() {

@@ -130,6 +130,34 @@ The friends list shows who is online and in which world, and when a
 friend's world is open to friends a **Join** button takes you straight in,
 without typing the room code. Only friends see where a player is.
 
+## Chat
+
+**Chat** (title screen, pause menu and the chat button in the corner) has
+private conversations with friends and public channels: the **Lobby** and
+any channel an admin creates. A player sees a channel only after an admin
+lets them in (admin panel > Chats). Messages arrive live through a chat hub
+(the rooms Worker's Durable Object `~hub`), unread counts show on the
+buttons, and a friend's message pops up while playing.
+
+Players report a message with "!". Admins see every channel and, in the
+game or in the admin panel (Reports), delete messages and mute players
+for a while; everything goes to the Log. Messages are at most 300
+characters, and a player can send at most five in ten seconds.
+
+## Calls
+
+Friends can call each other: **Call** in the friends list or at the top of
+a private chat. On a computer a call has video and sound, on a phone or
+tablet sound only. **+ Friend** invites more online friends into the same
+call (everyone connects to everyone, so it suits a few friends). The call
+window floats in the corner above the game, with mute, camera and hang up.
+
+Calls go straight between the players' browsers (WebRTC, with public STUN
+servers); only the set-up messages pass through the chat hub, and only
+between accepted friends. On some strict networks (some mobile operators
+or school networks) a direct connection is not possible and the call does
+not connect; a TURN relay (for example Cloudflare's) would fix that.
+
 ## Performance
 
 Weak phones are limited by pixels (the GPU), not by JavaScript, so the
@@ -362,6 +390,12 @@ What the tests cover:
   Constitucion and its buildings stand where the city file says.
 - `tests/friends.spec.js`: a friend request by username, accepting it, the
   friend shown online in a world, and joining that world from the list.
+- `tests/chat.spec.js`: friends chat live with unread counts, the Lobby is
+  only for players an admin let in, an admin deletes a message (it goes
+  away live) and mutes a player, and a report reaches the admin.
+- `tests/call.spec.js`: a friend calls with video (the browser's fake
+  camera), the other answers, both connect, mute works and hanging up ends
+  the call for both; strangers cannot ring anyone.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
   through the real Soul Map, from the Void Dragon to the Soul Storm and the
   victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries
