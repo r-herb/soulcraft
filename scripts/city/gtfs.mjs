@@ -81,6 +81,10 @@ export function readGtfs(path) {
         if (s > score || (s === score && best && ts.length > best.length)) { score = s; best = ts; }
       }
       if (!best) return null;
+      // one service (timetable period) only: the one with the most trips
+      const bySvc = new Map();
+      for (const tr of best) { if (!bySvc.has(tr.service_id)) bySvc.set(tr.service_id, []); bySvc.get(tr.service_id).push(tr); }
+      best = [...bySvc.values()].sort((x, y) => y.length - x.length)[0];
       const deps = [...new Set(best.map((t) => firstStop.get(t.trip_id).dep))].sort((a, b) => a - b);
       const durs = best.map((t) => { const f = firstStop.get(t.trip_id); return f.last - f.dep; }).sort((a, b) => a - b);
       return { deps, dur: durs[durs.length >> 1] || 30 };
