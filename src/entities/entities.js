@@ -297,6 +297,10 @@ const MOB_DEFS = {
   frostSpirit: { hp: 12, speed: 4.6, dmg: 3, reach: 1.4, name: 'mob.frostSpirit', flying: true, drops: [], w: 0.7, h: 0.8 },
   whirlwind: { hp: 999, speed: 2.6, dmg: 1, reach: 1.6, name: 'mob.whirlwind', hazard: true, drops: [], w: 1.4, h: 3 },
   mimic: { hp: 12, speed: 5, dmg: 2, reach: 1.4, name: 'mob.mimic', drops: [], w: 1.1, h: 0.7 },
+  // livestock: never attack; follow the food they like, flee when hit
+  chicken: { hp: 4, speed: 1.6, name: 'mob.chicken', passive: true, food: 'wheat_seeds', drops: [['raw_chicken', 1]], w: 0.5, h: 0.7 },
+  sheep: { hp: 8, speed: 1.5, name: 'mob.sheep', passive: true, food: 'wheat', drops: [['wool', 1], ['wool', 0.5], ['raw_mutton', 1]], w: 0.9, h: 1.2 },
+  cow: { hp: 10, speed: 1.4, name: 'mob.cow', passive: true, food: 'wheat', drops: [['raw_beef', 1], ['raw_beef', 0.5]], w: 0.9, h: 1.4 },
 };
 
 export class Mob extends Entity {
@@ -314,6 +318,7 @@ export class Mob extends Entity {
     this.nameKey = d.name;
     this.hittable = type !== 'whirlwind';
     this.isMob = true;
+    this.passive = !!d.passive;
     this.build();
     if (d.flying) this.gravity = 0;
   }
@@ -354,6 +359,8 @@ export class Mob extends Entity {
       tail.position.set(0, -0.2, -0.3);
       b.add(tail);
       this.bodyMesh = b;
+    } else if (tp === 'chicken' || tp === 'sheep' || tp === 'cow') {
+      this.buildAnimal(tp);
     } else if (tp === 'whirlwind') {
       this.rings = [];
       for (let i = 0; i < 5; i++) {
@@ -365,8 +372,73 @@ export class Mob extends Entity {
       }
     }
   }
+  // four-legged (or two-legged) farm animals from boxes
+  buildAnimal(tp) {
+    const root = new THREE.Group();
+    this.object.add(root);
+    this.animalRoot = root;
+    this.quadLegs = [];
+    const leg = (x, z, h, col) => { const g = new THREE.Group(); g.position.set(x, h, z); const m = box(0.14, h, 0.14, col); m.position.y = -h / 2; g.add(m); root.add(g); this.quadLegs.push(g); };
+    if (tp === 'chicken') {
+      const body = box(0.42, 0.36, 0.52, '#f4f4f4'); body.position.y = 0.42; root.add(body);
+      const head = box(0.26, 0.3, 0.24, '#f4f4f4', faceTexture('eyes', '#f4f4f4', '#1a1a1a')); head.position.set(0, 0.72, 0.26); root.add(head);
+      const beak = box(0.12, 0.08, 0.1, '#f2b632'); beak.position.set(0, 0.68, 0.43); root.add(beak);
+      const comb = box(0.06, 0.1, 0.14, '#e0342a'); comb.position.set(0, 0.9, 0.26); root.add(comb);
+      leg(-0.1, 0, 0.24, '#f2b632'); leg(0.1, 0, 0.24, '#f2b632');
+    } else {
+      const sheep = tp === 'sheep';
+      const bodyCol = sheep ? '#eeeeea' : '#f4f4f4';
+      const body = box(0.8, sheep ? 0.62 : 0.68, 1.2, bodyCol); body.position.y = sheep ? 0.82 : 0.95; root.add(body);
+      if (!sheep) for (const [x, y, z] of [[0.41, 1.0, 0.1], [-0.41, 0.9, -0.3], [0.2, 1.3, -0.2]]) { const s = box(0.02, 0.26, 0.3, '#3a2a1a'); s.position.set(x, y, z); if (Math.abs(x) < 0.3) { s.rotation.z = Math.PI / 2; } root.add(s); }
+      const headCol = sheep ? '#3a3a3a' : '#5a3a24';
+      const head = box(0.44, 0.44, 0.44, headCol, faceTexture('eyes', headCol, '#101010')); head.position.set(0, sheep ? 1.08 : 1.22, 0.74); root.add(head);
+      if (!sheep) { for (const x of [-0.26, 0.26]) { const h = box(0.08, 0.16, 0.08, '#e8e0c8'); h.position.set(x, 1.5, 0.7); root.add(h); } const nose = box(0.3, 0.16, 0.06, '#e8a8a0'); nose.position.set(0, 1.1, 0.97); root.add(nose); }
+      const lh = sheep ? 0.52 : 0.6, lc = sheep ? '#3a3a3a' : '#f4f4f4';
+      leg(-0.26, 0.4, lh, lc); leg(0.26, 0.4, lh, lc); leg(-0.26, -0.4, lh, lc); leg(0.26, -0.4, lh, lc);
+    }
+  }
+  setBaby(on) {
+    this.baby = on;
+    this.growT = 0;
+    if (this.animalRoot) this.animalRoot.scale.setScalar(on ? 0.55 : 1);
+    this.w = (this.def.w || 0.6) * (on ? 0.6 : 1); this.h = (this.def.h || 1.8) * (on ? 0.6 : 1);
+  }
+  // livestock: wander, come to the food they like, flee when hit, look for a mate
+  passiveUpdate(dt) {
+    const g = this.game, d = this.def, p = g.player;
+    this.fleeT = Math.max(0, (this.fleeT || 0) - dt);
+    this.loveT = Math.max(0, (this.loveT || 0) - dt);
+    this.breedCd = Math.max(0, (this.breedCd || 0) - dt);
+    if (this.baby) { this.growT += dt; if (this.growT > 300) this.setBaby(false); }
+    const dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, dist = Math.hypot(dx, dz) || 1;
+    const held = g.inventory && g.inventory.held;
+    let mx = 0, mz = 0, sp = d.speed;
+    const mate = this.loveT > 0 && this.mate && !this.mate.dead ? this.mate : null;
+    if (this.fleeT > 0) { mx = -dx / dist; mz = -dz / dist; sp *= 2.6; }
+    else if (mate) { const ax = mate.pos.x - this.pos.x, az = mate.pos.z - this.pos.z, ad = Math.hypot(ax, az) || 1; if (ad > 1.2) { mx = ax / ad; mz = az / ad; } }
+    else if (held && held.item === d.food && !p.dead && dist < 9 && dist > 2) { mx = dx / dist; mz = dz / dist; }
+    else {
+      this.wanderT -= dt;
+      if (this.wanderT <= 0) { this.wanderT = 3 + Math.random() * 5; const a = Math.random() * Math.PI * 2; const go = Math.random() < 0.45; this.wanderDir.set(go ? Math.sin(a) : 0, 0, go ? Math.cos(a) : 0); }
+      mx = this.wanderDir.x * 0.6; mz = this.wanderDir.z * 0.6;
+    }
+    if (mx || mz) this.yaw = Math.atan2(mx, mz);
+    const k = Math.min(1, (this.onGround ? 10 : 2) * dt);
+    this.vel.x += (mx * sp - this.vel.x) * k;
+    this.vel.z += (mz * sp - this.vel.z) * k;
+    const o = this.physics(dt);
+    if (this.onGround && (o.hitX || o.hitZ) && (mx || mz)) this.vel.y = 7.6;
+    // hens lay an egg now and then
+    if (this.type === 'chicken' && !this.baby) {
+      if (this.eggT === undefined) this.eggT = 90 + Math.random() * 150;
+      this.eggT -= dt;
+      if (this.eggT <= 0) { this.eggT = 150 + Math.random() * 150; g.entities.dropItem('egg', 1, this.pos.clone().setY(this.pos.y + 0.3)); }
+    }
+    if (this.loveT > 0 && Math.random() < dt * 3) g.entities.particles.emit(this.pos.x, this.pos.y + this.h + 0.2, this.pos.z, 1, 0.45, 0.6, 1, 0.8, 0.8, false);
+  }
   update(dt) {
     const g = this.game, d = this.def;
+    if (d.passive && !this.netProxy) { this.hurtT -= dt; this.phase += dt * 6; this.passiveUpdate(dt); this.animate(dt); return; }
     // multiplayer: monsters go for the nearest player (the host runs them)
     const p = g.net && g.net.isHost ? g.net.mobTarget(this.pos) : g.player;
     this.hurtT -= dt;
@@ -437,6 +509,7 @@ export class Mob extends Entity {
     const moving = Math.hypot(this.vel.x, this.vel.z);
     if (this.rig) { animateWalk(this.rig, this.phase, Math.min(1, moving / 3)); if (this.type === 'hollow') { this.rig.armL.rotation.x = -1.3 + Math.sin(this.phase) * 0.1; this.rig.armR.rotation.x += (-1.3 - this.rig.armR.rotation.x) * 0.2; } }
     if (this.legs) this.legs.forEach((l, i) => { l.rotation.y = Math.sin(this.phase * 2 + i) * 0.4 * Math.min(1, moving); });
+    if (this.quadLegs) this.quadLegs.forEach((l, i) => { l.rotation.x = Math.sin(this.phase * 1.6 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * 0.6 * Math.min(1, moving); });
     if (this.bodyMesh) this.bodyMesh.position.y = 0.35 + Math.sin(this.phase) * 0.1;
     if (this.rings) this.rings.forEach((r, i) => { r.rotation.z += dt * (4 + i); r.position.x = Math.sin(this.phase + i) * 0.1; });
     if (this.type === 'fireSpirit' && Math.random() < dt * 8) g.entities.particles.emit(this.pos.x, this.pos.y + 0.4, this.pos.z, 1, 0.55, 0.15, 1, 1, 0.5, false);
@@ -470,6 +543,7 @@ export class Mob extends Entity {
     }
     const ok = super.damage(amount, dir);
     if (ok) this.game.audio.sfx('hit');
+    if (ok && this.passive) this.fleeT = 5;
     return ok;
   }
   die() {
@@ -484,6 +558,11 @@ export class Mob extends Entity {
   }
   reward() {
     const g = this.game;
+    if (this.passive) {
+      // livestock gives meat, wool...; babies give nothing
+      if (!this.baby) for (const [item, chance] of this.def.drops) if (Math.random() < chance) g.entities.dropItem(item, 1, this.pos.clone().setY(this.pos.y + 0.5));
+      return;
+    }
     g.meta.stats.kills++;
     g.daily.note('kill');
     for (const [item, chance] of this.def.drops) if (Math.random() < chance) g.entities.dropItem(item, 1 + (Math.random() < 0.3 ? 1 : 0), this.pos.clone().setY(this.pos.y + 0.5));
@@ -657,7 +736,7 @@ export class EntityManager {
     if (diff === 'peaceful') return;
     if (g.bosses.active || g.meta.dim === 'quest') return;
     if (g.net && !g.net.isHost) return; // the host's monsters come over the network
-    const hostile = this.list.filter((e) => e instanceof Mob && !e.bossMinion).length;
+    const hostile = this.list.filter((e) => e instanceof Mob && !e.bossMinion && !e.passive).length;
     const cap = (diff === 'hard' ? 12 : 8) + (g.net ? g.net.players.size * 3 : 0);
     if (hostile >= cap) return;
     const dim = g.meta.dim;

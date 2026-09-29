@@ -80,6 +80,32 @@ class Painter {
   clear() { for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) this.set(x, y, [0, 0, 0], 0); }
 }
 
+// crops: a stalk that grows with each stage; the ripe stage carries its fruit
+function cropPainters() {
+  const out = {};
+  const kinds = {
+    wheat: { stem: '#6fae3a', ripe: '#e2c15a', fruit: null },
+    tomato: { stem: '#3f8f35', ripe: '#3f8f35', fruit: '#e0342a' },
+    carrot: { stem: '#58ad42', ripe: '#4c9a3a', fruit: '#f08a24' },
+  };
+  for (const [k, c] of Object.entries(kinds)) {
+    for (let st = 0; st < 4; st++) {
+      out[`${k}_${st}`] = (p) => {
+        p.clear();
+        const h = 4 + st * 3, col = hex(st === 3 ? c.ripe : c.stem);
+        for (const x of [3, 6, 9, 12]) {
+          for (let y = 15; y > 15 - h; y--) p.set(x + ((y & 2) ? 0 : 0), y, col);
+          if (st > 0) { p.set(x - 1, 15 - Math.floor(h / 2), col); p.set(x + 1, 14 - Math.floor(h / 3), col); }
+          if (k === 'wheat' && st === 3) { p.set(x, 15 - h, hex('#f2d77a')); p.set(x, 16 - h, hex('#f2d77a')); p.set(x + 1, 16 - h, hex('#caa648')); }
+        }
+        if (st === 3 && k === 'tomato') for (const [x, y] of [[4, 8], [7, 10], [10, 7], [13, 9], [5, 11]]) { p.set(x, y, hex(c.fruit)); p.set(x + 1, y, hex(c.fruit)); p.set(x, y + 1, hex('#b82420')); }
+        if (st === 3 && k === 'carrot') for (const x of [3, 6, 9, 12]) { p.set(x, 15, hex(c.fruit)); p.set(x + 1, 15, hex(c.fruit)); }
+      };
+    }
+  }
+  return out;
+}
+
 const painters = {
   grass_top: (p) => { p.noise(['#4c9a3a', '#58ad42', '#3f8a33', '#63b84b']); if (p.glow) p.speckle('#8df07a', 5); },
   grass_side: (p) => {
@@ -259,6 +285,11 @@ const painters = {
     for (let x = 4; x < 12; x += 2) for (let y = 9; y < 13; y += 2) p.set(x, y, hex('#d8e2dc'));
     for (let x = 5; x < 11; x++) p.set(x, 14, hex('#111111'));
   },
+  farmland: (p) => {
+    p.noise(['#5a3a24', '#4e321f', '#654229']);
+    for (let y = 1; y < 16; y += 4) for (let x = 0; x < 16; x++) p.set(x, y, hex('#3f2818'));
+  },
+  ...cropPainters(),
   market_stall: (p) => {
     p.noise(['#8a5a2e', '#7f532a']); p.border('#5a3a1a');
     for (let x = 0; x < 16; x++) for (let y = 0; y < 5; y++) p.set(x, y, hex((x >> 2) % 2 ? '#f2f2f2' : '#2f8f4e'));

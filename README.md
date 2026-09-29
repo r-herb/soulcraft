@@ -158,6 +158,28 @@ between accepted friends. On some strict networks (some mobile operators
 or school networks) a direct connection is not possible and the call does
 not connect; a TURN relay (for example Cloudflare's) would fix that.
 
+## Farm: crops and livestock
+
+- **Crops**: wheat and tomato seeds (and carrots) from a market stall. Use
+  them on the top of grass, dirt or farmland: the soil turns into farmland
+  and the crop grows through four stages while the world is played (about
+  7.5 minutes to ripe). Breaking a ripe crop gives the harvest (wheat,
+  tomatoes, carrots) and seeds back; an unripe one gives its seed back.
+  Three wheat make bread, two make flour.
+- **Livestock**: chickens, sheep and cows wander the overworld's grass in
+  small groups by day, and a market stall sells them in crates (use the
+  crate on the ground; the only way to get animals in a city). Hold their
+  food (seeds for chickens, wheat for sheep and cows) and they follow you;
+  feed two adults of a kind and a young one is born (it grows up in five
+  minutes; a pair can breed again after five). Hens lay eggs. Sheep give
+  wool, all of them meat, which roasts over charcoal at the workbench.
+  Animals flee when hit and are never attacked by pets. Animals you walk
+  away from (over 64 blocks) are kept in the save and come back when you
+  return.
+- Wheat, tomatoes, carrots, eggs, wool and raw meat sell on the exchange.
+- The world owner's game grows the crops and runs the animals; in a shared
+  world guests see them through the room like the monsters.
+
 ## Money: the bank and the exchange
 
 Signed-in players have a wallet: 20 coins to start, coins in hand and
@@ -446,6 +468,10 @@ What the tests cover:
 - `tests/call.spec.js`: a friend calls with video (the browser's fake
   camera), the other answers, both connect, mute works and hanging up ends
   the call for both; strangers cannot ring anyone.
+- `tests/farm.spec.js`: seeds planted on grass grow into ripe wheat and
+  tomatoes and give a harvest, two cows fed wheat have a calf, a hen lays
+  an egg, a sheep gives wool, and animals are parked in the save and come
+  back.
 - `tests/econ.spec.js`: quests count once toward the salary, lottery
   tickets and their limit, offering, buying and taking back goods on the
   players' market, and (with a test clock) the month end paying the salary

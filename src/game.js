@@ -26,6 +26,8 @@ import { CityData } from './world/city.js';
 import { MAX_LIVES } from './player/lives.js';
 import { BusNet } from './world/bus.js';
 import { BusManager } from './entities/buses.js';
+import { Farm, harvestOf, isCrop } from './world/farm.js';
+import { Livestock } from './entities/livestock.js';
 
 // real-city data, loaded once per city
 const cityCache = new Map();
@@ -102,6 +104,8 @@ export class Game {
     this.scene.add(this.ambient, this.sunLight);
     this.held = new HeldItem(this);
     this.entities = new EntityManager(this);
+    this.farm = new Farm(this);
+    this.livestock = new Livestock(this);
     this.daily = new DailyTracker(this);
     this.event = currentEvent();
     this.bosses = new BossManager(this);
@@ -298,6 +302,7 @@ export class Game {
 
   async loadRealm(dim, onProgress, findGround = false) {
     if (this.world) this.world.dispose();
+    if (this.world && this.meta.dim) this.livestock.parkAll();
     this.entities.clear();
     if (this.buses) this.buses.clear();
     this.bosses.clearActive();
@@ -308,6 +313,7 @@ export class Game {
     if (this.city && dim === 'city') this.world.genExtra = (cx, cz) => this.city.slice(cx, cz);
     this.world.onBlockChange = (x, y, z, prev, id) => {
       this.entities.onBlockChange(x, y, z, prev, id);
+      this.farm.onBlockChange(x, y, z, prev, id);
       if (this.net) this.net.blockChanged(x, y, z, id);
     };
     const rd = this.viewDistance();
@@ -395,6 +401,7 @@ export class Game {
     const p = this.player;
     return {
       ...this.meta,
+      animals: this.livestock.snapshot(),
       player: { x: p.pos.x, y: p.pos.y, z: p.pos.z, yaw: p.yaw, pitch: p.pitch, health: p.health, maxHealth: p.maxHealth, food: p.food },
       inventory: this.inventory.toJSON(),
     };
@@ -497,6 +504,8 @@ export class Game {
     this.hunger(dt);
     this.interact(dt, inp);
     this.entities.update(dt);
+    this.farm.update(dt);
+    this.livestock.update(dt);
     this.petTick(dt);
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
     this.eventTick(dt);
@@ -633,6 +642,11 @@ export class Game {
     this.entities.burst(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5, b.tex ? b.tex.side : 0);
     if (this.creative) { this.ui.tutorialDone('break'); return; }
     if (!canHarvest) { this.ui.toast(t('toast.needTool'), 'warn'); return; }
+    if (isCrop(hit.id)) {
+      for (const [item, n] of harvestOf(hit.id)) this.entities.dropItem(item, n, new THREE.Vector3(hit.x + 0.5, hit.y + 0.4, hit.z + 0.5));
+      this.ui.tutorialDone('break');
+      return;
+    }
     const drop = blockDrop(hit.id);
     if (drop === 'soul_crystal') {
       this.addCrystals(hit.id === B.dusk_soul_ore ? 2 : 1);
@@ -643,7 +657,8 @@ export class Game {
     const above = this.world.getBlock(hit.x, hit.y + 1, hit.z);
     if (above > 0 && (SHAPE[above] === 2 || SHAPE[above] === 3)) {
       this.world.setBlock(hit.x, hit.y + 1, hit.z, B.air);
-      const d = blockDrop(above);
+      if (isCrop(above)) for (const [item, n] of harvestOf(above)) this.entities.dropItem(item, n, new THREE.Vector3(hit.x + 0.5, hit.y + 1.4, hit.z + 0.5));
+      const d = isCrop(above) ? null : blockDrop(above);
       if (d) this.entities.dropItem(d, 1, new THREE.Vector3(hit.x + 0.5, hit.y + 1.4, hit.z + 0.5));
     }
     this.ui.tutorialDone('break');
@@ -672,6 +687,17 @@ export class Game {
     if (fresh && hit && hit.id === B.restaurant) { this.ui.open('restaurant'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }
     if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
+    // farm animals take their food; crates release an animal; seeds are planted
+    if (ent && ent.passive && fresh) { this.livestock.feed(ent); this.useCooldown = 0.3; return; }
+    if (def && def.animal && fresh) { if (this.livestock.release(def.animal, hit)) this.useCooldown = 0.3; return; }
+    if (def && def.plant && fresh && hit && !(def.food && !(hit.ny === 1))) {
+      if (hit.ny === 1 && this.farm.plant(hit.x, hit.y, hit.z, def.plant)) {
+        if (!this.creative) this.inventory.consumeHeld(1);
+        this.audio.sfx('place'); this.held.swing(); this.useCooldown = 0.25;
+        return;
+      }
+      if (!def.food) { this.ui.toast(t('farm.plantHint')); this.useCooldown = 0.3; return; }
+    }
     // villagers
     if (ent && ent.villager && fresh) { this.ui.openTrade(ent); this.useCooldown = 0.3; return; }
     // workbench opens crafting

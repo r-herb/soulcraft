@@ -17,6 +17,7 @@ import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, 
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
+import { B } from './world/blocks.js';
 import { Net, createRoom } from './net/net.js';
 
 function hasWebGL() {
@@ -285,7 +286,7 @@ async function boot() {
   });
   onAccount(loadWallet);
   loadWallet();
-  window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, get game() { return app.game; } };
+  window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, B, get game() { return app.game; } };
 
   registerSW();
 }

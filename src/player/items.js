@@ -3,7 +3,7 @@ import { BLOCKS, B } from '../world/blocks.js';
 
 export const ITEMS = {};
 
-const NOT_ITEMS = new Set(['air', 'water', 'magma', 'coreite', 'chamber_brick', 'chamber_lamp', 'void_crystal', 'vault',
+const NOT_ITEMS = new Set(['farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_0', 'tomato_1', 'tomato_2', 'tomato_3', 'carrot_0', 'carrot_1', 'carrot_2', 'carrot_3', 'air', 'water', 'magma', 'coreite', 'chamber_brick', 'chamber_lamp', 'void_crystal', 'vault',
   'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on', 'lamp_off', 'lamp_on',
   'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
   'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent']);
@@ -40,7 +40,19 @@ item('roast', { food: 7 });
 item('soul_heart', { stack: 8, heart: true });
 // Malaga's kitchen: ingredients from the food shops, dishes cooked at a workbench
 item('tomato', { food: 2 });
+// farming and livestock
+item('wheat_seeds', { plant: 'wheat' });
+item('tomato_seeds', { plant: 'tomato' });
+item('wheat');
+item('egg', { stack: 16 });
+item('raw_chicken', { food: 2 });
+item('raw_mutton', { food: 2 });
+item('raw_beef', { food: 3 });
+item('chicken_crate', { stack: 4, animal: 'chicken' });
+item('sheep_crate', { stack: 4, animal: 'sheep' });
+item('cow_crate', { stack: 4, animal: 'cow' });
 item('orange', { food: 3 });
+item('carrot', { food: 3, plant: 'carrot' });
 item('rice');
 item('sardine', { food: 1 });
 item('olive_oil', { stack: 16 });

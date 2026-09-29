@@ -101,7 +101,7 @@ export class Pet extends Entity {
     const g = this.game, p = g.player.pos;
     let best = null, bestD = 13;
     for (const e of g.entities.list) {
-      if (!(e instanceof Mob) || e.dead || !e.hittable || e.def.hazard) continue;
+      if (!(e instanceof Mob) || e.dead || !e.hittable || e.def.hazard || e.passive) continue;
       const dp = e.pos.distanceTo(p), d = e.pos.distanceTo(this.pos);
       if (dp < 12 && d < bestD) { best = e; bestD = d; }
     }

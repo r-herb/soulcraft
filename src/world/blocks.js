@@ -25,7 +25,7 @@ export const TILES = [
   'asphalt', 'paving', 'marble', 'plaster_white', 'plaster_cream', 'plaster_ochre', 'plaster_terra', 'roof_tiles',
   'window', 'limestone', 'concrete',
   // street names and house numbers
-  'road_paint', 'paint_dark', 'bus_stop', 'bus_stop_top', 'diamond_ore', 'atm', 'market_stall', 'restaurant', 'num_0', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'num_6', 'num_7', 'num_8', 'num_9',
+  'road_paint', 'paint_dark', 'bus_stop', 'bus_stop_top', 'diamond_ore', 'atm', 'market_stall', 'restaurant', 'farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_0', 'tomato_1', 'tomato_2', 'tomato_3', 'carrot_0', 'carrot_1', 'carrot_2', 'carrot_3', 'num_0', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'num_6', 'num_7', 'num_8', 'num_9',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -49,6 +49,7 @@ function def(id, key, o) {
     drop: o.drop, // item key or null (defaults to self)
     replaceable: !!o.replaceable,
     hurts: o.hurts || 0,
+    crop: o.crop || null, stage: o.stage || 0, // farming
     tex: tex && { top: TILE[tex.top], side: TILE[tex.side], bottom: TILE[tex.bottom] },
   };
 }
@@ -148,6 +149,20 @@ const LIST = [
   def(87, 'road_paint', { tex: 'road_paint', hardness: 1.2, tool: 'pick' }),
   def(88, 'paint_dark', { tex: 'paint_dark', hardness: 1.2, tool: 'pick' }),
   def(100, 'diamond_ore', { tex: 'diamond_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'diamond' }),
+  // farming: tilled soil and crops in four stages (3 = ripe; the farm decides the harvest)
+  def(104, 'farmland', { tex: { top: 'farmland', side: 'dirt', bottom: 'dirt' }, hardness: 0.6, tool: 'shovel', drop: 'dirt' }),
+  def(105, 'wheat_0', { tex: 'wheat_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'wheat', stage: 0 }),
+  def(106, 'wheat_1', { tex: 'wheat_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'wheat', stage: 1 }),
+  def(107, 'wheat_2', { tex: 'wheat_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'wheat', stage: 2 }),
+  def(108, 'wheat_3', { tex: 'wheat_3', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'wheat', stage: 3 }),
+  def(109, 'tomato_0', { tex: 'tomato_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'tomato', stage: 0 }),
+  def(110, 'tomato_1', { tex: 'tomato_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'tomato', stage: 1 }),
+  def(111, 'tomato_2', { tex: 'tomato_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'tomato', stage: 2 }),
+  def(112, 'tomato_3', { tex: 'tomato_3', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'tomato', stage: 3 }),
+  def(113, 'carrot_0', { tex: 'carrot_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'carrot', stage: 0 }),
+  def(114, 'carrot_1', { tex: 'carrot_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'carrot', stage: 1 }),
+  def(115, 'carrot_2', { tex: 'carrot_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'carrot', stage: 2 }),
+  def(116, 'carrot_3', { tex: 'carrot_3', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'carrot', stage: 3 }),
   def(101, 'atm', { tex: { top: 'concrete', side: 'atm', bottom: 'concrete' }, hardness: -1 }),
   def(102, 'market_stall', { tex: { top: 'planks', side: 'market_stall', bottom: 'planks' }, hardness: -1 }),
   def(103, 'restaurant', { tex: { top: 'planks', side: 'restaurant', bottom: 'planks' }, hardness: -1 }),

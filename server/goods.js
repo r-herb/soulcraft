@@ -5,10 +5,12 @@ export const GOODS = {
   sunfruit: 3, bread: 5, roast: 8, glow_stew: 12,
   log: 2, planks: 1, rubble: 1, sand: 1, glass: 3, charcoal: 2,
   iron_ingot: 12, gold_ingot: 30, emberite_ingot: 45, diamond: 80,
+  // the farm
+  wheat: 2, tomato: 2, carrot: 2, egg: 2, wool: 4, raw_chicken: 4, raw_mutton: 5, raw_beef: 6,
 };
 // food shops (fixed prices) and restaurant meals (eaten on the spot, dearer
 // than cooking the same dish yourself)
-export const SHOP = { tomato: 2, orange: 2, rice: 3, sardine: 3, olive_oil: 4, flour: 2, bread: 6, charcoal: 3 };
+export const SHOP = { tomato: 2, orange: 2, rice: 3, sardine: 3, olive_oil: 4, flour: 2, bread: 6, charcoal: 3, wheat_seeds: 1, tomato_seeds: 1, carrot: 2, chicken_crate: 15, sheep_crate: 30, cow_crate: 45 };
 export const MENU = { churros: { price: 8, food: 6 }, espetos: { price: 12, food: 8 }, gazpacho: { price: 14, food: 9 }, paella: { price: 22, food: 14 } };
 // How much of a good one player may sell a day (to the exchange and on the
 // market together): about what a busy day of honest play brings in. The
@@ -18,6 +20,7 @@ export const DAILY_CAP = {
   sunfruit: 128, bread: 64, roast: 64, glow_stew: 32,
   log: 256, planks: 512, rubble: 512, sand: 512, glass: 256, charcoal: 128,
   iron_ingot: 64, gold_ingot: 32, emberite_ingot: 16, diamond: 8,
+  wheat: 256, tomato: 128, carrot: 128, egg: 64, wool: 64, raw_chicken: 32, raw_mutton: 32, raw_beef: 32,
 };
 export const capFor = (item) => DAILY_CAP[item] || 256;
 export const START_CASH = 20;

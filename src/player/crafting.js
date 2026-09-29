@@ -6,6 +6,7 @@ const K = {
   E: 'emberite_ingot', e: 'emberite_shard', F: 'fiber', D: 'sand', A: 'ashstone', W: 'glowbell', g: 'glass',
   s: 'spiritstone', V: 'void_scale', T: 'stone', w: 'wool',
   t: 'tomato', r: 'rice', f: 'sardine', O: 'olive_oil', u: 'flour',
+  k: 'wheat', c: 'raw_chicken', b: 'raw_beef', m: 'raw_mutton',
 };
 
 function r(id, pattern, out, count = 1, extra = {}) {
@@ -43,6 +44,12 @@ export const RECIPES = [
   r('gazpacho', ['tt', 'tO'], 'gazpacho'),
   r('paella', ['rfr', 'tOt', ' C '], 'paella', 2),
   r('churros', ['uu', 'OC'], 'churros', 2),
+  // the farm: bread and flour from wheat, meat roasted over charcoal
+  r('bread_wheat', ['kkk'], 'bread'),
+  r('flour', ['kk'], 'flour'),
+  r('roast_chicken', ['c', 'C'], 'roast'),
+  r('roast_beef', ['b', 'C'], 'roast', 2),
+  r('roast_mutton', ['m', 'C'], 'roast'),
   r('iron_block', ['III', 'III', 'III'], 'iron_block'),
   r('gold_block', ['GGG', 'GGG', 'GGG'], 'gold_block'),
   r('void_lantern', ['gIg', 'ICI', 'gIg'], 'void_lantern', 1, { crystals: 12 }),
