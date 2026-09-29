@@ -40,9 +40,10 @@ test.describe('Malaga', () => {
     await page.evaluate(() => { const g = window.__sc.game; g.player.pitch = -0.2; });
     await shot(page, 'city-street');
     // street names are painted on the roads and houses carry their numbers
-    const marks = await page.evaluate(() => { const m = window.__sc.game.city.mark; let paint = 0, plaques = 0; for (const v of m) { if (v === 1 || v === 2) paint++; else if (v >= 10) plaques++; } return { paint, plaques }; });
+    const marks = await page.evaluate(() => { const m = window.__sc.game.city.mark; let paint = 0, plaques = 0, atms = 0; for (const v of m) { if (v === 1 || v === 2) paint++; else if (v === 4) atms++; else if (v >= 10) plaques++; } return { paint, plaques, atms }; });
     expect(marks.paint).toBeGreaterThan(2000);
     expect(marks.plaques).toBeGreaterThan(20);
+    expect(marks.atms).toBeGreaterThan(20); // a cash machine by each bank
     // real places land inside the map
     const larios = await page.evaluate(() => window.__sc.game.city.toXZ(36.7195, -4.4215));
     expect(larios.x).toBeGreaterThan(0);

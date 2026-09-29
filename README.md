@@ -158,6 +158,56 @@ between accepted friends. On some strict networks (some mobile operators
 or school networks) a direct connection is not possible and the call does
 not connect; a TURN relay (for example Cloudflare's) would fix that.
 
+## Money: the bank and the exchange
+
+Signed-in players have a wallet: 20 coins to start, coins in hand and
+coins in the bank. Use a **cash machine** (a grey terminal next to every
+village well, and by each real bank in Malaga) to open the bank:
+
+- **Exchange**: sell what you gather (food, wood, stone, glass, ingots,
+  diamonds) for coins, or buy it. Prices move with supply: every unit
+  players sell makes that good cheaper for everyone, every unit bought makes
+  it dearer (buy price is above sell price, so flipping loses money).
+- **Bank**: deposit and withdraw coins, with your last operations.
+- **Central bank**: the city's gold reserve, the gold price, the coins in
+  circulation and how much of them the gold covers. Gold ingots sold to the
+  exchange go into the reserve; bought ones come out of it.
+
+A bus ride in Malaga costs 2 coins from your hand (paid when you get in);
+without coins you can still climb onto the roof for free. Diamonds are a
+new ore deep underground (below y 20, needs an iron pickaxe).
+
+**Food.** Market stalls (in every village and at Malaga's 135 real food
+shops) sell ingredients: tomatoes, oranges, rice, sardines, olive oil,
+flour, bread and charcoal. Cook them at the workbench (charcoal is the fire):
+espetos (sardine, stick, charcoal), gazpacho (three tomatoes and olive oil),
+paella (rice, sardine, tomatoes, olive oil, charcoal; two portions) and
+churros (flour, olive oil, charcoal; two). Restaurants (a village tavern,
+and Malaga's 475 restaurants, cafes and bars) serve the same dishes to eat
+on the spot: faster and more filling, but two to three times dearer.
+
+**The city.** Soulcraft has its own calendar: time runs 24 times faster, so
+a Soulcraft day is one real hour and a month is one real day (it ends at
+midnight UTC); the date shows in the bank's City tab. The city pays a
+monthly salary for quests done that month: 6 coins per daily task, 40 per
+guardian, 8 per Treasure Quest level, up to 300 (not in creative mode).
+It is paid when the month ends, the next time the player opens the bank
+or the game.
+
+**Lottery.** Tickets cost 5 coins, at most 10 a month; when the month ends
+one ticket wins the pot, less the tenth the city keeps. The winner gets a
+message if online.
+
+**Players' market.** Offer goods from the backpack for a price in coins; the
+goods wait at the market (they leave the backpack) until another player
+buys them, and the coins go to the seller, who is told if online. The
+seller can take the goods back while they are unsold.
+
+The wallet lives on the server (D1: `wallets`, `market`, `ledger`,
+`econ_state`, and `quest_log`, `salaries`, `lottery_tickets`,
+`lottery_draws`, `offers`); the backpack is still the player's own save, so the server
+trusts what the game says it sells.
+
 ## Performance
 
 Weak phones are limited by pixels (the GPU), not by JavaScript, so the
@@ -396,6 +446,15 @@ What the tests cover:
 - `tests/call.spec.js`: a friend calls with video (the browser's fake
   camera), the other answers, both connect, mute works and hanging up ends
   the call for both; strangers cannot ring anyone.
+- `tests/econ.spec.js`: quests count once toward the salary, lottery
+  tickets and their limit, offering, buying and taking back goods on the
+  players' market, and (with a test clock) the month end paying the salary
+  once and drawing the lottery; selling lowers a good's price, buying needs coins,
+  deposits and withdrawals, gold goes into the central bank's reserve, bus
+  fares, groceries and meals; and in the game a cash machine opens the bank,
+  selling and buying move items and coins, the HUD shows the new balance, a
+  market stall sells ingredients that cook into gazpacho, and a restaurant
+  serves only hungry players.
 - `tests/bosses.spec.js` (desktop): plays the whole guardian progression
   through the real Soul Map, from the Void Dragon to the Soul Storm and the
   victory screen. A bot (`tests/bot.js`) aims, leads its shots, parries

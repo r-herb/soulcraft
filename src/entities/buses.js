@@ -5,6 +5,8 @@
 import * as THREE from 'three';
 import { box } from './models.js';
 import { t } from '../i18n/index.js';
+import { account, econ } from '../save/account.js';
+import { BUS_FARE } from '../../server/goods.js';
 
 const L = 11.5, W = 2.6, H = 3.1; // length, width, height (blocks)
 const SHOW = 160; // draw buses this close to the player
@@ -131,14 +133,35 @@ export class BusManager {
       const [lx, lz] = this.toLocal(b, p.x, p.z);
       if (Math.abs(lx) > W / 2 + 2.5 || Math.abs(lz) > L / 2 + 1 || Math.abs(p.y - b.y) > 3) continue;
       if (b.stop < 0 && !g.creative) { g.ui.toast(t('bus.wait'), 'warn'); return true; }
-      this.riding = { key: b.key, lx: 0.6, lz: -1.5 + Math.random() * 3 };
-      this.lastStop = b.stop; this.announced = -1;
-      const last = this.net.stops[b.line.stops[b.line.stops.length - 1].s];
-      g.ui.toast(t('bus.boarded', { ref: b.line.ref, to: b.line.to || (last && last.name) || '' }));
-      g.audio.sfx('click');
+      // signed-in players pay the fare in coins (the roof stays free)
+      if (!g.creative && account.user && account.available) {
+        if (this.paying) return true;
+        this.paying = true;
+        econ.pay('bus').then(() => {
+          this.paying = false;
+          const now = this.meshes.get(b.key);
+          if (!now || this.riding) return;
+          g.ui.toast(t('bus.paid', { n: BUS_FARE }), 'ok');
+          this.board(now.bus);
+        }).catch((e) => {
+          this.paying = false;
+          g.ui.toast(e.code === 'no_money' ? t('bus.noFare', { n: BUS_FARE }) : t('econ.err'), 'warn');
+        });
+        return true;
+      }
+      this.board(b);
       return true;
     }
     return false;
+  }
+
+  board(b) {
+    const g = this.game;
+    this.riding = { key: b.key, lx: 0.6, lz: -1.5 + Math.random() * 3 };
+    this.lastStop = b.stop; this.announced = -1;
+    const last = this.net.stops[b.line.stops[b.line.stops.length - 1].s];
+    g.ui.toast(t('bus.boarded', { ref: b.line.ref, to: b.line.to || (last && last.name) || '' }));
+    g.audio.sfx('click');
   }
 
   // after the player's own movement: stand on roofs, be carried, and not walk through buses

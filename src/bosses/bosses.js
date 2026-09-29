@@ -1,6 +1,7 @@
 // Boss progression: starts a fight when the player walks into an unlocked
 // arena, runs the active boss, handles loot, defeat, death resets and the
 // Trial Chamber's wind charges.
+import { reportQuest } from '../net/quests.js';
 import * as THREE from 'three';
 import { ARENAS, CHAMBER } from '../world/structures.js';
 import { t } from '../i18n/index.js';
@@ -137,6 +138,7 @@ export class BossManager {
       return;
     }
     g.meta.bosses[id] = true;
+    reportQuest(g, 'boss', id);
     g.meta.stats.kills++;
     g.audio.sfx('victory');
     g.ui.toast(t('toast.bossDefeated', { name: t('boss.' + id) }), 'ok');

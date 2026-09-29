@@ -48,7 +48,7 @@ export default defineConfig({
     },
     withApi && {
       // the accounts API: Pages Functions + a throwaway local D1 database
-      command: 'rm -rf .wrangler/test-state && npx wrangler d1 migrations apply soulcraft --local --persist-to .wrangler/test-state && ' + noProxy + 'npx wrangler pages dev dist --port 8788 --persist-to .wrangler/test-state --binding SUPERADMIN_LOGIN=admin --binding SUPERADMIN_PASSWORD=admin-pass-123 --binding MAIL_TEST=1 --do ROOMS=Room@soulcraft-mp',
+      command: 'rm -rf .wrangler/test-state && npx wrangler d1 migrations apply soulcraft --local --persist-to .wrangler/test-state && ' + noProxy + 'npx wrangler pages dev dist --port 8788 --persist-to .wrangler/test-state --binding SUPERADMIN_LOGIN=admin --binding SUPERADMIN_PASSWORD=admin-pass-123 --binding MAIL_TEST=1 --binding TEST_CLOCK=1 --do ROOMS=Room@soulcraft-mp',
       url: 'http://localhost:8788',
       reuseExistingServer: false,
       timeout: 120_000,
@@ -60,17 +60,17 @@ export default defineConfig({
   ] : [
     {
       name: 'accounts',
-      testMatch: /(accounts|multiplayer|friends|chat|call)\.spec\.js/,
+      testMatch: /(accounts|multiplayer|friends|chat|call|econ)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:8788', viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
     {
       name: 'mobile',
-      testIgnore: /(live|accounts|multiplayer|friends|chat|call)\.spec\.js/,
+      testIgnore: /(live|accounts|multiplayer|friends|chat|call|econ)\.spec\.js/,
       use: { viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: devices['Pixel 7'].userAgent, launchOptions: launch },
     },
     {
       name: 'desktop',
-      testIgnore: /(live|accounts|multiplayer|friends|chat|call)\.spec\.js/,
+      testIgnore: /(live|accounts|multiplayer|friends|chat|call|econ)\.spec\.js/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 }, launchOptions: launch },
     },
   ],

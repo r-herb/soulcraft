@@ -4,6 +4,7 @@
 // tracked in the profile so they follow the player between worlds and
 // devices. They count in survival worlds only. Seasonal events are picked
 // from the date; ?event=<id> forces one for testing.
+import { reportQuest } from '../net/quests.js';
 import { t } from '../i18n/index.js';
 import { hash3 } from '../world/noise.js';
 
@@ -98,6 +99,7 @@ export class DailyTracker {
     task.claimed = true;
     let n = rewardFor(task);
     if (!d.bonus && d.tasks.every((x) => x.claimed)) { d.bonus = true; n += ALL_BONUS; }
+    reportQuest(g, 'daily', `${dayKey()}:${task.id}`);
     g.profile.crystals += n;
     g.profile.totalCrystals = (g.profile.totalCrystals || 0) + n;
     g.audio.sfx('crystal');

@@ -5,6 +5,7 @@ import { t } from '../i18n/index.js';
 import { iconInto, statSprite, SVG } from './icons.js';
 import { settings } from '../save/settings.js';
 import { ITEMS } from '../player/items.js';
+import { wallet } from '../save/account.js';
 
 export function slotEl(stack, size = 32) {
   const s = document.createElement('div');
@@ -39,7 +40,7 @@ export class Hud {
       <div class="hud-top-left">
         <div class="bar-row hearts"></div>
         <div class="bar-row foods"></div>
-        <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span><span class="stat-chip room-chip hidden" data-i18n-title="mp.roomChip"></span><span class="stat-chip lives-chip hidden" data-i18n-title="wmap.lives"><i class="life on"></i><span class="lives-n"></span></span></div>
+        <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span><span class="stat-chip room-chip hidden" data-i18n-title="mp.roomChip"></span><span class="stat-chip coin-chip hidden" data-i18n-title="econ.cash"><span class="coin-ico"></span><span class="coins"></span></span><span class="stat-chip lives-chip hidden" data-i18n-title="wmap.lives"><i class="life on"></i><span class="lives-n"></span></span></div>
       </div>
       <div class="hud-top-right">
         <span class="fps hidden"></span>
@@ -75,6 +76,8 @@ export class Hud {
     this.roomChip = q('.room-chip');
     this.chatBtn = q('[data-b="chat"]');
     this.livesChip = q('.lives-chip'); this.livesN = q('.lives-n');
+    this.coinChip = q('.coin-chip'); this.coinsN = q('.coins');
+    iconInto(q('.coin-ico'), 'coin', 14);
     this.minimap = new Minimap(q('.minimap'));
     this.clickToPlay = q('.click-to-play');
     const buttons = {};
@@ -190,6 +193,8 @@ export class Hud {
     const L = this.last;
     this.minimap.update(g, dt);
     const lv = g.mapTravelOk && !g.creative ? `${g.lives}/${MAX_LIVES}` : '';
+    const cn = wallet.cash === null ? '' : String(wallet.cash);
+    if (L.cn !== cn) { L.cn = cn; this.coinChip.classList.toggle('hidden', !cn); this.coinsN.textContent = cn; }
     if (L.lv !== lv) { L.lv = lv; this.livesChip.classList.toggle('hidden', !lv); this.livesN.textContent = lv; }
     const hp = Math.ceil(p.health), mh = p.maxHealth;
     if (L.hp !== hp || L.mh !== mh) {

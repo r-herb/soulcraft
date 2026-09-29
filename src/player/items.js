@@ -19,6 +19,7 @@ item('charcoal');
 item('fiber');
 item('iron_ingot');
 item('gold_ingot');
+item('diamond');
 item('emberite_shard');
 item('emberite_ingot');
 item('soul_crystal', { currency: true });
@@ -37,6 +38,17 @@ item('bread', { food: 5 });
 item('glow_stew', { food: 8, stack: 8 });
 item('roast', { food: 7 });
 item('soul_heart', { stack: 8, heart: true });
+// Malaga's kitchen: ingredients from the food shops, dishes cooked at a workbench
+item('tomato', { food: 2 });
+item('orange', { food: 3 });
+item('rice');
+item('sardine', { food: 1 });
+item('olive_oil', { stack: 16 });
+item('flour');
+item('espetos', { food: 7 });
+item('gazpacho', { food: 8, stack: 8 });
+item('paella', { food: 10, stack: 8 });
+item('churros', { food: 5 });
 // tools & weapons: damage in half-hearts
 const tool = (key, o) => item(key, { stack: 1, ...o });
 tool('wood_pickaxe', { tool: 'pick', tier: 1, speed: 2, damage: 2 });

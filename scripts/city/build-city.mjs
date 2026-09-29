@@ -335,7 +335,8 @@ for (const { el, rs } of shapes) {
 console.log(`${table.length - 1} buildings`);
 
 // ---------- marks: street names painted on the road, house numbers ----------
-// mark layer: 1 light paint (on asphalt), 2 dark paint (on stone), 10-19 a
+// mark layer: 1 light paint (on asphalt), 2 dark paint (on stone), 3 a bus
+// stop sign, 4 a cash machine, 5 a food shop, 6 a restaurant, 10-19 a
 // house-number plaque with digit 0-9 (on a facade, above the door)
 const mark = new Uint8Array(CELLS);
 const PAVED = new Set([SURF.road, SURF.marble, SURF.pavement, SURF.plaza, SURF.parking, SURF.steps]);
@@ -420,6 +421,40 @@ const LIGHT_PAINT = new Set([SURF.road, SURF.parking]);
     }
   }
   console.log(`${signs} bus stop signs`);
+
+  // cash machines by every bank and ATM, food shops and restaurants: a
+  // counter on the pavement against the wall, near where OpenStreetMap has it
+  const FOOD_SHOPS = new Set(['supermarket', 'convenience', 'greengrocer', 'bakery', 'butcher', 'seafood', 'deli', 'pastry', 'confectionery', 'frozen_food', 'farm']);
+  const EATERIES = new Set(['restaurant', 'cafe', 'fast_food', 'bar', 'pub', 'ice_cream', 'food_court']);
+  const places = { 4: [], 5: [], 6: [] };
+  for (const el of osm.elements) {
+    const t = tags(el);
+    const m = t.amenity === 'bank' || t.amenity === 'atm' ? 4 : FOOD_SHOPS.has(t.shop) || t.amenity === 'marketplace' ? 5 : EATERIES.has(t.amenity) ? 6 : 0;
+    if (!m) continue;
+    if (el.type === 'node') places[m].push([el.lon, el.lat]);
+    else if (el.type === 'way' && el.geometry && el.geometry.length) {
+      const g = el.geometry;
+      places[m].push([g.reduce((a, p) => a + p.lon, 0) / g.length, g.reduce((a, p) => a + p.lat, 0) / g.length]);
+    }
+  }
+  const walkable = (i) => { const s2 = surf[i] & 0x7f; return !bid[i] && !mark[i] && (s2 === SURF.pavement || s2 === SURF.plaza || s2 === SURF.marble); };
+  const byWall = (x, z) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => { const X = x + dx, Z = z + dz; return X >= 0 && Z >= 0 && X < WIDTH && Z < DEPTH && bid[Z * WIDTH + X]; });
+  const counters = { 4: 0, 5: 0, 6: 0 };
+  for (const m of [4, 5, 6]) for (const [lon, lat] of places[m]) {
+    const x0 = Math.floor(px(lon)), z0 = Math.floor(pz(lat));
+    let best = -1;
+    for (let pass = 0; pass < 2 && best < 0; pass++) {
+      for (let r = 0; r <= 10 && best < 0; r++) for (let dz = -r; dz <= r && best < 0; dz++) for (let dx = -r; dx <= r && best < 0; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+        const x = x0 + dx, z = z0 + dz;
+        if (x < 0 || z < 0 || x >= WIDTH || z >= DEPTH) continue;
+        const i = z * WIDTH + x;
+        if (walkable(i) && (pass || byWall(x, z))) best = i;
+      }
+    }
+    if (best >= 0) { mark[best] = m; counters[m]++; }
+  }
+  console.log(`${counters[4]} cash machines, ${counters[5]} food shops, ${counters[6]} restaurants and cafes`);
 
   // house numbers: on the facade that faces the street, one plaque per digit
   const numbers = [];

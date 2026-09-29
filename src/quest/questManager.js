@@ -1,6 +1,7 @@
 // Treasure Quest runtime: checkpoints, level objectives, gates, traps,
 // levers, memory tiles, crumbling bridges, jump pads, keys, monsters, the
 // final boss and the treasure chest.
+import { reportQuest } from '../net/quests.js';
 import * as THREE from 'three';
 import { LEVELS, F, SPACING, levelAt, QUEST_SEED, LEVEL_COUNT, CH2_FIRST, CH2_LAST, CH2_VAULT, CH2_COUNT } from '../world/quest.js';
 import { B, BLOCKS } from '../world/blocks.js';
@@ -73,6 +74,7 @@ export class QuestManager {
     this.state.solved.push(i);
     this.openGate(i);
     if (!silent) {
+      reportQuest(this.game, 'treasure', 'L' + i);
       this.game.audio.sfx('levelup');
       this.game.ui.toast(t('quest.levelDone', { n: i }), 'ok');
       this.game.vibrate(60);

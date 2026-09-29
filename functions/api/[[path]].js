@@ -27,6 +27,8 @@
 //
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
+import { monthIndex, scDate, PAY, SALARY_CAP, TICKET, MAX_TICKETS } from '../../server/calendar.js';
+import { GOODS, SHOP, MENU, START_CASH, BUS_FARE, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -322,6 +324,174 @@ async function route(parts, method, request, env, secure) {
       if (!m) return err(404, 'no_message');
       await db.prepare('INSERT INTO reports (message_id, reporter_id, reason, created_at) VALUES (?, ?, ?, ?)').bind(m.id, me.id, String(reason || '').slice(0, 200) || null, Date.now()).run();
       return json({ ok: true });
+    }
+    return err(404, 'not_found');
+  }
+
+  // ---------- economy: wallet, bank, exchange, central bank ----------
+  if (a === 'econ') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    // local tests may move the clock (to see a month end); never in production
+    const testNow = env.TEST_CLOCK === '1' && Number(request.headers.get('x-test-now'));
+    const uid = s.user.id, now = testNow || Date.now();
+    await db.prepare('INSERT OR IGNORE INTO wallets (user_id, cash, bank, updated_at) VALUES (?, ?, 0, ?)').bind(uid, START_CASH, now).run();
+    const wallet = async () => { const w = await db.prepare('SELECT cash, bank FROM wallets WHERE user_id = ?').bind(uid).first(); return { cash: w.cash, bank: w.bank }; };
+    const supplyOf = async (item) => { const r = await db.prepare('SELECT supply FROM market WHERE item = ?').bind(item).first(); return r ? r.supply : 0; };
+    // take coins from the hand only if there are enough (two requests at once cannot overdraw)
+    const take = async (amount) => (await db.prepare('UPDATE wallets SET cash = cash - ?, updated_at = ? WHERE user_id = ? AND cash >= ?').bind(amount, now, uid, amount).run()).meta.changes > 0;
+    const entry = (kind, item, qty, amount) => db.prepare('INSERT INTO ledger (user_id, kind, item, qty, amount, at) VALUES (?, ?, ?, ?, ?, ?)').bind(uid, kind, item, qty, amount, now);
+    const month = monthIndex(now);
+    const credit = (user, amount) => db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(amount, now, user);
+    const ledger = (user, kind, item, qty, amount) => db.prepare('INSERT INTO ledger (user_id, kind, item, qty, amount, at) VALUES (?, ?, ?, ?, ?, ?)').bind(user, kind, item, qty, amount, now);
+    // month-end business, done lazily by whoever asks first: this player's
+    // salaries for past months, and past lottery draws
+    const settle = async () => {
+      const { results: due } = await db.prepare(`SELECT q.month, SUM(CASE q.kind WHEN 'daily' THEN ? WHEN 'boss' THEN ? ELSE ? END) AS pay FROM quest_log q
+        LEFT JOIN salaries s ON s.user_id = q.user_id AND s.month = q.month WHERE q.user_id = ? AND q.month < ? AND s.month IS NULL GROUP BY q.month`).bind(PAY.daily, PAY.boss, PAY.treasure, uid, month).all();
+      for (const d of due) {
+        const amount = Math.min(SALARY_CAP, d.pay);
+        const r = await db.prepare('INSERT OR IGNORE INTO salaries (user_id, month, amount, at) VALUES (?, ?, ?, ?)').bind(uid, d.month, amount, now).run();
+        if (r.meta.changes) await db.batch([credit(uid, amount), ledger(uid, 'salary', null, d.month, amount)]);
+      }
+      const { results: draws } = await db.prepare('SELECT t.draw, COUNT(*) AS n FROM lottery_tickets t LEFT JOIN lottery_draws d ON d.draw = t.draw WHERE t.draw < ? AND d.draw IS NULL GROUP BY t.draw').bind(month).all();
+      for (const d of draws) {
+        const pick = await db.prepare('SELECT id, user_id FROM lottery_tickets WHERE draw = ? ORDER BY id LIMIT 1 OFFSET ?').bind(d.draw, Math.floor(Math.random() * d.n)).first();
+        const pot = Math.floor(d.n * TICKET * 0.9); // a tenth stays with the city
+        const r = await db.prepare('INSERT OR IGNORE INTO lottery_draws (draw, winner, ticket, pot, tickets, at) VALUES (?, ?, ?, ?, ?, ?)').bind(d.draw, pick.user_id, pick.id, pot, d.n, now).run();
+        if (r.meta.changes) {
+          await db.prepare('INSERT OR IGNORE INTO wallets (user_id, cash, bank, updated_at) VALUES (?, ?, 0, ?)').bind(pick.user_id, START_CASH, now).run();
+          await db.batch([credit(pick.user_id, pot), ledger(pick.user_id, 'lottery', null, d.draw, pot)]);
+          await push(env, [pick.user_id], { t: 'lottery', pot });
+        }
+      }
+    };
+    if (!b && method === 'GET') {
+      await settle();
+      const { results } = await db.prepare('SELECT item, supply FROM market').all();
+      const sup = Object.fromEntries(results.map((r) => [r.item, r.supply]));
+      const goods = Object.keys(GOODS).map((item) => ({ item, buy: buyPrice(item, sup[item] || 0), sell: sellPrice(item, sup[item] || 0), base: GOODS[item], supply: sup[item] || 0 }));
+      const gold = (await db.prepare("SELECT value FROM econ_state WHERE key = 'gold_reserve'").first() || { value: 0 }).value;
+      const money = (await db.prepare('SELECT SUM(cash + bank) AS m, COUNT(*) AS n FROM wallets').first()) || { m: 0, n: 0 };
+      // this month's quests (the salary so far), the lottery, the calendar
+      const { results: q } = await db.prepare('SELECT kind, COUNT(*) AS n FROM quest_log WHERE user_id = ? AND month = ? GROUP BY kind').bind(uid, month).all();
+      const quests = { daily: 0, boss: 0, treasure: 0 };
+      for (const r of q) quests[r.kind] = r.n;
+      const earned = Math.min(SALARY_CAP, quests.daily * PAY.daily + quests.boss * PAY.boss + quests.treasure * PAY.treasure);
+      const lastPay = await db.prepare('SELECT month, amount FROM salaries WHERE user_id = ? ORDER BY month DESC LIMIT 1').bind(uid).first();
+      const pool = await db.prepare('SELECT COUNT(*) AS n, SUM(user_id = ?) AS mine FROM lottery_tickets WHERE draw = ?').bind(uid, month).first();
+      const last = await db.prepare('SELECT d.draw, d.pot, d.tickets, d.winner, u.name FROM lottery_draws d LEFT JOIN users u ON u.id = d.winner ORDER BY d.draw DESC LIMIT 1').first();
+      return json({
+        wallet: await wallet(), goods, central: { gold, money: money.m || 0, holders: money.n || 0, goldPrice: buyPrice('gold_ingot', sup.gold_ingot || 0) }, fare: BUS_FARE, shop: SHOP, menu: MENU,
+        date: scDate(now), salary: { quests, earned, pay: PAY, cap: SALARY_CAP, last: lastPay || null },
+        lottery: { ticket: TICKET, max: MAX_TICKETS, tickets: pool.n || 0, mine: pool.mine || 0, pot: Math.floor((pool.n || 0) * TICKET * 0.9), last: last ? { draw: last.draw, pot: last.pot, tickets: last.tickets, winner: last.name, you: last.winner === uid } : null },
+      });
+    }
+    if (b === 'offers' && method === 'GET') {
+      const { results } = await db.prepare(`SELECT o.id, o.seller, o.item, o.qty, o.price, o.created_at AS at, u.name FROM offers o JOIN users u ON u.id = o.seller
+        WHERE o.status = 'open' ORDER BY o.id DESC LIMIT 100`).all();
+      return json({ offers: results.map((o) => ({ ...o, mine: o.seller === uid })) });
+    }
+    if (b === 'history' && method === 'GET') {
+      const { results } = await db.prepare('SELECT kind, item, qty, amount, at FROM ledger WHERE user_id = ? ORDER BY id DESC LIMIT 30').bind(uid).all();
+      return json({ history: results });
+    }
+    if (method !== 'POST') return err(404, 'not_found');
+    const inp = await body(request);
+    // a quest done: counts toward this month's salary (once per quest per month)
+    if (b === 'quest') {
+      const kind = String(inp.kind || ''), ref = String(inp.ref || '').slice(0, 80);
+      if (!PAY[kind] || !ref) return err(400, 'bad_quest');
+      const r = await db.prepare('INSERT OR IGNORE INTO quest_log (user_id, month, kind, ref, at) VALUES (?, ?, ?, ?, ?)').bind(uid, month, kind, ref, now).run();
+      return json({ ok: true, counted: r.meta.changes > 0 });
+    }
+    if (b === 'lottery') {
+      const n = Math.floor(Number(inp.tickets) || 0);
+      if (n < 1) return err(400, 'bad_qty');
+      const have = (await db.prepare('SELECT COUNT(*) AS n FROM lottery_tickets WHERE draw = ? AND user_id = ?').bind(month, uid).first()).n;
+      if (have + n > MAX_TICKETS) return err(409, 'too_many', `At most ${MAX_TICKETS} tickets a month.`);
+      if (!(await take(n * TICKET))) return json({ error: 'no_money', message: 'Not enough coins.', need: n * TICKET }, 402);
+      const ops = [entry('lottery_ticket', null, n, -n * TICKET)];
+      for (let i = 0; i < n; i++) ops.push(db.prepare('INSERT INTO lottery_tickets (draw, user_id, at) VALUES (?, ?, ?)').bind(month, uid, now));
+      await db.batch(ops);
+      return json({ ok: true, wallet: await wallet() });
+    }
+    // the players' market: offer goods (they wait here), buy, or take back
+    if (b === 'offers' && !c) {
+      const item = String(inp.item || ''), qty = Math.floor(Number(inp.qty) || 0), price = Math.floor(Number(inp.price) || 0);
+      if (!/^[a-z0-9_]{2,40}$/.test(item)) return err(400, 'bad_item');
+      if (qty < 1 || qty > 640) return err(400, 'bad_qty');
+      if (price < 1 || price > 100000) return err(400, 'bad_price');
+      const open = (await db.prepare("SELECT COUNT(*) AS n FROM offers WHERE seller = ? AND status = 'open'").bind(uid).first()).n;
+      if (open >= 20) return err(409, 'too_many', 'At most 20 offers at a time.');
+      const r = await db.prepare('INSERT INTO offers (seller, item, qty, price, created_at) VALUES (?, ?, ?, ?, ?)').bind(uid, item, qty, price, now).run();
+      return json({ ok: true, id: r.meta.last_row_id });
+    }
+    if (b === 'offers' && c && (d === 'buy' || d === 'cancel')) {
+      const o = await db.prepare("SELECT * FROM offers WHERE id = ? AND status = 'open'").bind(Number(c)).first();
+      if (!o) return err(404, 'gone', 'This offer is no longer there.');
+      if (d === 'cancel') {
+        if (o.seller !== uid) return err(403, 'forbidden');
+        const r = await db.prepare("UPDATE offers SET status = 'cancelled', closed_at = ? WHERE id = ? AND status = 'open'").bind(now, o.id).run();
+        if (!r.meta.changes) return err(404, 'gone', 'This offer is no longer there.');
+        return json({ ok: true, item: o.item, qty: o.qty });
+      }
+      if (o.seller === uid) return err(400, 'own_offer');
+      const r = await db.prepare("UPDATE offers SET status = 'sold', buyer = ?, closed_at = ? WHERE id = ? AND status = 'open'").bind(uid, now, o.id).run();
+      if (!r.meta.changes) return err(404, 'gone', 'This offer is no longer there.');
+      if (!(await take(o.price))) {
+        await db.prepare("UPDATE offers SET status = 'open', buyer = NULL, closed_at = NULL WHERE id = ?").bind(o.id).run();
+        return json({ error: 'no_money', message: 'Not enough coins.', need: o.price }, 402);
+      }
+      await db.prepare('INSERT OR IGNORE INTO wallets (user_id, cash, bank, updated_at) VALUES (?, ?, 0, ?)').bind(o.seller, START_CASH, now).run();
+      await db.batch([entry('market_buy', o.item, o.qty, -o.price), credit(o.seller, o.price), ledger(o.seller, 'market_sell', o.item, o.qty, o.price)]);
+      await push(env, [o.seller], { t: 'sold', item: o.item, qty: o.qty, price: o.price, buyer: s.user.name });
+      return json({ ok: true, item: o.item, qty: o.qty, wallet: await wallet() });
+    }
+    if (b === 'sell' || b === 'buy') {
+      const item = String(inp.item || ''), qty = Math.floor(Number(inp.qty) || 0);
+      if (!GOODS[item]) return err(400, 'bad_item');
+      if (qty < 1 || qty > 640) return err(400, 'bad_qty');
+      const supply = await supplyOf(item);
+      const total = tradeTotal(item, supply, qty, b);
+      const gold = item === 'gold_ingot' ? (await db.prepare("SELECT value FROM econ_state WHERE key = 'gold_reserve'").first()).value : 0;
+      if (b === 'buy' && item === 'gold_ingot' && gold < qty) return err(409, 'no_stock', 'The central bank does not have that much gold.');
+      if (b === 'buy' && !(await take(total))) return json({ error: 'no_money', message: 'Not enough coins.', need: total }, 402);
+      const d = b === 'sell' ? 1 : -1;
+      const ops = [
+        ...(b === 'sell' ? [db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(total, now, uid)] : []),
+        db.prepare('INSERT INTO market (item, base, supply, traded) VALUES (?, ?, ?, ?) ON CONFLICT(item) DO UPDATE SET supply = supply + ?, traded = traded + ?').bind(item, GOODS[item], d * qty, qty, d * qty, qty),
+        entry(b, item, qty, d * total),
+      ];
+      if (item === 'gold_ingot') ops.push(db.prepare("UPDATE econ_state SET value = value + ? WHERE key = 'gold_reserve'").bind(d * qty));
+      await db.batch(ops);
+      return json({ ok: true, total, wallet: await wallet() });
+    }
+    if (b === 'deposit' || b === 'withdraw') {
+      const amount = Math.floor(Number(inp.amount) || 0);
+      if (amount < 1) return err(400, 'bad_amount');
+      const d = b === 'deposit' ? 1 : -1;
+      const moved = await db.prepare(`UPDATE wallets SET cash = cash - ?, bank = bank + ?, updated_at = ? WHERE user_id = ? AND ${b === 'deposit' ? 'cash' : 'bank'} >= ?`).bind(d * amount, d * amount, now, uid, amount).run();
+      if (!moved.meta.changes) return err(402, 'no_money', b === 'deposit' ? 'Not enough coins in hand.' : 'Not enough coins in the bank.');
+      await entry(b, null, null, amount).run();
+      return json({ ok: true, wallet: await wallet() });
+    }
+    if (b === 'pay') {
+      // a bus fare, groceries from a food shop, or a meal at a restaurant
+      let price, item = null, qty = null;
+      if (inp.what === 'bus') price = BUS_FARE;
+      else if (inp.what === 'shop') {
+        item = String(inp.item || ''); qty = Math.floor(Number(inp.qty) || 0);
+        if (!SHOP[item]) return err(400, 'bad_item');
+        if (qty < 1 || qty > 64) return err(400, 'bad_qty');
+        price = SHOP[item] * qty;
+      } else if (inp.what === 'meal') {
+        item = String(inp.item || ''); qty = 1;
+        if (!MENU[item]) return err(400, 'bad_item');
+        price = MENU[item].price;
+      } else return err(400, 'bad_payment');
+      if (!(await take(price))) return json({ error: 'no_money', message: 'Not enough coins.', need: price }, 402);
+      await entry(inp.what, item, qty, -price).run();
+      return json({ ok: true, total: price, wallet: await wallet() });
     }
     return err(404, 'not_found');
   }

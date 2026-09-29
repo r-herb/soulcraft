@@ -10,6 +10,8 @@ import { worldMap } from './worldmap.js';
 import { busStop } from './busui.js';
 import { friends, social, refreshSocial } from './social.js';
 import { chat, chatState } from './chat.js';
+import { bank } from './bank.js';
+import { foodShop, restaurant } from './food.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
@@ -65,7 +67,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }

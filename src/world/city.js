@@ -36,6 +36,7 @@ export const CITY_PLACES = {
     { name: 'La Malagueta', lat: 36.71711, lon: -4.41085 },
     { name: 'Plaza de la Merced', lat: 36.72340, lon: -4.41810 },
     { name: 'Paseo del Parque', lat: 36.71910, lon: -4.41700 },
+    { name: 'Banco de España', lat: 36.72016, lon: -4.41566 },
     { name: 'El Limonar', lat: 36.72700, lon: -4.40000 },
   ],
 };
@@ -158,6 +159,8 @@ export function genCity(cx, cz, data, e) {
     if (!b && s === SURF.scrub && hash3(wx, 3, wz, 7) < 0.08 && g + 1 < HEIGHT) data[idx(lx, g + 1, lz)] = B.dry_bush;
     // a bus stop sign (two blocks high)
     if (mk === 3 && !b && g + 2 < HEIGHT) { data[idx(lx, g + 1, lz)] = B.bus_stop; data[idx(lx, g + 2, lz)] = B.bus_stop; }
+    if (mk === 4 && !b && g + 2 < HEIGHT) { data[idx(lx, g + 1, lz)] = B.atm; data[idx(lx, g + 2, lz)] = B.atm; }
+    if ((mk === 5 || mk === 6) && !b && g + 1 < HEIGHT) data[idx(lx, g + 1, lz)] = mk === 5 ? B.market_stall : B.restaurant;
     // city walls (the Alcazaba, Gibralfaro)
     const wh = e.wall[k];
     if (wh) {

@@ -17,7 +17,7 @@ export const account = {
 
 export function slot(base) { return account.user ? `u${account.user.id}:${base}` : base; }
 export function onAccount(fn) { account.listeners.add(fn); return () => account.listeners.delete(fn); }
-function changed() { account.listeners.forEach((fn) => { try { fn(account.user); } catch (e) { console.warn(e); } }); }
+function changed() { if (!account.user) setWallet(null); account.listeners.forEach((fn) => { try { fn(account.user); } catch (e) { console.warn(e); } }); }
 
 async function api(path, opts = {}) {
   const res = await fetch('/api/' + path, {
@@ -105,6 +105,25 @@ export const chat = {
   // admins
   del: (id) => api(`admin/messages/${id}`, { method: 'DELETE' }),
   mute: (userId, minutes) => api(`admin/users/${userId}/mute`, { method: 'POST', body: { minutes } }),
+};
+// the economy: coins in hand and in the bank, the exchange and the central bank
+export const wallet = { cash: null, bank: 0, listeners: new Set() };
+export function setWallet(w) {
+  if (w) { wallet.cash = w.cash; wallet.bank = w.bank; } else { wallet.cash = null; wallet.bank = 0; }
+  wallet.listeners.forEach((fn) => { try { fn(wallet); } catch { /* ignore */ } });
+}
+export const econ = {
+  async state() { const r = await api('econ'); setWallet(r.wallet); return r; },
+  history: () => api('econ/history'),
+  async trade(side, item, qty) { const r = await api('econ/' + side, { method: 'POST', body: { item, qty } }); setWallet(r.wallet); return r; },
+  async move(side, amount) { const r = await api('econ/' + side, { method: 'POST', body: { amount } }); setWallet(r.wallet); return r; },
+  quest: (kind, ref) => api('econ/quest', { method: 'POST', body: { kind, ref } }),
+  async lottery(tickets) { const r = await api('econ/lottery', { method: 'POST', body: { tickets } }); setWallet(r.wallet); return r; },
+  offers: () => api('econ/offers'),
+  offer: (item, qty, price) => api('econ/offers', { method: 'POST', body: { item, qty, price } }),
+  async buyOffer(id) { const r = await api(`econ/offers/${id}/buy`, { method: 'POST', body: {} }); setWallet(r.wallet); return r; },
+  cancelOffer: (id) => api(`econ/offers/${id}/cancel`, { method: 'POST', body: {} }),
+  async pay(what, extra = {}) { const r = await api('econ/pay', { method: 'POST', body: { what, ...extra } }); setWallet(r.wallet); return r; },
 };
 export function callSignal(to, data) { return api('call/signal', { method: 'POST', body: { to, data } }); }
 export async function sendPresence(p) { if (account.user) await api('presence', { method: 'POST', body: p }).catch(() => {}); }

@@ -5,6 +5,7 @@ const K = {
   L: 'log', P: 'planks', S: 'stick', C: 'charcoal', R: 'rubble', I: 'iron_ingot', G: 'gold_ingot',
   E: 'emberite_ingot', e: 'emberite_shard', F: 'fiber', D: 'sand', A: 'ashstone', W: 'glowbell', g: 'glass',
   s: 'spiritstone', V: 'void_scale', T: 'stone', w: 'wool',
+  t: 'tomato', r: 'rice', f: 'sardine', O: 'olive_oil', u: 'flour',
 };
 
 function r(id, pattern, out, count = 1, extra = {}) {
@@ -37,6 +38,11 @@ export const RECIPES = [
   r('brick', ['RD', 'DR'], 'brick', 4),
   r('ember_lamp', ['A', 'C', 'A'], 'ember_lamp', 2),
   r('glow_stew', ['WW', 'PP'], 'glow_stew'),
+  // Malaga's kitchen (the charcoal is the fire)
+  r('espetos', ['f', 'S', 'C'], 'espetos'),
+  r('gazpacho', ['tt', 'tO'], 'gazpacho'),
+  r('paella', ['rfr', 'tOt', ' C '], 'paella', 2),
+  r('churros', ['uu', 'OC'], 'churros', 2),
   r('iron_block', ['III', 'III', 'III'], 'iron_block'),
   r('gold_block', ['GGG', 'GGG', 'GGG'], 'gold_block'),
   r('void_lantern', ['gIg', 'ICI', 'gIg'], 'void_lantern', 1, { crystals: 12 }),

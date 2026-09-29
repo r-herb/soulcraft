@@ -25,7 +25,7 @@ export const TILES = [
   'asphalt', 'paving', 'marble', 'plaster_white', 'plaster_cream', 'plaster_ochre', 'plaster_terra', 'roof_tiles',
   'window', 'limestone', 'concrete',
   // street names and house numbers
-  'road_paint', 'paint_dark', 'bus_stop', 'bus_stop_top', 'num_0', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'num_6', 'num_7', 'num_8', 'num_9',
+  'road_paint', 'paint_dark', 'bus_stop', 'bus_stop_top', 'diamond_ore', 'atm', 'market_stall', 'restaurant', 'num_0', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'num_6', 'num_7', 'num_8', 'num_9',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -147,6 +147,10 @@ const LIST = [
   // street names painted on the road, house-number plaques (blue on white tiles, as in Malaga)
   def(87, 'road_paint', { tex: 'road_paint', hardness: 1.2, tool: 'pick' }),
   def(88, 'paint_dark', { tex: 'paint_dark', hardness: 1.2, tool: 'pick' }),
+  def(100, 'diamond_ore', { tex: 'diamond_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'diamond' }),
+  def(101, 'atm', { tex: { top: 'concrete', side: 'atm', bottom: 'concrete' }, hardness: -1 }),
+  def(102, 'market_stall', { tex: { top: 'planks', side: 'market_stall', bottom: 'planks' }, hardness: -1 }),
+  def(103, 'restaurant', { tex: { top: 'planks', side: 'restaurant', bottom: 'planks' }, hardness: -1 }),
   def(99, 'bus_stop', { tex: { top: 'bus_stop_top', side: 'bus_stop', bottom: 'bus_stop_top' }, hardness: 1.5, tool: 'pick' }),
   ...Array.from({ length: 10 }, (_, d) => def(89 + d, 'num_' + d, { tex: { top: 'plaster_white', side: 'num_' + d, bottom: 'plaster_white' }, hardness: 1, tool: 'pick' })),
   def(67, 'glow_crystal', { tex: 'glow_crystal', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0.8, light: 12 }),

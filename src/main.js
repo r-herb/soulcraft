@@ -1,7 +1,8 @@
 // Boot: settings, language, WebGL check, UI, game, service worker.
 import { CallManager } from './net/call.js';
 import { CallUI } from './ui/callui.js';
-import { startHub } from './net/hub.js';
+import { startHub, onHub } from './net/hub.js';
+import { itemName } from './ui/hud.js';
 import { startChatWatch, refreshChat } from './ui/chat.js';
 import './ui/tokens.css';
 import './ui/styles.css';
@@ -12,7 +13,7 @@ import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
 import { Game, loadCityData } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
-import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount, account } from './save/account.js';
+import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount, account, econ } from './save/account.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -275,6 +276,15 @@ async function boot() {
   const chatBtn = () => ui.hud && ui.hud.showChat && ui.hud.showChat(!!(account.user && account.mp));
   onAccount(() => { chatBtn(); refreshChat(); });
   chatBtn();
+  // coins in hand and in the bank, for the HUD
+  const loadWallet = () => { if (account.user && account.available) econ.state().catch(() => {}); };
+  // someone bought what this player offered, or the lottery was won
+  onHub((ev) => {
+    if (ev.t === 'sold') { ui.toast(t('econ.soldOffer', { q: ev.qty, item: itemName(ev.item), buyer: ev.buyer, p: ev.price }), 'ok'); loadWallet(); }
+    else if (ev.t === 'lottery') { ui.toast(t('econ.wonLottery', { pot: ev.pot }), 'soul'); loadWallet(); }
+  });
+  onAccount(loadWallet);
+  loadWallet();
   window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, get game() { return app.game; } };
 
   registerSW();

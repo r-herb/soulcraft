@@ -51,7 +51,8 @@ function oreAt(seed, x, y, z, stoneId) {
     else if (h < 0.22) { type = B.gold_ore; r = 1.2; }
     else if (h < 0.4) { type = B.iron_ore; r = 1.4; }
   } else {
-    if (h < 0.04 && y < 40) { type = B.soul_ore; r = 1.1; }
+    if (h < 0.012 && y < 20) { type = B.diamond_ore; r = 1.0; }
+    else if (h < 0.04 && y < 40) { type = B.soul_ore; r = 1.1; }
     else if (h < 0.1 && y < 34) { type = B.gold_ore; r = 1.1; }
     else if (h < 0.26 && y < 60) { type = B.iron_ore; r = 1.4; }
     else if (h < 0.48) { type = B.char_ore; r = 1.6; }
@@ -233,6 +234,11 @@ function carveVillageColumn(L, v, wx, wz, x, z, h, data) {
     if (dx === 0 && dz === 0) data[idx(x, v.y + 5, z)] = B.torch;
     return;
   }
+  // a cash machine by the well (the bank and the exchange)
+  if (dx === 4 && dz === 0) { data[idx(x, v.y + 1, z)] = B.atm; data[idx(x, v.y + 2, z)] = B.atm; }
+  // the market stall (ingredients) and the tavern (meals)
+  if (dx === -4 && dz === 0) data[idx(x, v.y + 1, z)] = B.market_stall;
+  if (dx === 0 && dz === 4) data[idx(x, v.y + 1, z)] = B.restaurant;
   for (const hs of v.houses) {
     if (wx < hs.x0 || wx > hs.x1 || wz < hs.z0 || wz > hs.z1) continue;
     const y0 = v.y;

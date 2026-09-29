@@ -252,6 +252,27 @@ const painters = {
   },
   limestone: (p) => { p.bricks('#d9ccb0', '#b8a987', 16, 8); p.speckle('#c8b996', 8); },
   concrete: (p) => { p.noise(['#b4b5b8', '#adaeb1', '#bbbcbf']); p.speckle('#9c9da0', 5); },
+  diamond_ore: (p) => { painters.stone(p); p.blobs(['#7ff3f0', '#b6fbff', '#2aa9b8'], 4, '#e6ffff'); },
+  atm: (p) => {
+    p.noise(['#2d6a4f', '#2a634a']); p.border('#1b4332');
+    for (let x = 3; x < 13; x++) for (let y = 3; y < 8; y++) p.set(x, y, hex(y === 3 ? '#9ff5c8' : '#1d2b3a'));
+    for (let x = 4; x < 12; x += 2) for (let y = 9; y < 13; y += 2) p.set(x, y, hex('#d8e2dc'));
+    for (let x = 5; x < 11; x++) p.set(x, 14, hex('#111111'));
+  },
+  market_stall: (p) => {
+    p.noise(['#8a5a2e', '#7f532a']); p.border('#5a3a1a');
+    for (let x = 0; x < 16; x++) for (let y = 0; y < 5; y++) p.set(x, y, hex((x >> 2) % 2 ? '#f2f2f2' : '#2f8f4e'));
+    const fruit = ['#e0342a', '#ff8c1a', '#f2d23a', '#6fbf4a'];
+    for (let x = 2; x < 14; x++) for (let y = 8; y < 13; y++) if ((x + y) % 2) p.set(x, y, hex(fruit[((x >> 2) + (y >> 2)) % 4]));
+  },
+  restaurant: (p) => {
+    p.noise(['#a8322a', '#9c2e27']); p.border('#6a1c18');
+    const w = hex('#f7f1e3');
+    for (let y = 4; y < 12; y++) { p.set(3, y, w); p.set(12, y, w); }
+    for (let y = 4; y < 7; y++) { p.set(2, y, w); p.set(4, y, w); }
+    for (let x = 6; x < 10; x++) for (let y = 5; y < 11; y++) if (Math.hypot(x - 7.5, y - 7.5) < 2.6) p.set(x, y, w);
+    for (let x = 1; x < 15; x++) p.set(x, 14, hex('#f2c14e'));
+  },
   bus_stop: (p) => {
     p.noise(['#1f5fbf', '#1c58b3']); p.border('#f2f2f2');
     const w = hex('#ffffff'), d = hex('#1f5fbf');

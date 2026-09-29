@@ -649,12 +649,27 @@ export class Game {
     this.ui.tutorialDone('break');
   }
 
+  // eat something worth `food` half-drumsticks; false when already full
+  hungry() { return this.player.food < 20 || this.player.health < this.player.maxHealth; }
+  feed(food) {
+    if (!this.hungry()) return false;
+    this.player.food = Math.min(20, this.player.food + food);
+    this.player.saturation = Math.min(this.player.food, this.player.saturation + food * 0.6);
+    this.player.health = Math.min(this.player.maxHealth, this.player.health + Math.ceil(food / 2));
+    this.daily.note('eat');
+    this.audio.sfx('eat');
+    return true;
+  }
+
   use(hit, ent, dir, fresh) {
     const h = this.inventory.held;
     const def = h && ITEMS[h.item];
     if (this.quest && hit && fresh && this.quest.interact(hit)) { this.useCooldown = 0.3; return; }
     // city buses: board one standing at a stop, read the timetable at a stop sign
     if (fresh && this.buses && this.buses.tryBoard()) { this.useCooldown = 0.3; return; }
+    if (fresh && hit && hit.id === B.atm) { this.ui.open('bank'); this.useCooldown = 0.3; return; }
+    if (fresh && hit && hit.id === B.market_stall) { this.ui.open('foodShop'); this.useCooldown = 0.3; return; }
+    if (fresh && hit && hit.id === B.restaurant) { this.ui.open('restaurant'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }
     if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
     // villagers
@@ -662,13 +677,8 @@ export class Game {
     // workbench opens crafting
     if (hit && hit.id === B.workbench && fresh && !(def && def.block !== undefined)) { this.ui.openInventory(); this.useCooldown = 0.3; return; }
     if (def && def.food && fresh) {
-      if (this.player.food >= 20 && this.player.health >= this.player.maxHealth) { this.ui.toast(t('toast.fullHealth')); return; }
-      this.player.food = Math.min(20, this.player.food + def.food);
-      this.player.saturation = Math.min(this.player.food, this.player.saturation + def.food * 0.6);
-      this.player.health = Math.min(this.player.maxHealth, this.player.health + Math.ceil(def.food / 2));
+      if (!this.feed(def.food)) { this.ui.toast(t('toast.fullHealth')); return; }
       this.inventory.consumeHeld(1);
-      this.daily.note('eat');
-      this.audio.sfx('eat');
       this.useCooldown = 0.4;
       return;
     }
