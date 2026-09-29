@@ -1,0 +1,40 @@
+# Downloads OpenStreetMap data for the real-city worlds and commits it to the
+# city-data branch (the build scripts in scripts/city read it from there).
+# Map data (c) OpenStreetMap contributors, ODbL 1.0.
+name: City data
+
+on:
+  workflow_dispatch:
+    inputs:
+      city:
+        description: City id (see scripts/city/cities.mjs)
+        default: malaga
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Download from Overpass
+        run: node scripts/city/fetch-osm.mjs "${{ inputs.city }}"
+      - name: Commit to the city-data branch
+        run: |
+          set -e
+          cp "data/city/${{ inputs.city }}-osm.json.gz" /tmp/osm.json.gz
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin city-data || true
+          if git rev-parse --verify origin/city-data >/dev/null 2>&1; then git checkout -B city-data origin/city-data; else git checkout --orphan city-data && git rm -rf . >/dev/null; fi
+          mkdir -p data/city
+          cp /tmp/osm.json.gz "data/city/${{ inputs.city }}-osm.json.gz"
+          printf 'OpenStreetMap extracts for the real-city worlds.\nMap data (c) OpenStreetMap contributors, available under the Open Database License (ODbL 1.0): https://www.openstreetmap.org/copyright\n' > data/city/README.txt
+          git add data/city
+          git commit -m "City data: ${{ inputs.city }} ($(date -u +%Y-%m-%d))" || echo "no change"
+          git push origin city-data
