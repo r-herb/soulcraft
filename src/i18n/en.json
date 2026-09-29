@@ -702,5 +702,17 @@
   "wmap.travelling": "Travelling...",
   "wmap.arrived": "You are here. You will respawn here.",
   "wmap.arrivedLives": "You are here. Lives left: {n}/{max}.",
-  "wmap.lifeBack": "A life came back: {n}/{max}."
+  "wmap.lifeBack": "A life came back: {n}/{max}.",
+  "block.road_paint": "Road Paint",
+  "block.paint_dark": "Dark Paint",
+  "block.num_0": "House Number 0",
+  "block.num_1": "House Number 1",
+  "block.num_2": "House Number 2",
+  "block.num_3": "House Number 3",
+  "block.num_4": "House Number 4",
+  "block.num_5": "House Number 5",
+  "block.num_6": "House Number 6",
+  "block.num_7": "House Number 7",
+  "block.num_8": "House Number 8",
+  "block.num_9": "House Number 9"
 }

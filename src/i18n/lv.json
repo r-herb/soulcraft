@@ -702,5 +702,17 @@
   "wmap.travelling": "Pārvietojas...",
   "wmap.arrived": "Tu esi klāt. Atdzimsi šeit.",
   "wmap.arrivedLives": "Tu esi klāt. Dzīvības: {n}/{max}.",
-  "wmap.lifeBack": "Dzīvība atgūta: {n}/{max}."
+  "wmap.lifeBack": "Dzīvība atgūta: {n}/{max}.",
+  "block.road_paint": "Ceļa krāsa",
+  "block.paint_dark": "Tumšā krāsa",
+  "block.num_0": "Mājas numurs 0",
+  "block.num_1": "Mājas numurs 1",
+  "block.num_2": "Mājas numurs 2",
+  "block.num_3": "Mājas numurs 3",
+  "block.num_4": "Mājas numurs 4",
+  "block.num_5": "Mājas numurs 5",
+  "block.num_6": "Mājas numurs 6",
+  "block.num_7": "Mājas numurs 7",
+  "block.num_8": "Mājas numurs 8",
+  "block.num_9": "Mājas numurs 9"
 }

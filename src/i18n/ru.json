@@ -702,5 +702,17 @@
   "wmap.travelling": "Перенос...",
   "wmap.arrived": "Ты на месте. Возрождаться будешь здесь.",
   "wmap.arrivedLives": "Ты на месте. Осталось жизней: {n}/{max}.",
-  "wmap.lifeBack": "Жизнь вернулась: {n}/{max}."
+  "wmap.lifeBack": "Жизнь вернулась: {n}/{max}.",
+  "block.road_paint": "Дорожная краска",
+  "block.paint_dark": "Тёмная краска",
+  "block.num_0": "Номер дома 0",
+  "block.num_1": "Номер дома 1",
+  "block.num_2": "Номер дома 2",
+  "block.num_3": "Номер дома 3",
+  "block.num_4": "Номер дома 4",
+  "block.num_5": "Номер дома 5",
+  "block.num_6": "Номер дома 6",
+  "block.num_7": "Номер дома 7",
+  "block.num_8": "Номер дома 8",
+  "block.num_9": "Номер дома 9"
 }

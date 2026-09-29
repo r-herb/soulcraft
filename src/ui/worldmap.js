@@ -16,7 +16,7 @@ const rgb = (hex) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 1
 
 // ---------- the city picture (built once per city, 2 m per pixel) ----------
 const CITY_SURF = ['#bdb393', '#55555a', '#aaa59b', '#e9e3d5', '#80b06a', '#e9d8a6', '#4a86c8', '#9a9486', '#6b5d53',
-  '#d2c9b6', '#4d7b3e', '#9aa0a6', '#bdb5a4', '#9daa6c', '#88b872', '#707074', '#c9a66b', '#62a254'].map(rgb);
+  '#d2c9b6', '#4d7b3e', '#9aa0a6', '#bdb5a4', '#9daa6c', '#88b872', '#707074', '#c9a66b', '#62a254', '#4fc3e8'].map(rgb);
 const CITY_WALL = ['#eeede8', '#eadfc4', '#dcb670', '#c97d5c', '#dad1ba', '#a6583f', '#86abc8', '#b3b3b0', '#d6b685'].map(rgb);
 const ROOF_TILES = rgb('#c2663e'), ROOF_STONE = rgb('#d9c8a2'), SEA_RGB = rgb('#2f6db3'), TREE_RGB = rgb('#3f7033');
 export const CITY_STEP = 2;

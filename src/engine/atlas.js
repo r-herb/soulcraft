@@ -13,6 +13,15 @@ function hex(c) {
 function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
 function shade(c, f) { return [c[0] * f, c[1] * f, c[2] * f]; }
 
+// 5 x 7 digits for the house-number plaques
+const DIGITS = [
+  ['.###.', '#...#', '#..##', '#.#.#', '##..#', '#...#', '.###.'], ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'], ['####.', '....#', '....#', '.###.', '....#', '....#', '####.'],
+  ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'], ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+  ['..##.', '.#...', '#....', '####.', '#...#', '#...#', '.###.'], ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
+  ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'], ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
+];
+
 class Painter {
   constructor(img, ox, oy, seed, glow) {
     this.img = img; this.ox = ox; this.oy = oy; this.r = mulberry32(seed); this.glow = glow;
@@ -243,6 +252,15 @@ const painters = {
   },
   limestone: (p) => { p.bricks('#d9ccb0', '#b8a987', 16, 8); p.speckle('#c8b996', 8); },
   concrete: (p) => { p.noise(['#b4b5b8', '#adaeb1', '#bbbcbf']); p.speckle('#9c9da0', 5); },
+  road_paint: (p) => { p.noise(['#f2f1ea', '#e8e7df', '#f7f6f0']); p.speckle('#c9c8c0', 5); },
+  paint_dark: (p) => { p.noise(['#27324a', '#2d3953', '#222c42']); p.speckle('#3d4a66', 5); },
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, d) => ['num_' + d, (p) => {
+    p.noise(['#f4f3ee', '#eeede6']);
+    p.border('#2f5fb3');
+    const rows = DIGITS[d];
+    // each digit pixel is 2 x 2 texels
+    for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) if (rows[y][x] === '#') for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) p.set(3 + x * 2 + a, 1 + y * 2 + b, hex('#1f4fa8'));
+  }])),
   frost_brick: (p) => { p.bricks('#9cc4dc', '#5f89a6', 8, 4); p.speckle('#e6f6ff', 5); },
   blink_on: (p) => { p.noise(['#b98bff', '#c9a2ff', '#a678f0']); p.border('#6d45d6'); for (let i = 4; i < 12; i++) { p.set(i, 4, hex('#f0e6ff')); p.set(i, 11, hex('#f0e6ff')); p.set(4, i, hex('#f0e6ff')); p.set(11, i, hex('#f0e6ff')); } },
   blink_off: (p) => { p.clear(); for (let i = 0; i < 16; i += 2) { p.set(i, 0, hex('#b98bff'), 150); p.set(i, 15, hex('#b98bff'), 150); p.set(0, i, hex('#b98bff'), 150); p.set(15, i, hex('#b98bff'), 150); } },

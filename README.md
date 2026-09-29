@@ -106,6 +106,12 @@ friends like any other world.
 - The game loads the file once and builds each chunk from it in the
   worker (`src/world/city.js`). Heights are scaled by 0.82 so Gibralfaro
   fits under the build limit.
+- Street names (from OpenStreetMap, with the Spanish abbreviations C/,
+  AV., PZA.) are painted on the roads in big block letters that read from
+  above, and houses with an address carry blue number plaques over a door.
+- The city lives: fish in the sea, the port and ponds, swimmers in the
+  pools, sunbathers with parasols on the beach and people walking in the
+  pedestrian streets (by day). They are scenery only.
 - Other cities can be added in `scripts/city/cities.mjs`.
 
 ## Performance

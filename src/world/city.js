@@ -13,12 +13,12 @@ const M = 4; // slice margin: trees and wall edges reach into neighbours
 // surface codes (same list as the build script)
 const SURF = {
   ground: 0, road: 1, pavement: 2, marble: 3, park: 4, sand: 5, water: 6, riverbed: 7, rail: 8,
-  plaza: 9, forest: 10, dock: 11, steps: 12, scrub: 13, garden: 14, parking: 15, wall: 16, pitch: 17,
+  plaza: 9, forest: 10, dock: 11, steps: 12, scrub: 13, garden: 14, parking: 15, wall: 16, pitch: 17, pool: 18,
 };
 const TREE_BIT = 0x80;
 const SURFACE_BLOCK = [
   B.grass, B.asphalt, B.paving, B.marble, B.grass, B.sand, B.sand, B.concrete, B.rubble,
-  B.paving, B.grass, B.concrete, B.paving, B.grass, B.grass, B.asphalt, B.ruin_stone, B.grass,
+  B.paving, B.grass, B.concrete, B.paving, B.grass, B.grass, B.asphalt, B.ruin_stone, B.grass, B.water,
 ];
 const NATURAL = new Set([SURF.ground, SURF.park, SURF.forest, SURF.scrub, SURF.garden, SURF.pitch, SURF.sand]);
 const WALLS = [B.plaster_white, B.plaster_cream, B.plaster_ochre, B.plaster_terra, B.limestone, B.brick, B.window, B.concrete, B.sandstone];
@@ -65,7 +65,9 @@ export class CityData {
     this.surf = new Uint8Array(buf, o, n); o += n;
     this.wall = new Uint8Array(buf, o, n); o += n;
     this.bid = new Uint16Array(buf.slice(o, o + n * 2)); o += n * 2;
-    this.table = new Uint8Array(buf, o, h.buildings * 4);
+    this.table = new Uint8Array(buf, o, h.buildings * 4); o += h.buildings * 4;
+    // v2: street names painted on the road and house numbers
+    this.mark = h.v >= 2 ? new Uint8Array(buf, o, n) : new Uint8Array(n);
   }
 
   // A real place (latitude, longitude) in blocks, the same projection as the build script.
@@ -83,19 +85,19 @@ export class CityData {
   // The chunk's cells plus a margin, for the worker.
   slice(cx, cz) {
     const W = S + 2 * M, n = W * W;
-    const ground = new Uint8Array(n), surf = new Uint8Array(n), wall = new Uint8Array(n), bid = new Uint16Array(n);
+    const ground = new Uint8Array(n), surf = new Uint8Array(n), wall = new Uint8Array(n), bid = new Uint16Array(n), mark = new Uint8Array(n);
     const bl = {};
     const x0 = cx * S - M, z0 = cz * S - M;
     for (let z = 0; z < W; z++) for (let x = 0; x < W; x++) {
       const k = z * W + x, gx = x0 + x, gz = z0 + z;
       if (!this.inside(gx, gz)) { ground[k] = this.seaY - 5; surf[k] = SURF.water; continue; }
       const i = gz * this.w + gx;
-      ground[k] = this.ground[i]; surf[k] = this.surf[i]; wall[k] = this.wall[i];
+      ground[k] = this.ground[i]; surf[k] = this.surf[i]; wall[k] = this.wall[i]; mark[k] = this.mark[i];
       const b = this.bid[i];
       bid[k] = b;
       if (b && !bl[b]) bl[b] = Array.from(this.table.subarray(b * 4, b * 4 + 4));
     }
-    return { city: true, seaY: this.seaY, ground, surf, wall, bid, bl };
+    return { city: true, seaY: this.seaY, ground, surf, wall, bid, bl, mark };
   }
 
   // An open cell (not a building, the sea or a wall) near (x, z), or null.
@@ -141,9 +143,15 @@ export function genCity(cx, cz, data, e) {
       continue;
     }
     if (s === SURF.water) { data[idx(lx, g, lz)] = B.water; continue; } // fountains and ponds
+    // swimming pools: two blocks of water over a marble floor, level with the ground
+    if (s === SURF.pool && !b) { data[idx(lx, g - 2, lz)] = B.marble; data[idx(lx, g - 1, lz)] = B.water; data[idx(lx, g, lz)] = B.water; continue; }
     let top = SURFACE_BLOCK[s] ?? B.grass;
     if (s === SURF.scrub && hash3(wx, 1, wz, 7) < 0.3) top = B.dirt;
     if (s === SURF.steps && (wx + wz) % 2) top = B.stone;
+    // street names painted on the road
+    const mk = e.mark ? e.mark[k] : 0;
+    if (mk === 1 && !b) top = B.road_paint;
+    else if (mk === 2 && !b) top = B.paint_dark;
     data[idx(lx, g, lz)] = top;
     // plants on open ground
     if (!b && (s === SURF.park || s === SURF.garden || s === SURF.ground) && hash3(wx, 2, wz, 7) < 0.06 && g + 1 < HEIGHT) data[idx(lx, g + 1, lz)] = B.tallgrass;
@@ -174,14 +182,15 @@ export function genCity(cx, cz, data, e) {
     for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
     for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
     data[idx(lx, base, lz)] = edge ? wallId : B.planks;
-    const door = street && hash3(wx, 5, wz, b) < 0.12;
+    const door = street && (hash3(wx, 5, wz, b) < 0.12 || (e.mark && e.mark[k] >= 10)); // a door under each house number
     for (let y = base + 1; y < topY; y++) {
       const r = y - base;
       if (edge) {
         const win = glass || (stone
           ? r % 12 >= 4 && r % 12 <= 8 && (wx + wz) % 7 === 3
           : r % 4 >= 2 && r % 4 <= 3 && (wx + wz) % 3 !== 0 && r > 1);
-        data[idx(lx, y, lz)] = door && r <= 2 ? B.air : win ? B.window : wallId;
+        const plaque = r === 3 && e.mark && e.mark[k] >= 10 && e.mark[k] <= 19;
+        data[idx(lx, y, lz)] = plaque ? B.num_0 + e.mark[k] - 10 : door && r <= 2 ? B.air : win ? B.window : wallId;
       } else data[idx(lx, y, lz)] = r % 4 === 0 ? B.planks : B.air;
     }
     data[idx(lx, topY, lz)] = edge && roof !== 1 ? wallId : ROOFS[roof] ?? B.paving;

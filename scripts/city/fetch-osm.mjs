@@ -35,6 +35,9 @@ const query = (s, w, n, e) => {
   way["historic"]${bb}; relation["historic"]${bb};
   way["place"]${bb};
   node["natural"="tree"]${bb};
+  node["addr:housenumber"]${bb};
+  node["highway"="bus_stop"]${bb}; node["public_transport"]${bb};
+  relation["route"="bus"]${bb};
 );
 out body geom;`;
 };

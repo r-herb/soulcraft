@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { CITIES } from './cities.mjs';
 import { loadElevation } from './elevation.mjs';
+import { plainText, shortStreetName, textPixel, GLYPH_W, GLYPH_H } from './font3x5.mjs';
 
 const id = process.argv[2] || 'malaga';
 const city = CITIES[id];
@@ -36,7 +37,7 @@ const MAX_Y = 118;
 // surface codes (the game's generator knows the same list)
 export const SURF = {
   ground: 0, road: 1, pavement: 2, marble: 3, park: 4, sand: 5, water: 6, riverbed: 7, rail: 8,
-  plaza: 9, forest: 10, dock: 11, steps: 12, scrub: 13, garden: 14, parking: 15, wall: 16, pitch: 17,
+  plaza: 9, forest: 10, dock: 11, steps: 12, scrub: 13, garden: 14, parking: 15, wall: 16, pitch: 17, pool: 18,
 };
 const TREE_BIT = 0x80;
 
@@ -142,7 +143,8 @@ const AREA_RULES = [
   [(t) => t.natural === 'beach' || t.natural === 'sand', SURF.sand],
   [(t) => t.place === 'square' || t.highway === 'pedestrian' || t['area:highway'] === 'pedestrian' || t.amenity === 'marketplace', SURF.plaza],
   [(t) => t.man_made === 'pier' || t.man_made === 'breakwater' || t.man_made === 'quay', SURF.dock],
-  [(t) => t.natural === 'water' || t.water || t.leisure === 'swimming_pool' || t.amenity === 'fountain', SURF.water],
+  [(t) => t.natural === 'water' || t.water || t.amenity === 'fountain', SURF.water],
+  [(t) => t.leisure === 'swimming_pool', SURF.pool],
 ];
 const areaEls = osm.elements.filter((el) => (el.type === 'way' || el.type === 'relation') && !tags(el).building);
 for (const [test, code] of AREA_RULES) {
@@ -332,6 +334,118 @@ for (const { el, rs } of shapes) {
 }
 console.log(`${table.length - 1} buildings`);
 
+// ---------- marks: street names painted on the road, house numbers ----------
+// mark layer: 1 light paint (on asphalt), 2 dark paint (on stone), 10-19 a
+// house-number plaque with digit 0-9 (on a facade, above the door)
+const mark = new Uint8Array(CELLS);
+const PAVED = new Set([SURF.road, SURF.marble, SURF.pavement, SURF.plaza, SURF.parking, SURF.steps]);
+const LIGHT_PAINT = new Set([SURF.road, SURF.parking]);
+{
+  const placed = new Map(); // name -> label centres
+  const NAMED = ['primary', 'secondary', 'tertiary', 'residential', 'pedestrian', 'living_street', 'unclassified', 'primary_link', 'secondary_link', 'trunk'];
+  const ways = osm.elements.filter((el) => el.type === 'way' && el.geometry && tags(el).name && NAMED.includes(tags(el).highway) && tags(el).tunnel !== 'yes');
+  const lenOf = (pts) => { let l = 0; for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return l; };
+  const withPts = ways.map((el) => ({ el, pts: ringXY(el.geometry) })).map((w) => ({ ...w, len: lenOf(w.pts) })).sort((a, b) => b.len - a.len);
+  let labels = 0;
+  for (const { el, pts } of withPts) {
+    const name = tags(el).name;
+    const text = plainText(shortStreetName(name));
+    if (!text) continue;
+    // straight runs of the way (direction within ~10 degrees)
+    const runs = [];
+    let a = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const d0 = [pts[a + 1][0] - pts[a][0], pts[a + 1][1] - pts[a][1]], d1 = [pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]];
+      const cos = (d0[0] * d1[0] + d0[1] * d1[1]) / (Math.hypot(...d0) * Math.hypot(...d1) || 1);
+      if (cos < 0.985) { runs.push([pts[a], pts[i - 1]]); a = i - 1; }
+    }
+    runs.push([pts[a], pts[pts.length - 1]]);
+    for (const [p0, p1] of runs) {
+      const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+      if (len < 12) continue;
+      let dir = [(p1[0] - p0[0]) / len, (p1[1] - p0[1]) / len];
+      // read left to right on a north-up map (north-south streets read upwards)
+      if (dir[0] < -0.1 || (Math.abs(dir[0]) <= 0.1 && dir[1] > 0)) dir = [-dir[0], -dir[1]];
+      // Letters stay upright on the block grid (crisp at one block per pixel):
+      // mostly east-west streets get upright letters, mostly north-south ones
+      // letters turned to read upwards; on a slanted street the letters step
+      // along it like stairs.
+      const horiz = Math.abs(dir[0]) >= Math.abs(dir[1]);
+      const ax = horiz ? [1, 0] : [0, -1], perp = [-ax[1], ax[0]];
+      const step = (GLYPH_W + 1) / Math.abs(dir[0] * ax[0] + dir[1] * ax[1]);
+      const total = text.length * step;
+      if (len < total + 6) continue;
+      const count = Math.max(1, Math.floor(len / Math.max(150, total + 40)));
+      for (let k = 0; k < count; k++) {
+        const f = (k + 0.5) / count;
+        const ox = p0[0] + (p1[0] - p0[0]) * f, oz = p0[1] + (p1[1] - p0[1]) * f;
+        const near = placed.get(name) || [];
+        if (near.some(([x, z]) => Math.hypot(x - ox, z - oz) < 90)) continue;
+        const paint = [];
+        let fits = true;
+        for (let c = 0; c < text.length && fits; c++) {
+          const t0 = -total / 2 + (c + 0.5) * step;
+          const cx = Math.round(ox + dir[0] * t0), cz = Math.round(oz + dir[1] * t0);
+          // the letter (3 x 5) and a one-block margin must lie on the street
+          for (let row = -1; row <= GLYPH_H && fits; row++) for (let col = -1; col <= GLYPH_W; col++) {
+            const x = cx + ax[0] * (col - 1) + perp[0] * (row - 2), z = cz + ax[1] * (col - 1) + perp[1] * (row - 2);
+            if (x < 0 || z < 0 || x >= WIDTH || z >= DEPTH) { fits = false; break; }
+            const i = z * WIDTH + x;
+            if (!PAVED.has(surf[i] & 0x7f) || bid[i] || sea[i] || mark[i]) { fits = false; break; }
+            if (col >= 0 && col < GLYPH_W && row >= 0 && row < GLYPH_H && textPixel(text, c * (GLYPH_W + 1) + col, row)) paint.push(i);
+          }
+        }
+        if (!fits) continue;
+        for (const i of paint) mark[i] = LIGHT_PAINT.has(surf[i] & 0x7f) ? 1 : 2;
+        near.push([ox, oz]); placed.set(name, near);
+        labels++;
+      }
+    }
+  }
+  console.log(`${labels} street name labels`);
+
+  // house numbers: on the facade that faces the street, one plaque per digit
+  const numbers = [];
+  for (const el of osm.elements) {
+    const t = tags(el), n = String(t['addr:housenumber'] || '').trim();
+    if (!/^\d{1,3}$/.test(n)) continue;
+    if (el.type === 'node') numbers.push({ x: px(el.lon), z: pz(el.lat), n });
+    else if (el.type === 'way' && el.geometry && t.building) {
+      const pts = ringXY(el.geometry);
+      numbers.push({ x: pts.reduce((a, q) => a + q[0], 0) / pts.length, z: pts.reduce((a, q) => a + q[1], 0) / pts.length, n });
+    }
+  }
+  let plaques = 0;
+  for (const { x, z, n } of numbers) {
+    // the nearest building edge cell with the street on its other side
+    let best = null;
+    for (let r = 0; r <= 12 && !best; r++) for (let dz = -r; dz <= r && !best; dz++) for (let dx = -r; dx <= r && !best; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+      const cx = Math.floor(x) + dx, cz = Math.floor(z) + dz;
+      if (cx < 1 || cz < 1 || cx >= WIDTH - 1 || cz >= DEPTH - 1) continue;
+      const i = cz * WIDTH + cx;
+      if (!bid[i]) continue;
+      for (const [ex, ez] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const j = (cz + ez) * WIDTH + cx + ex;
+        if (!bid[j] && PAVED.has(surf[j] & 0x7f)) { best = { cx, cz, ex, ez, b: bid[i] }; break; }
+      }
+    }
+    if (!best) continue;
+    // digits run along the facade, left to right as seen from the street
+    const along = [-best.ez, best.ex];
+    const digits = n.split('');
+    const cells = digits.map((_, k) => [best.cx + along[0] * (k - (digits.length - 1) / 2 | 0), best.cz + along[1] * (k - (digits.length - 1) / 2 | 0)]);
+    const ok = cells.every(([cx, cz]) => {
+      const i = cz * WIDTH + cx, j = (cz + best.ez) * WIDTH + cx + best.ex;
+      return cx >= 0 && cz >= 0 && cx < WIDTH && cz < DEPTH && bid[i] === best.b && !bid[j] && !mark[i];
+    });
+    if (!ok) continue;
+    cells.forEach(([cx, cz], k) => { mark[cz * WIDTH + cx] = 10 + Number(digits[k]); });
+    plaques++;
+  }
+  console.log(`${plaques} house numbers (of ${numbers.length} addresses)`);
+}
+
 // ---------- distance over the sand from the sea (for gentle beaches) ----------
 const beachD = new Uint16Array(CELLS).fill(65535);
 {
@@ -362,13 +476,32 @@ for (let i = 0; i < CELLS; i++) {
   ground[i] = Math.min(MAX_Y, g);
   if (wallH[i]) surf[i] = SURF.wall;
 }
+// swimming pools are level: each pool takes its lowest ground height
+{
+  const seen = new Uint8Array(CELLS);
+  for (let i0 = 0; i0 < CELLS; i0++) {
+    if (seen[i0] || (surf[i0] & 0x7f) !== SURF.pool) continue;
+    const cells = [i0]; seen[i0] = 1;
+    let low = 255;
+    for (let k = 0; k < cells.length; k++) {
+      const i = cells[k]; low = Math.min(low, ground[i]);
+      const x = i % WIDTH;
+      for (const j of [x > 0 ? i - 1 : -1, x < WIDTH - 1 ? i + 1 : -1, i - WIDTH, i + WIDTH]) {
+        if (j < 0 || j >= CELLS || seen[j] || (surf[j] & 0x7f) !== SURF.pool) continue;
+        seen[j] = 1; cells.push(j);
+      }
+    }
+    for (const i of cells) ground[i] = low;
+  }
+}
 const wallTop = wallH;
 
 // ---------- pack ----------
 // header (JSON) + ground (u8) + surf (u8) + wall heights (u8) + building ids (u16) + building table (4 x u8 per building)
+// + (v2) marks (u8)
 const [sLat, sLon] = city.spawn;
 const header = {
-  v: 1, id, name: city.name, width: WIDTH, depth: DEPTH, seaY: SEA_Y, buildings: table.length,
+  v: 2, id, name: city.name, width: WIDTH, depth: DEPTH, seaY: SEA_Y, buildings: table.length,
   spawn: [Math.round(px(sLon)), Math.round(pz(sLat))], bbox: city.bbox,
   attribution: 'Map data (c) OpenStreetMap contributors (ODbL). Elevation: Terrain Tiles on AWS (SRTM and others).',
 };
@@ -377,7 +510,7 @@ const bt = new Uint8Array(table.length * 4);
 table.forEach((r, k) => { bt[k * 4] = r[0]; bt[k * 4 + 1] = Math.min(255, r[1]); bt[k * 4 + 2] = r[2]; bt[k * 4 + 3] = r[3]; });
 const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32LE(hb.length);
 const pad = Buffer.alloc((4 - ((4 + hb.length) % 4)) % 4, 32);
-const body = Buffer.concat([lenBuf, hb, pad, Buffer.from(ground.buffer), Buffer.from(surf.buffer), Buffer.from(wallTop.buffer), Buffer.from(bid.buffer), Buffer.from(bt.buffer)]);
+const body = Buffer.concat([lenBuf, hb, pad, Buffer.from(ground.buffer), Buffer.from(surf.buffer), Buffer.from(wallTop.buffer), Buffer.from(bid.buffer), Buffer.from(bt.buffer), Buffer.from(mark.buffer)]);
 mkdirSync('public/city', { recursive: true });
 const gz = gzipSync(body, { level: 9 });
 writeFileSync(`public/city/${id}.bin.gz`, gz);

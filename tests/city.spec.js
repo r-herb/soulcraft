@@ -39,6 +39,10 @@ test.describe('Malaga', () => {
     expect(check.block).toBeGreaterThan(0);
     await page.evaluate(() => { const g = window.__sc.game; g.player.pitch = -0.2; });
     await shot(page, 'city-street');
+    // street names are painted on the roads and houses carry their numbers
+    const marks = await page.evaluate(() => { const m = window.__sc.game.city.mark; let paint = 0, plaques = 0; for (const v of m) { if (v === 1 || v === 2) paint++; else if (v >= 10) plaques++; } return { paint, plaques }; });
+    expect(marks.paint).toBeGreaterThan(2000);
+    expect(marks.plaques).toBeGreaterThan(20);
     // real places land inside the map
     const larios = await page.evaluate(() => window.__sc.game.city.toXZ(36.7195, -4.4215));
     expect(larios.x).toBeGreaterThan(0);
@@ -46,6 +50,8 @@ test.describe('Malaga', () => {
     if (process.env.SHOTS) {
       // a look at some well-known places: [name, lat, lon, metres east and south of it, height]
       const views = [
+        ['city-names', 36.71760, -4.42300, 0, 2, 38],
+        ['city-names2', 36.71960, -4.42160, 0, 2, 30],
         ['city-larios', 36.7195, -4.4215, 0, 60, 2],
         ['city-cathedral', 36.72017, -4.41961, 25, 75, 35],
         ['city-alcazaba', 36.72112, -4.41593, -30, 80, 35],
@@ -79,6 +85,39 @@ test.describe('Malaga', () => {
         await shot(page, name);
       }
     }
+    // life in the city: sunbathers and fish at La Malagueta, swimmers in a pool, walkers in the old town
+    await page.evaluate(() => { const g = window.__sc.game; g.meta.time = 0.2; g.player.fly = true; });
+    const visit = async (name, find, kinds) => {
+      const spot = await page.evaluate(find);
+      expect(spot, name).not.toBeNull();
+      await page.evaluate((s) => { const g = window.__sc.game; g.player.pos.set(s.x + 0.5, s.y, s.z + 0.5); g.player.yaw = s.yaw || 0; g.player.pitch = s.pitch ?? -0.5; }, spot);
+      await page.waitForFunction((k) => { const l = window.__sc.game.entities.life; return k.every((kind) => l.count(kind) > 0); }, kinds, { timeout: 60_000 });
+      await page.waitForTimeout(1500);
+      await shot(page, name);
+    };
+    await visit('city-beach', () => {
+      const c = window.__sc.game.city, t = c.toXZ(36.7172, -4.4085);
+      for (let r = 0; r < 80; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+        const i = (t.z + dz) * c.w + t.x + dx;
+        if ((c.surf[i] & 127) === 5 && !c.bid[i]) return { x: t.x + dx, z: t.z + dz + 4, y: c.ground[i] + 6, yaw: 0, pitch: -0.45 };
+      }
+      return null;
+    }, ['sunbather', 'fish']);
+    await visit('city-pool', () => {
+      const c = window.__sc.game.city, p = window.__sc.game.player.pos;
+      let best = null, bd = 1e9;
+      for (let z = 1; z < c.d - 1; z += 3) for (let x = 1; x < c.w - 1; x += 3) {
+        const i = z * c.w + x;
+        if ((c.surf[i] & 127) !== 18 || c.bid[i]) continue;
+        const d = Math.hypot(x - p.x, z - p.z);
+        if (d < bd) { bd = d; best = { x, z: z + 7, y: c.ground[i] + 5, yaw: 0, pitch: -0.55 }; }
+      }
+      return best;
+    }, ['swimmer']);
+    await visit('city-walkers', () => {
+      const c = window.__sc.game.city, t = c.toXZ(36.7196, -4.4216);
+      return { x: t.x, z: t.z + 10, y: c.ground[t.z * c.w + t.x] + 2.5, yaw: 0, pitch: -0.15 };
+    }, ['walker']);
     expect(problems).toEqual([]);
   });
 });

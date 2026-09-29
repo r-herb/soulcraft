@@ -702,5 +702,17 @@
   "wmap.travelling": "Viajando...",
   "wmap.arrived": "Ya estás aquí. Reaparecerás aquí.",
   "wmap.arrivedLives": "Ya estás aquí. Vidas: {n}/{max}.",
-  "wmap.lifeBack": "Has recuperado una vida: {n}/{max}."
+  "wmap.lifeBack": "Has recuperado una vida: {n}/{max}.",
+  "block.road_paint": "Pintura vial",
+  "block.paint_dark": "Pintura oscura",
+  "block.num_0": "Número de casa 0",
+  "block.num_1": "Número de casa 1",
+  "block.num_2": "Número de casa 2",
+  "block.num_3": "Número de casa 3",
+  "block.num_4": "Número de casa 4",
+  "block.num_5": "Número de casa 5",
+  "block.num_6": "Número de casa 6",
+  "block.num_7": "Número de casa 7",
+  "block.num_8": "Número de casa 8",
+  "block.num_9": "Número de casa 9"
 }
