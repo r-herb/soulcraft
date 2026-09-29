@@ -10,6 +10,16 @@ export const GOODS = {
 // than cooking the same dish yourself)
 export const SHOP = { tomato: 2, orange: 2, rice: 3, sardine: 3, olive_oil: 4, flour: 2, bread: 6, charcoal: 3 };
 export const MENU = { churros: { price: 8, food: 6 }, espetos: { price: 12, food: 8 }, gazpacho: { price: 14, food: 9 }, paella: { price: 22, food: 14 } };
+// How much of a good one player may sell a day (to the exchange and on the
+// market together): about what a busy day of honest play brings in. The
+// backpack is the player's own save, so this is what stops made-up goods
+// from flooding the city.
+export const DAILY_CAP = {
+  sunfruit: 128, bread: 64, roast: 64, glow_stew: 32,
+  log: 256, planks: 512, rubble: 512, sand: 512, glass: 256, charcoal: 128,
+  iron_ingot: 64, gold_ingot: 32, emberite_ingot: 16, diamond: 8,
+};
+export const capFor = (item) => DAILY_CAP[item] || 256;
 export const START_CASH = 20;
 export const BUS_FARE = 2;
 const REF = 200;

@@ -27,8 +27,8 @@
 //
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
-import { monthIndex, scDate, PAY, SALARY_CAP, TICKET, MAX_TICKETS } from '../../server/calendar.js';
-import { GOODS, SHOP, MENU, START_CASH, BUS_FARE, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
+import { monthIndex, monthStart, scDate, PAY, SALARY_CAP, QUEST_MAX, TICKET, MAX_TICKETS } from '../../server/calendar.js';
+import { capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -380,7 +380,9 @@ async function route(parts, method, request, env, secure) {
       const lastPay = await db.prepare('SELECT month, amount FROM salaries WHERE user_id = ? ORDER BY month DESC LIMIT 1').bind(uid).first();
       const pool = await db.prepare('SELECT COUNT(*) AS n, SUM(user_id = ?) AS mine FROM lottery_tickets WHERE draw = ?').bind(uid, month).first();
       const last = await db.prepare('SELECT d.draw, d.pot, d.tickets, d.winner, u.name FROM lottery_draws d LEFT JOIN users u ON u.id = d.winner ORDER BY d.draw DESC LIMIT 1').first();
+      const fzi = await db.prepare('SELECT frozen_until, frozen_reason FROM wallets WHERE user_id = ?').bind(uid).first();
       return json({
+        frozen: fzi && fzi.frozen_until > now ? { until: fzi.frozen_until, reason: fzi.frozen_reason || '' } : null,
         wallet: await wallet(), goods, central: { gold, money: money.m || 0, holders: money.n || 0, goldPrice: buyPrice('gold_ingot', sup.gold_ingot || 0) }, fare: BUS_FARE, shop: SHOP, menu: MENU,
         date: scDate(now), salary: { quests, earned, pay: PAY, cap: SALARY_CAP, last: lastPay || null },
         lottery: { ticket: TICKET, max: MAX_TICKETS, tickets: pool.n || 0, mine: pool.mine || 0, pot: Math.floor((pool.n || 0) * TICKET * 0.9), last: last ? { draw: last.draw, pot: last.pot, tickets: last.tickets, winner: last.name, you: last.winner === uid } : null },
@@ -397,10 +399,23 @@ async function route(parts, method, request, env, secure) {
     }
     if (method !== 'POST') return err(404, 'not_found');
     const inp = await body(request);
+    // a frozen wallet (an admin's decision) cannot trade until the date
+    const fz = await db.prepare('SELECT frozen_until, frozen_reason FROM wallets WHERE user_id = ?').bind(uid).first();
+    if (fz && fz.frozen_until && fz.frozen_until > now) return json({ error: 'frozen', message: 'This wallet is frozen by an admin.', until: fz.frozen_until, reason: fz.frozen_reason || '' }, 403);
+    // how many units of a good this player may still sell today (exchange and market together)
+    const sellLeft = async (item) => {
+      const since = monthStart(month);
+      const a = await db.prepare("SELECT IFNULL(SUM(qty), 0) AS n FROM ledger WHERE user_id = ? AND kind = 'sell' AND item = ? AND at >= ?").bind(uid, item, since).first();
+      const b2 = await db.prepare('SELECT IFNULL(SUM(qty), 0) AS n FROM offers WHERE seller = ? AND item = ? AND created_at >= ?').bind(uid, item, since).first();
+      return Math.max(0, capFor(item) - a.n - b2.n);
+    };
+    const capErr = (left) => json({ error: 'daily_cap', message: `You can sell ${left} more of this today.`, left }, 429);
     // a quest done: counts toward this month's salary (once per quest per month)
     if (b === 'quest') {
       const kind = String(inp.kind || ''), ref = String(inp.ref || '').slice(0, 80);
       if (!PAY[kind] || !ref) return err(400, 'bad_quest');
+      const done = (await db.prepare('SELECT COUNT(*) AS n FROM quest_log WHERE user_id = ? AND month = ? AND kind = ?').bind(uid, month, kind).first()).n;
+      if (done >= QUEST_MAX[kind]) return json({ ok: true, counted: false });
       const r = await db.prepare('INSERT OR IGNORE INTO quest_log (user_id, month, kind, ref, at) VALUES (?, ?, ?, ?, ?)').bind(uid, month, kind, ref, now).run();
       return json({ ok: true, counted: r.meta.changes > 0 });
     }
@@ -423,6 +438,8 @@ async function route(parts, method, request, env, secure) {
       if (price < 1 || price > 100000) return err(400, 'bad_price');
       const open = (await db.prepare("SELECT COUNT(*) AS n FROM offers WHERE seller = ? AND status = 'open'").bind(uid).first()).n;
       if (open >= 20) return err(409, 'too_many', 'At most 20 offers at a time.');
+      const left = await sellLeft(item);
+      if (qty > left) return capErr(left);
       const r = await db.prepare('INSERT INTO offers (seller, item, qty, price, created_at) VALUES (?, ?, ?, ?, ?)').bind(uid, item, qty, price, now).run();
       return json({ ok: true, id: r.meta.last_row_id });
     }
@@ -451,6 +468,7 @@ async function route(parts, method, request, env, secure) {
       const item = String(inp.item || ''), qty = Math.floor(Number(inp.qty) || 0);
       if (!GOODS[item]) return err(400, 'bad_item');
       if (qty < 1 || qty > 640) return err(400, 'bad_qty');
+      if (b === 'sell') { const left = await sellLeft(item); if (qty > left) return capErr(left); }
       const supply = await supplyOf(item);
       const total = tradeTotal(item, supply, qty, b);
       const gold = item === 'gold_ingot' ? (await db.prepare("SELECT value FROM econ_state WHERE key = 'gold_reserve'").first()).value : 0;
@@ -694,6 +712,68 @@ async function route(parts, method, request, env, secure) {
       else { const { results } = await db.prepare("SELECT user_id AS id FROM channel_members WHERE channel_id = ? UNION SELECT id FROM users WHERE role = 'admin'").bind(Number(m.conv.slice(1))).all(); to = results.map((r) => r.id); }
       await push(env, to, { t: 'del', conv: m.conv, id: m.id });
       return json({ ok: true });
+    }
+    // ---------- the economy: who earned what today, freezing and correcting wallets ----------
+    if (b === 'econ' && !c && method === 'GET') {
+      const month = monthIndex(), since = monthStart(month);
+      const { results } = await db.prepare(`SELECT l.user_id, u.name, u.username, w.cash, w.bank, w.frozen_until, w.frozen_reason,
+          SUM(CASE WHEN l.amount > 0 THEN l.amount ELSE 0 END) AS earned, SUM(CASE WHEN l.amount < 0 THEN -l.amount ELSE 0 END) AS spent
+        FROM ledger l JOIN users u ON u.id = l.user_id LEFT JOIN wallets w ON w.user_id = l.user_id
+        WHERE l.at >= ? AND l.kind NOT IN ('deposit', 'withdraw') GROUP BY l.user_id ORDER BY earned DESC LIMIT 100`).bind(since).all();
+      const { results: sold } = await db.prepare("SELECT user_id, item, SUM(qty) AS qty FROM ledger WHERE kind = 'sell' AND at >= ? GROUP BY user_id, item").bind(since).all();
+      const { results: offered } = await db.prepare('SELECT seller AS user_id, item, SUM(qty) AS qty FROM offers WHERE created_at >= ? GROUP BY seller, item').bind(since).all();
+      const perUser = new Map();
+      for (const r of [...sold, ...offered]) { const m = perUser.get(r.user_id) || {}; m[r.item] = (m[r.item] || 0) + r.qty; perUser.set(r.user_id, m); }
+      const { results: frozen } = await db.prepare('SELECT w.user_id, u.name, u.username, w.cash, w.bank, w.frozen_until, w.frozen_reason FROM wallets w JOIN users u ON u.id = w.user_id WHERE w.frozen_until > ?').bind(Date.now()).all();
+      const row = (r) => {
+        const items = perUser.get(r.user_id) || {};
+        const flags = [];
+        for (const [item, qty] of Object.entries(items)) if (qty >= capFor(item) * 0.8) flags.push(`${item} ${qty}/${capFor(item)}`);
+        if ((r.earned || 0) >= 1000) flags.push('earned 1000+');
+        return { userId: r.user_id, name: r.name, username: r.username, cash: r.cash || 0, bank: r.bank || 0, earned: r.earned || 0, spent: r.spent || 0, sold: items, flags, frozenUntil: r.frozen_until > Date.now() ? r.frozen_until : null, frozenReason: r.frozen_reason || '' };
+      };
+      const today = results.map(row);
+      for (const f of frozen) if (!today.some((x) => x.userId === f.user_id)) today.push(row(f));
+      return json({ month, since, users: today });
+    }
+    if (b === 'econ' && c === 'users' && Number(d) > 0) {
+      const target = await db.prepare('SELECT id, name FROM users WHERE id = ?').bind(Number(d)).first();
+      if (!target) return err(404, 'not_found');
+      const tail = parts[4];
+      const now2 = Date.now();
+      await db.prepare('INSERT OR IGNORE INTO wallets (user_id, cash, bank, updated_at) VALUES (?, ?, 0, ?)').bind(target.id, START_CASH, now2).run();
+      if (!tail && method === 'GET') {
+        const { results } = await db.prepare('SELECT kind, item, qty, amount, at FROM ledger WHERE user_id = ? ORDER BY id DESC LIMIT 100').bind(target.id).all();
+        return json({ history: results });
+      }
+      if (tail === 'freeze' && method === 'POST') {
+        const inp = await body(request);
+        const hours = Math.min(24 * 365, Math.max(1, Math.floor(Number(inp.hours) || 24)));
+        const reason = String(inp.reason || '').slice(0, 200);
+        await db.prepare('UPDATE wallets SET frozen_until = ?, frozen_reason = ? WHERE user_id = ?').bind(now2 + hours * 3600e3, reason, target.id).run();
+        await log('econ_freeze', target, `${hours} h${reason ? ': ' + reason : ''}`);
+        return json({ ok: true });
+      }
+      if (tail === 'freeze' && method === 'DELETE') {
+        await db.prepare('UPDATE wallets SET frozen_until = NULL, frozen_reason = NULL WHERE user_id = ?').bind(target.id).run();
+        await log('econ_unfreeze', target);
+        return json({ ok: true });
+      }
+      if (tail === 'adjust' && method === 'POST') {
+        const inp = await body(request);
+        const dc = Math.trunc(Number(inp.cash) || 0), db2 = Math.trunc(Number(inp.bank) || 0);
+        const reason = String(inp.reason || '').trim().slice(0, 200);
+        if (!reason) return err(400, 'reason_needed', 'Say why.');
+        if (!dc && !db2) return err(400, 'nothing', 'Nothing to change.');
+        await db.batch([
+          db.prepare('UPDATE wallets SET cash = MAX(0, cash + ?), bank = MAX(0, bank + ?), updated_at = ? WHERE user_id = ?').bind(dc, db2, now2, target.id),
+          db.prepare('INSERT INTO ledger (user_id, kind, item, qty, amount, at) VALUES (?, ?, NULL, NULL, ?, ?)').bind(target.id, 'admin', dc + db2, now2),
+        ]);
+        await log('econ_adjust', target, `cash ${dc >= 0 ? '+' : ''}${dc}, bank ${db2 >= 0 ? '+' : ''}${db2}: ${reason}`);
+        const w = await db.prepare('SELECT cash, bank FROM wallets WHERE user_id = ?').bind(target.id).first();
+        return json({ ok: true, wallet: w });
+      }
+      return err(404, 'not_found');
     }
     if (b === 'reports' && !c && method === 'GET') {
       const { results } = await db.prepare(`SELECT r.*, m.text, m.name AS author, m.user_id AS author_id, m.conv, m.deleted_by, u.name AS reporter FROM reports r

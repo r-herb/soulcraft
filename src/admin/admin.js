@@ -71,7 +71,7 @@ let fbNew = 0; // unread ideas and problem reports (shown on the Feedback tab)
 function topBar(active) {
   const tab = (id, label) => `<button class="${active === id ? 'on' : ''}" data-nav="${id}">${label}</button>`;
   return `<div class="admin-top"><h1>Soulcraft Admin</h1>
-    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('chats', 'Chats')}${tab('reports', 'Reports')}${tab('audit', 'Log')}</nav>
+    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('chats', 'Chats')}${tab('reports', 'Reports')}${tab('econ', 'Economy')}${tab('audit', 'Log')}</nav>
     <span class="faint">${SUPER ? 'Superadmin' : 'Admin'}</span>
     <a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>`;
 }
@@ -82,7 +82,7 @@ function setFbBadge(n) {
 }
 function bindTopBar() {
   root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
-  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit(), chats: () => renderChats(), reports: () => renderReports() };
+  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit(), chats: () => renderChats(), reports: () => renderReports(), econ: () => renderEcon() };
   root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => pages[b.dataset.nav]()));
 }
 
@@ -444,8 +444,65 @@ async function renderReports() {
   });
 }
 
+// ---------- the economy: today's earners, flags, frozen wallets ----------
+async function renderEcon() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('econ')}<div class="admin-card"><h2>Economy today</h2>
+    <p class="dim" style="margin-top:0">Who earned coins today (a Soulcraft month = one real day, from midnight UTC). The backpack is the player's own save, so each player may sell only so much of a good a day; <b>flags</b> mark players close to those limits or earning a lot. Freeze a wallet to stop its trading, and correct it if coins came from made-up goods.</p>
+    <div class="ec-list"><p class="empty">Loading...</p></div></div></div>`;
+  bindTopBar();
+  let data;
+  try { data = await api('admin/econ'); } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  const box = root.querySelector('.ec-list');
+  box.innerHTML = data.users.length ? `<table class="users"><thead><tr><th>Player</th><th>Coins</th><th>Today</th><th>Sold today</th><th>Flags</th><th></th></tr></thead><tbody>${data.users.map((u) => `<tr data-id="${u.userId}" class="${u.frozenUntil ? 'off' : ''}">
+    <td><b>${esc(u.name)}</b>${u.username ? `<div class="faint">@${esc(u.username)}</div>` : ''}</td>
+    <td>${u.cash} in hand<div class="faint">${u.bank} in the bank</div></td>
+    <td>+${u.earned}<div class="faint">-${u.spent}</div></td>
+    <td class="faint">${Object.entries(u.sold).map(([k, n]) => `${esc(k)} ${n}`).join(', ') || '-'}</td>
+    <td>${u.flags.map((f) => `<span class="badge off">${esc(f)}</span> `).join('')}${u.frozenUntil ? `<span class="badge admin">frozen until ${esc(fmt(u.frozenUntil))}</span>${u.frozenReason ? `<div class="faint">${esc(u.frozenReason)}</div>` : ''}` : ''}</td>
+    <td><div class="acts"><button class="btn" data-a="history">History</button>${u.frozenUntil ? '<button class="btn" data-a="unfreeze">Unfreeze</button>' : '<button class="btn" data-a="freeze">Freeze</button>'}<button class="btn" data-a="adjust">Correct</button></div></td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nobody traded today.</p>';
+  box.querySelectorAll('tr[data-id]').forEach((tr) => {
+    const u = data.users.find((x) => x.userId === Number(tr.dataset.id));
+    const on = (a, fn) => { const b = tr.querySelector(`[data-a="${a}"]`); if (b) b.addEventListener('click', () => fn()); };
+    on('history', async () => {
+      const d = dialog(`<h2>Coins: ${esc(u.name)}</h2><div class="saves-list"><div>Loading...</div></div><div class="dlg-actions" style="margin-top:var(--sp-3)"><button class="btn" data-a="cancel">Close</button></div>`);
+      try {
+        const { history } = await api(`admin/econ/users/${u.userId}`);
+        d.querySelector('.saves-list').innerHTML = history.length ? history.map((h) => `<div>${esc(fmt(h.at))} - <b>${esc(h.kind)}</b> ${h.item ? esc(`${h.qty}x ${h.item}`) : ''} <span class="${h.amount < 0 ? 'faint' : ''}">${h.amount > 0 ? '+' : ''}${h.amount}</span></div>`).join('') : '<div>Nothing yet.</div>';
+      } catch (e) { d.querySelector('.saves-list').innerHTML = `<div>${esc(e.message)}</div>`; }
+    });
+    on('unfreeze', async () => { try { await api(`admin/econ/users/${u.userId}/freeze`, { method: 'DELETE' }); toast(`${u.name} can trade again`); renderEcon(); } catch (e) { toast(e.message, true); } });
+    on('freeze', () => {
+      const d = dialog(`<h2>Freeze the wallet of ${esc(u.name)}</h2><form novalidate>
+        <p class="dim" style="margin:0">No selling, buying, paying or market offers until then. The coins stay.</p>
+        <div class="field"><label>Hours</label><input class="input" name="hours" type="number" min="1" value="24"></div>
+        <div class="field"><label>Reason (the player sees it)</label><input class="input" name="reason" maxlength="200"></div>
+        <p class="form-error" role="alert"></p>
+        <div class="dlg-actions"><button type="button" class="btn ghost" data-a="cancel">Cancel</button><button class="btn primary" type="submit">Freeze</button></div></form>`);
+      d.querySelector('form').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        try { await api(`admin/econ/users/${u.userId}/freeze`, { method: 'POST', body: { hours: Number(ev.target.hours.value), reason: ev.target.reason.value } }); d.close(); toast(`${u.name} frozen`); renderEcon(); }
+        catch (e) { d.querySelector('.form-error').textContent = e.message; }
+      });
+    });
+    on('adjust', () => {
+      const d = dialog(`<h2>Correct the wallet of ${esc(u.name)}</h2><form novalidate>
+        <p class="dim" style="margin:0">Now ${u.cash} in hand and ${u.bank} in the bank. Enter changes, for example -500 to take back coins from made-up goods (never below 0).</p>
+        <div class="field"><label>Change in hand</label><input class="input" name="cash" type="number" value="0"></div>
+        <div class="field"><label>Change in the bank</label><input class="input" name="bank" type="number" value="0"></div>
+        <div class="field"><label>Reason (for the log)</label><input class="input" name="reason" maxlength="200" required></div>
+        <p class="form-error" role="alert"></p>
+        <div class="dlg-actions"><button type="button" class="btn ghost" data-a="cancel">Cancel</button><button class="btn primary" type="submit">Save</button></div></form>`);
+      d.querySelector('form').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        try { await api(`admin/econ/users/${u.userId}/adjust`, { method: 'POST', body: { cash: Number(ev.target.cash.value), bank: Number(ev.target.bank.value), reason: ev.target.reason.value } }); d.close(); toast('Wallet corrected'); renderEcon(); }
+        catch (e) { d.querySelector('.form-error').textContent = e.message; }
+      });
+    });
+  });
+}
+
 // ---------- audit log ----------
-const ACTIONS = { user_add: 'added a user', user_edit: 'edited a user', user_delete: 'deleted a user', password: 'set a password', ban: 'banned', unban: 'lifted the ban of', role: 'changed the role of', disable: 'disabled', enable: 'enabled', chat_delete: 'deleted a message of', chat_mute: 'muted', channel: 'changed a channel', report: 'handled a report' };
+const ACTIONS = { user_add: 'added a user', user_edit: 'edited a user', user_delete: 'deleted a user', password: 'set a password', ban: 'banned', unban: 'lifted the ban of', role: 'changed the role of', disable: 'disabled', enable: 'enabled', chat_delete: 'deleted a message of', chat_mute: 'muted', channel: 'changed a channel', report: 'handled a report', econ_freeze: 'froze the wallet of', econ_unfreeze: 'unfroze the wallet of', econ_adjust: 'corrected the wallet of' };
 async function renderAudit() {
   root.innerHTML = `<div class="admin-wrap">${topBar('audit')}<div class="admin-card"><h2>What admins did</h2><div class="audit-list"><p class="empty">Loading...</p></div></div></div>`;
   bindTopBar();

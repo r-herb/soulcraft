@@ -933,5 +933,8 @@
   "cal.m8": "Zeltlapu",
   "cal.m9": "Miglas",
   "cal.m10": "Dvēseļu",
-  "cal.m11": "Zvaigžņu"
+  "cal.m11": "Zvaigžņu",
+  "econ.dailyCap": "Tas ir maksimums, ko pilsēta dienā pērk no viena spēlētāja. Šodien vari pārdot vēl {n}.",
+  "econ.frozen": "Admins ir iesaldējis tavu maku līdz {until}.",
+  "econ.h.admin": "Admina korekcija"
 }

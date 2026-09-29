@@ -36,12 +36,12 @@ test.describe('Economy', () => {
     expect(before.buy).toBeGreaterThan(before.sell);
 
     // selling a lot lowers the price
-    let r = await request.post('/api/econ/sell', { data: { item: 'sunfruit', qty: 300 } });
+    let r = await request.post('/api/econ/sell', { data: { item: 'sunfruit', qty: 120 } });
     expect(r.ok()).toBeTruthy();
     const sold = await r.json();
     expect(sold.wallet.cash).toBe(20 + sold.total);
     s = await (await request.get('/api/econ')).json();
-    expect(fruit().supply).toBe(300);
+    expect(fruit().supply).toBe(120);
     expect(fruit().sell).toBeLessThan(before.sell);
     expect(fruit().buy).toBeLessThan(before.buy);
 
@@ -162,6 +162,64 @@ test.describe('Economy', () => {
     expect(h).toContain('salary');
     expect(h).toContain('market_sell');
     await ida.dispose(); await jo.dispose();
+  });
+
+  test('guarding the economy: daily limits, quest limits, and an admin freezes and corrects a wallet', async ({ playwright, baseURL, request, page }) => {
+    const KIM = { name: 'Kim', username: 'kim', password: 'kim-pass-1' };
+    expect((await request.post('/api/auth/login', { data: ADMIN })).ok()).toBeTruthy();
+    expect([201, 409]).toContain((await request.post('/api/admin/users', { data: KIM })).status());
+    const kim = await playwright.request.newContext({ baseURL });
+    expect((await kim.post('/api/auth/login', { data: { login: KIM.username, password: KIM.password } })).ok()).toBeTruthy();
+
+    // at most 8 diamonds a day, to the exchange and the market together
+    expect((await kim.post('/api/econ/sell', { data: { item: 'diamond', qty: 6 } })).ok()).toBeTruthy();
+    let r = await kim.post('/api/econ/sell', { data: { item: 'diamond', qty: 3 } });
+    expect(r.status()).toBe(429);
+    expect(await r.json()).toMatchObject({ error: 'daily_cap', left: 2 });
+    expect((await kim.post('/api/econ/offers', { data: { item: 'diamond', qty: 2, price: 50 } })).ok()).toBeTruthy();
+    expect((await kim.post('/api/econ/offers', { data: { item: 'diamond', qty: 1, price: 50 } })).status()).toBe(429);
+    expect((await kim.post('/api/econ/sell', { data: { item: 'planks', qty: 64 } })).ok()).toBeTruthy();
+
+    // three daily tasks count a day, however many are reported
+    const counted = [];
+    for (let i = 0; i < 5; i++) counted.push((await (await kim.post('/api/econ/quest', { data: { kind: 'daily', ref: 'fake' + i } })).json()).counted);
+    expect(counted).toEqual([true, true, true, false, false]);
+
+    // the admin sees the flag, freezes the wallet and takes coins back
+    const ec = await (await request.get('/api/admin/econ')).json();
+    const row = ec.users.find((u) => u.name === 'Kim');
+    expect(row.flags).toContain('diamond 8/8');
+    const id = row.userId;
+    expect((await request.post(`/api/admin/econ/users/${id}/freeze`, { data: { hours: 2, reason: 'too many diamonds' } })).ok()).toBeTruthy();
+    r = await kim.post('/api/econ/sell', { data: { item: 'planks', qty: 1 } });
+    expect(r.status()).toBe(403);
+    expect(await r.json()).toMatchObject({ error: 'frozen', reason: 'too many diamonds' });
+    expect((await kim.post('/api/econ/pay', { data: { what: 'bus' } })).status()).toBe(403);
+    expect((await (await kim.get('/api/econ')).json()).frozen).toMatchObject({ reason: 'too many diamonds' });
+    const cash = (await (await kim.get('/api/econ')).json()).wallet.cash;
+    expect((await request.post(`/api/admin/econ/users/${id}/adjust`, { data: { cash: -100, bank: 0 } })).status()).toBe(400);
+    r = await request.post(`/api/admin/econ/users/${id}/adjust`, { data: { cash: -100, bank: 0, reason: 'made-up diamonds' } });
+    expect((await r.json()).wallet.cash).toBe(Math.max(0, cash - 100));
+    expect((await (await request.get(`/api/admin/econ/users/${id}`)).json()).history[0].kind).toBe('admin');
+    const audit = (await (await request.get('/api/admin/audit')).json()).entries.map((a) => a.action);
+    expect(audit).toContain('econ_freeze');
+    expect(audit).toContain('econ_adjust');
+
+    // the Economy tab of the admin panel
+    await page.goto('/admin');
+    await page.fill('#a-login', ADMIN.login);
+    await page.fill('#a-pass', ADMIN.password);
+    await page.click('form[data-form="login"] button[type=submit]');
+    await expect(page.locator('table.users')).toBeVisible();
+    await page.click('[data-nav="econ"]');
+    const tr = page.locator('.ec-list tr', { hasText: 'Kim' });
+    await expect(tr).toContainText('diamond 8/8');
+    await expect(tr).toContainText('frozen until');
+    await shot(page, 'admin-econ');
+    await tr.locator('[data-a="unfreeze"]').click();
+    await expect(page.locator('.ec-list tr', { hasText: 'Kim' }).locator('[data-a="freeze"]')).toBeVisible();
+    expect((await kim.post('/api/econ/sell', { data: { item: 'planks', qty: 1 } })).ok()).toBeTruthy();
+    await kim.dispose();
   });
 
   test('the cash machine screen: sell, buy, deposit and the central bank', async ({ page, request }) => {

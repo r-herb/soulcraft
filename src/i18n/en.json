@@ -933,5 +933,8 @@
   "cal.m8": "Goldleaf",
   "cal.m9": "Mistfall",
   "cal.m10": "Soulnight",
-  "cal.m11": "Starfrost"
+  "cal.m11": "Starfrost",
+  "econ.dailyCap": "That is the most the city buys from one player today. You can sell {n} more of this today.",
+  "econ.frozen": "Your wallet is frozen by an admin until {until}.",
+  "econ.h.admin": "Correction by an admin"
 }

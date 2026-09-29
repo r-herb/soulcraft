@@ -145,7 +145,7 @@ export class BusManager {
           this.board(now.bus);
         }).catch((e) => {
           this.paying = false;
-          g.ui.toast(e.code === 'no_money' ? t('bus.noFare', { n: BUS_FARE }) : t('econ.err'), 'warn');
+          g.ui.toast(e.code === 'no_money' || e.code === 'frozen' ? t('bus.noFare', { n: BUS_FARE }) : t('econ.err'), 'warn');
         });
         return true;
       }

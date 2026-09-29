@@ -35,7 +35,7 @@ async function prices(f) {
   if (!account.user || !account.available) { f.body.innerHTML = `<p class="faint">${esc(t('food.signIn'))}</p>`; return null; }
   try { return await econ.state(); } catch { f.body.innerHTML = `<p class="faint">${esc(t('econ.err'))}</p>`; return null; }
 }
-const failText = (e) => (e && e.code === 'no_money' ? t('econ.noMoney') : t('econ.err'));
+const failText = (e) => (e && e.code === 'no_money' ? t('econ.noMoney') : e && e.code === 'frozen' ? t('econ.frozen', { until: new Date(e.data.until).toLocaleString() }) : t('econ.err'));
 
 export function foodShop(args, ui) {
   const g = ui.game;

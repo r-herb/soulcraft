@@ -933,5 +933,8 @@
   "cal.m8": "Hoja de oro",
   "cal.m9": "Bruma",
   "cal.m10": "Noche de almas",
-  "cal.m11": "Escarcha"
+  "cal.m11": "Escarcha",
+  "econ.dailyCap": "Es lo máximo que la ciudad compra a un jugador al día. Hoy puedes vender {n} más.",
+  "econ.frozen": "Un administrador ha congelado tu cartera hasta {until}.",
+  "econ.h.admin": "Corrección de un administrador"
 }

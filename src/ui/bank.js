@@ -32,6 +32,8 @@ export function bank(args, ui) {
 
   const fail = (e) => {
     const c = e && e.code;
+    if (c === 'daily_cap') { errEl.textContent = t('econ.dailyCap', { n: e.data.left }); return; }
+    if (c === 'frozen') { errEl.textContent = t('econ.frozen', { until: new Date(e.data.until).toLocaleString(getLang()) }); return; }
     errEl.textContent = c === 'no_money' ? t('econ.noMoney') : c === 'no_stock' ? t('econ.noStock') : c === 'too_many' || c === 'gone' || c === 'no_items' ? t('econ.' + c) : t('econ.err');
   };
   const drawWallet = () => {
@@ -219,6 +221,7 @@ export function bank(args, ui) {
     node.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
     drawWallet();
     if (!state) return;
+    if (state.frozen && !errEl.textContent) errEl.textContent = t('econ.frozen', { until: new Date(state.frozen.until).toLocaleString(getLang()) }) + (state.frozen.reason ? ` (${state.frozen.reason})` : '');
     if (tab === 'exchange') drawExchange(); else if (tab === 'market') drawMarket(); else if (tab === 'bank') drawBank(); else if (tab === 'lottery') drawLottery(); else drawCentral();
   }
   node.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { ui.click(); tab = b.dataset.tab; errEl.textContent = ''; draw(); }));

@@ -21,5 +21,8 @@ export function scDate(now = Date.now()) {
 // salary for a month of quests: daily tasks, guardians and treasure-quest levels
 export const PAY = { daily: 6, boss: 40, treasure: 8 };
 export const SALARY_CAP = 300;
+// at most this many quests of a kind count in a month (three daily tasks a
+// day, five guardians, the Treasure Quest levels)
+export const QUEST_MAX = { daily: 3, boss: 5, treasure: 26 };
 export const TICKET = 5;
 export const MAX_TICKETS = 10;
