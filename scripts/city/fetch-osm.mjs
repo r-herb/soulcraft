@@ -38,6 +38,9 @@ const query = (s, w, n, e) => {
   node["addr:housenumber"]${bb};
   node["highway"="bus_stop"]${bb}; node["public_transport"]${bb};
   relation["route"="bus"]${bb};
+  node["amenity"~"^(bank|atm|restaurant|cafe|fast_food|bar|ice_cream|marketplace|bureau_de_change)$"]${bb};
+  node["shop"~"^(supermarket|convenience|greengrocer|bakery|butcher|seafood|deli|confectionery|pastry|wine|kiosk)$"]${bb};
+  way["shop"]${bb};
 );
 out body geom;`;
 };
