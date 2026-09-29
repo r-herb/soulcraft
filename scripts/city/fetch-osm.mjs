@@ -3,9 +3,9 @@
 //
 //   node scripts/city/fetch-osm.mjs malaga
 //
-// Writes data/city/<city>-osm.json.gz. Runs in GitHub Actions (the
+// Writes data/city/<city>-osm/part-NNN.json.gz. Runs in GitHub Actions (the
 // "City data" workflow); the output is committed to the city-data branch.
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { CITIES } from './cities.mjs';
 
@@ -76,17 +76,22 @@ async function ask(q, label) {
   throw new Error(`${label}: no Overpass server answered`);
 }
 
-const seen = new Map();
-let base = null;
-for (let ty = 0; ty < TILES; ty++) for (let tx = 0; tx < TILES; tx++) {
-  const s = S + (N - S) * ty / TILES, n = S + (N - S) * (ty + 1) / TILES;
-  const w = W + (E - W) * tx / TILES, e = W + (E - W) * (tx + 1) / TILES;
-  const data = await ask(query(s.toFixed(5), w.toFixed(5), n.toFixed(5), e.toFixed(5)), `tile ${ty * TILES + tx + 1}/${TILES * TILES}`);
-  base = base || data;
-  for (const el of data.elements) seen.set(`${el.type}/${el.id}`, el);
+// Each tile's new elements go to a part file of their own (one big file
+// would be too large to read back as a single JSON text).
+const [TX, TY] = process.env.OSM_TILES ? process.env.OSM_TILES.split('x').map(Number) : (city.osmTiles || [TILES, TILES]);
+const seen = new Set();
+const dir = `data/city/${id}-osm`;
+rmSync(dir, { recursive: true, force: true });
+mkdirSync(dir, { recursive: true });
+let total = 0, part = 0;
+for (let ty = 0; ty < TY; ty++) for (let tx = 0; tx < TX; tx++) {
+  const s = S + (N - S) * ty / TY, n = S + (N - S) * (ty + 1) / TY;
+  const w = W + (E - W) * tx / TX, e = W + (E - W) * (tx + 1) / TX;
+  const data = await ask(query(s.toFixed(5), w.toFixed(5), n.toFixed(5), e.toFixed(5)), `tile ${ty * TX + tx + 1}/${TX * TY}`);
+  const fresh = data.elements.filter((el) => { const k = `${el.type}/${el.id}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  const text = JSON.stringify({ version: data.version, generator: data.generator, osm3s: data.osm3s, bbox: [s, w, n, e], elements: fresh });
+  writeFileSync(`${dir}/part-${String(part++).padStart(3, '0')}.json.gz`, gzipSync(text, { level: 9 }));
+  total += fresh.length;
+  console.log(`  part ${part}: ${fresh.length} new elements, ${(text.length / 1e6).toFixed(1)} MB`);
 }
-const text = JSON.stringify({ ...base, elements: [...seen.values()] });
-console.log(`${seen.size} elements, ${(text.length / 1e6).toFixed(1)} MB`);
-mkdirSync('data/city', { recursive: true });
-writeFileSync(`data/city/${id}-osm.json.gz`, gzipSync(text, { level: 9 }));
-console.log(`wrote data/city/${id}-osm.json.gz`);
+console.log(`${total} elements in ${part} parts under ${dir}`);
