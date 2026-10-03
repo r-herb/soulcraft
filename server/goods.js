@@ -28,6 +28,14 @@ export const DAILY_CAP = {
 export const capFor = (item) => DAILY_CAP[item] || 256;
 // coins the city pays once for each finished city mission
 export const MISSION_PAY = { deposit: 10, tour: 60, bus: 40, paella: 50, critic: 30 };
+// the big mission's tasks (src/quest/heist.js): 25 coins each, and the
+// twelve of them recorded are what the final payout asks for
+export const HEIST_TASKS = ['airport', 'stadium', 'university', 'station', 'market', 'elpalo', 'pedregalejo', 'huelin', 'misericordia', 'gibralfaro', 'alcazaba', 'cathedral', 'muelle', 'limonar', 'jardin', 'merced', 'larios', 'parque'];
+for (const k of HEIST_TASKS) MISSION_PAY['h_' + k] = 25;
+// the Gran Diamante traded at the bank: the biggest sum the game pays, once a player
+export const HEIST_PAY = 1000000;
+export const HEIST_NEEDS = 12; // tasks done
+export const HEIST_MIN_MS = 15 * 60 * 1000; // from the first task to the payout
 export const START_CASH = 20;
 export const BUS_FARE = 2;
 // bus tickets: a single ride, or a bonobús card of ten rides

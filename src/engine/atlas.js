@@ -310,6 +310,13 @@ const painters = {
   emerald_ore: (p) => { painters.stone(p); p.blobs(['#2ecc71', '#58d68d', '#1e8449'], 3, '#abebc6'); },
   sapphire_ore: (p) => { painters.stone(p); p.blobs(['#2e6fdb', '#5b8def', '#1a3f8a'], 3, '#aed6f1'); },
   ruby_ore: (p) => { painters.stone(p); p.blobs(['#e0245e', '#f1467a', '#8a1238'], 3, '#f5b7c8'); },
+  weak_wall: (p) => { p.bricks('#e3d8bf', '#bfb08e', 16, 8); p.speckle('#d2c5a5', 6); for (const [x, y] of [[4, 3], [5, 4], [5, 5], [6, 6], [7, 6], [8, 7], [8, 8], [9, 9], [11, 10], [10, 10]]) p.set(x, y, hex('#a89a7a')); },
+  grand_diamond: (p) => {
+    p.noise(['#0b1a2a', '#0e2236']);
+    for (let x = 0; x < 16; x++) for (let y = 0; y < 16; y++) { const d = Math.abs(x - 7.5) + Math.abs(y - 7.5) * 1.2; if (d < 7) p.set(x, y, hex(d < 2.5 ? '#ffffff' : d < 4.5 ? '#b6fbff' : '#7ff3f0')); }
+    for (const [x, y] of [[5, 5], [10, 6], [7, 10]]) p.set(x, y, hex('#ffffff'));
+  },
+  vault_gold: (p) => { p.noise(['#3b3226', '#342c22']); for (let y = 1; y < 16; y += 5) for (let x = 0; x < 16; x++) { p.set(x, y, hex('#ffd65c')); p.set(x, y + 1, hex('#e8b93a')); p.set(x, y + 2, hex('#c48f2e')); } },
   gem_cache: (p) => {
     p.noise(['#8d8579', '#857d71', '#958d81']); p.border('#5f574c');
     for (let i = 3; i < 13; i++) { p.set(i, 3, hex('#5f574c')); p.set(i, 12, hex('#5f574c')); p.set(3, i, hex('#5f574c')); p.set(12, i, hex('#5f574c')); }

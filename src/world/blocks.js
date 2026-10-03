@@ -30,6 +30,8 @@ export const TILES = [
   'bank_counter', 'bank_counter_top', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp',
   // gems
   'quartz_ore', 'amethyst_ore', 'topaz_ore', 'emerald_ore', 'sapphire_ore', 'ruby_ore', 'gem_cache', 'gem_cache_open',
+  // the heist
+  'weak_wall', 'grand_diamond', 'vault_gold',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -183,6 +185,9 @@ const LIST = [
   def(127, 'sapphire_ore', { tex: 'sapphire_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'sapphire' }),
   def(128, 'ruby_ore', { tex: 'ruby_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'ruby', light: 3 }),
   def(129, 'gem_cache', { tex: { top: 'gem_cache', side: 'rubble', bottom: 'rubble' }, hardness: -1, light: 4 }),
+  def(131, 'weak_wall', { tex: 'weak_wall', hardness: 6, tool: 'pick', tier: 2, drop: 'none' }),
+  def(132, 'grand_diamond', { tex: { top: 'grand_diamond', side: 'grand_diamond', bottom: 'bank_stone' }, hardness: -1, light: 14 }),
+  def(133, 'vault_gold', { tex: { top: 'gold_block', side: 'vault_gold', bottom: 'vault_gold' }, hardness: -1 }),
   def(130, 'gem_cache_open', { tex: { top: 'gem_cache_open', side: 'rubble', bottom: 'rubble' }, hardness: -1 }),
   def(99, 'bus_stop', { tex: { top: 'bus_stop_top', side: 'bus_stop', bottom: 'bus_stop_top' }, hardness: 1.5, tool: 'pick' }),
   ...Array.from({ length: 10 }, (_, d) => def(89 + d, 'num_' + d, { tex: { top: 'plaster_white', side: 'num_' + d, bottom: 'plaster_white' }, hardness: 1, tool: 'pick' })),

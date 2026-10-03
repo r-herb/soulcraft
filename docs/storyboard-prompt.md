@@ -227,6 +227,15 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Lidošana** radošajā režīmā: 4 ātrumi (V vai poga): 1x, 2,5x, 5x, 10x.
 - Pasaules kartē ir slānis **Autobusi** ar līnijām, pieturām un kustīgiem autobusiem.
 
+### El Gran Golpe: Malagas lielā misija
+
+- **12 uzdevumi**, katram spēlētājam nejauši izvēlēti no 18, ved pa visu Malagu pie **informatoriem** (tumšā mētelī un cepurē, virs galvas zelta "!"): lidosta, La Rosaleda, universitāte, stacija (ar autobusu), Atarazanas tirgus (nopirkt sardīnes), El Palo (paēst restorānā), Pedregalejo (skalot zeltu), Huelin (atvērt slēptuvi), pludmales, pilis, katedrāle, Muelle Uno, El Limonar, Ciudad Jardín, Plaza de la Merced, Calle Larios un Paseo del Parque; daži vispirms grib dārgakmeni vai olu.
+- Katrs uzdevums dod 25 monētas un **bankas plāna gabaliņu**. Gabaliņi ir **puzle** (pauze > misijas > bankas plāns): pieskaries gabaliņam, tad tā vietai; nepareizā vieta nodreb.
+- Salikts plāns (arī priekšmets) rāda **vājo vietu** seifa aizmugurējā sienā un **apsargu maršrutus**.
+- **Fināls:** no bankas aizmugures izlauz vājo sienu (dzelzs cērte), iekļūsti seifā garām trim apsargiem (aiz letes, pie seifa durvīm, seifā) un paņem **Gran Diamante**. Apsargs, kas tevi ierauga aiz letes, seifā vai ar dimantu, šauj (izdzīvošanā) vai izved ārā un noliek dimantu atpakaļ (radošajā).
+- Aiznes dimantu 60 blokus prom, tad pie bankas letes apmaini to pret lielāko summu spēlē: **1 000 000 monētu** (vienreiz kontam; serveris maksā tikai pēc 12 reģistrētiem uzdevumiem).
+- Pilsēta tevi ievēl par **Malagas mēru**: ceremonija ar uguņošanu virs bankas; mēru saraksts bankas cilnē "Pilsēta".
+
 ### Dārgakmeņi un zelts
 
 - Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).

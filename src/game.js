@@ -31,6 +31,7 @@ import { BusManager } from './entities/buses.js';
 import { Farm, harvestOf, isCrop } from './world/farm.js';
 import { Livestock } from './entities/livestock.js';
 import { Missions } from './quest/missions.js';
+import { Heist } from './quest/heist.js';
 
 // real-city data, loaded once per city
 const cityCache = new Map();
@@ -110,6 +111,7 @@ export class Game {
     this.farm = new Farm(this);
     this.livestock = new Livestock(this);
     this.missions = new Missions(this);
+    this.heist = new Heist(this);
     this.daily = new DailyTracker(this);
     this.event = currentEvent();
     this.bosses = new BossManager(this);
@@ -245,6 +247,7 @@ export class Game {
     this.layout = Layout.get(meta.seed);
     this.city = meta.city ? await loadCityData(meta.city) : null;
     if (this.buses) this.buses.clear();
+    if (this.heist) this.heist.clear();
     const busNet = this.city ? await loadBusNet(meta.city) : null;
     this.buses = busNet ? new BusManager(this, busNet) : null;
     this.player = new Player();
@@ -309,6 +312,7 @@ export class Game {
     if (this.world && this.meta.dim) this.livestock.parkAll();
     this.entities.clear();
     if (this.buses) this.buses.clear();
+    if (this.heist) this.heist.clear();
     this.bosses.clearActive();
     this.meta.dim = dim;
     if (!this.meta.edits[dim]) this.meta.edits[dim] = {};
@@ -395,6 +399,7 @@ export class Game {
     if (this.world) { this.world.dispose(); this.world = null; }
     this.entities.clear();
     if (this.buses) this.buses.clear();
+    if (this.heist) this.heist.clear();
     this.bosses.clearActive();
     this.ui.hud.hide();
     this.input.exitLock();
@@ -511,6 +516,7 @@ export class Game {
     this.farm.update(dt);
     this.livestock.update(dt);
     this.missions.update(dt);
+    this.heist.update(dt);
     if (this.city && this.meta.dim === 'city') { this._tileT = (this._tileT || 0) - dt; if (this._tileT <= 0) { this._tileT = 1; this.city.ensure(pl.pos.x, pl.pos.z, 200); } }
     this.petTick(dt);
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
@@ -702,6 +708,9 @@ export class Game {
     if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }
     if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
     // gems: open a hidden cache, pan for gold in water
+    // the heist: the Gran Diamante in the vault, the bank's plan
+    if (fresh && hit && hit.id === B.grand_diamond) { this.heist.takeDiamond(hit); this.useCooldown = 0.3; return; }
+    if (def && def.special === 'heistMap' && fresh) { this.ui.open('heistMap'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.gem_cache) { this.openCache(hit); this.useCooldown = 0.3; return; }
     if (def && def.special === 'pan' && fresh) { this.pan(); this.useCooldown = 1.2; return; }
     // farm animals take their food; crates release an animal; seeds are planted

@@ -13,6 +13,7 @@ import { chat, chatState } from './chat.js';
 import { bank } from './bank.js';
 import { foodShop, restaurant } from './food.js';
 import { missions } from './missionsui.js';
+import { heistMap, mayor } from './heistui.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
@@ -68,7 +69,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -861,7 +862,7 @@ export class UI {
   screen_death(args) {
     const g = this.game;
     const src = args.source || '';
-    const causeKey = g.isQuest && args.cause === 'magma' ? 'quest.burned' : { fall: 'death.cause.fall', mob: 'death.cause.mob', magma: 'death.cause.magma', cactus: 'death.cause.cactus', void: 'death.cause.void', boss: 'death.cause.boss' }[args.cause] || 'death.cause.generic';
+    const causeKey = g.isQuest && args.cause === 'magma' ? 'quest.burned' : { fall: 'death.cause.fall', mob: 'death.cause.mob', magma: 'death.cause.magma', cactus: 'death.cause.cactus', void: 'death.cause.void', boss: 'death.cause.boss', guard: 'death.cause.guard' }[args.cause] || 'death.cause.generic';
     const node = el(`<div class="screen death" data-screen="death">
       <h1 data-i18n="death.title"></h1>
       <p class="dim">${esc(t(causeKey, { name: src }))}</p>

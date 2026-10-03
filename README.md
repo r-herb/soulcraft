@@ -202,6 +202,35 @@ not connect; a TURN relay (for example Cloudflare's) would fix that.
 - The world owner's game grows the crops and runs the animals; in a shared
   world guests see them through the room like the monsters.
 
+## El Gran Golpe: Malaga's big mission
+
+Twelve tasks, picked at random for each player from eighteen, send the
+player all over Malaga to meet informants (a figure in a dark coat and hat
+with a gold "!" over the head): the airport, La Rosaleda, the university,
+the station (by bus), the Atarazanas market (buy sardines), El Palo (eat at
+a restaurant), Pedregalejo (pan for gold), Huelin (open a gem cache), the
+beaches, the castles, the cathedral, Muelle Uno, El Limonar, Ciudad Jardín,
+the Plaza de la Merced, Calle Larios and the Paseo del Parque; some ask for
+a gem or an egg first. Each task pays 25 coins and gives a **piece of the
+bank's plan**. The pieces make a **puzzle** (pause menu > missions > the
+bank plan): tap a piece, then its square; a wrong square shakes. The whole
+plan (also an item) shows the **weak spot** in the vault's back wall and the
+**guards' rounds**.
+
+The final mission: round the back of the Banco de España, break the weak
+wall (an iron pickaxe, the rest of the bank cannot be broken), get into the
+vault past the three guards (one behind the counter, one before the vault
+door, one inside the vault) and take the **Gran Diamante** from its
+pedestal. A guard who sees the player behind the counter, in the vault or
+with the diamond (11 blocks, a wide cone, nothing in between) shoots
+(survival) or walks the player out and puts the diamond back (creative).
+Carried 60 blocks away, the diamond is traded at the bank's counter for the
+biggest sum the game pays, **1,000,000 coins** (once per account; the server
+pays only after the twelve tasks were recorded, at least 15 minutes apart
+from the first), and the city elects the player its **mayor**: a ceremony
+with fireworks over the bank, and the mayors of Malaga listed in the bank's
+city tab.
+
 ## Gems and gold
 
 Gems are ranked as in the real world, from cheap to precious: **quartz,
@@ -497,6 +526,11 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/heist.spec.js` (desktop): twelve tasks with twelve squares of the
+  plan, all done; the puzzle (a wrong square, the right one, the rest); the
+  weak wall breaks; a guard who sees the player in the vault takes the
+  diamond back; unseen, the diamond is taken and carried away; traded at the
+  counter, the player is mayor.
 - `tests/gems.spec.js` (desktop): the exchange prices gems in the order of
   their real value; gem ores lie underground, a ruby ore drops a ruby,
   panning finds gold only in water; Malaga hides gem caches that open once,

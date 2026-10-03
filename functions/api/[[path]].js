@@ -28,7 +28,7 @@
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import { monthIndex, monthStart, scDate, PAY, SALARY_CAP, QUEST_MAX, TICKET, MAX_TICKETS } from '../../server/calendar.js';
-import { MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
+import { HEIST_PAY, HEIST_NEEDS, HEIST_MIN_MS, MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -381,7 +381,10 @@ async function route(parts, method, request, env, secure) {
       const pool = await db.prepare('SELECT COUNT(*) AS n, SUM(user_id = ?) AS mine FROM lottery_tickets WHERE draw = ?').bind(uid, month).first();
       const last = await db.prepare('SELECT d.draw, d.pot, d.tickets, d.winner, u.name FROM lottery_draws d LEFT JOIN users u ON u.id = d.winner ORDER BY d.draw DESC LIMIT 1').first();
       const fzi = await db.prepare('SELECT frozen_until, frozen_reason FROM wallets WHERE user_id = ?').bind(uid).first();
+      // the mayors of Malaga: the players who did the big mission
+      const { results: mayors } = await db.prepare("SELECT u.name, m.at FROM missions_done m JOIN users u ON u.id = m.user_id WHERE m.mission = 'heist' ORDER BY m.at LIMIT 20").all();
       return json({
+        mayors,
         frozen: fzi && fzi.frozen_until > now ? { until: fzi.frozen_until, reason: fzi.frozen_reason || '' } : null,
         wallet: await wallet(), goods, central: { gold, money: money.m || 0, holders: money.n || 0, goldPrice: buyPrice('gold_ingot', sup.gold_ingot || 0) }, fare: BUS_FARE, tickets: TICKETS, shop: SHOP, menu: MENU,
         date: scDate(now), salary: { quests, earned, pay: PAY, cap: SALARY_CAP, last: lastPay || null },
@@ -418,6 +421,16 @@ async function route(parts, method, request, env, secure) {
       if (!r.meta.changes) return json({ ok: true, paid: 0, wallet: await wallet() });
       await db.batch([db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(MISSION_PAY[id], now, uid), entry('mission', id, null, MISSION_PAY[id])]);
       return json({ ok: true, paid: MISSION_PAY[id], wallet: await wallet() });
+    }
+    // El Gran Golpe: the Gran Diamante traded at the bank, once, after the
+    // twelve tasks of the big mission; the player becomes the city's mayor
+    if (b === 'heist') {
+      const r0 = await db.prepare("SELECT COUNT(*) AS n, MIN(at) AS first FROM missions_done WHERE user_id = ? AND mission LIKE 'h\\_%' ESCAPE '\\'").bind(uid).first();
+      if ((r0.n || 0) < HEIST_NEEDS || now - (r0.first || now) < HEIST_MIN_MS) return err(409, 'not_yet', 'The big mission is not done yet.');
+      const r = await db.prepare('INSERT OR IGNORE INTO missions_done (user_id, mission, at) VALUES (?, ?, ?)').bind(uid, 'heist', now).run();
+      if (!r.meta.changes) return json({ ok: true, paid: 0, wallet: await wallet() });
+      await db.batch([db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(HEIST_PAY, now, uid), entry('heist', 'grand_diamond', 1, HEIST_PAY)]);
+      return json({ ok: true, paid: HEIST_PAY, wallet: await wallet() });
     }
     // a quest done: counts toward this month's salary (once per quest per month)
     if (b === 'quest') {

@@ -124,6 +124,7 @@ export const econ = {
   offer: (item, qty, price) => api('econ/offers', { method: 'POST', body: { item, qty, price } }),
   async buyOffer(id) { const r = await api(`econ/offers/${id}/buy`, { method: 'POST', body: {} }); setWallet(r.wallet); return r; },
   cancelOffer: (id) => api(`econ/offers/${id}/cancel`, { method: 'POST', body: {} }),
+  async heist() { const r = await api('econ/heist', { method: 'POST', body: {} }); if (r.wallet) setWallet(r.wallet); return r; },
   async pay(what, extra = {}) { const r = await api('econ/pay', { method: 'POST', body: { what, ...extra } }); setWallet(r.wallet); return r; },
 };
 export function callSignal(to, data) { return api('call/signal', { method: 'POST', body: { to, data } }); }

@@ -22,6 +22,7 @@ export function bank(args, ui) {
     <div class="panel bank-panel">
       <div class="panel-head"><h2 class="panel-title" data-i18n="${args.atm ? 'econ.atm' : 'econ.title'}"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
       <div class="bank-wallet row"></div>
+      <div class="grand-trade hidden"></div>
       <div class="seg bank-tabs"><button data-tab="exchange" data-i18n="econ.tabExchange"></button><button data-tab="market" data-i18n="econ.tabMarket"></button><button data-tab="bank" data-i18n="econ.tabBank"></button><button data-tab="lottery" data-i18n="econ.tabLottery"></button><button data-tab="central" data-i18n="econ.tabCity"></button></div>
       <div class="panel-body bank-body"><p class="faint" data-i18n="common.loading"></p></div>
       <p class="form-error" role="alert"></p>
@@ -30,6 +31,18 @@ export function bank(args, ui) {
   const walletEl = node.querySelector('.bank-wallet');
   let tab = args.atm ? 'bank' : args.tab || 'exchange', state = null, history = null, busy = false;
   if (args.atm) node.querySelector('.bank-tabs').classList.add('hidden');
+  // the counter: the Gran Diamante (from the vault) traded for the biggest sum of the game
+  const grand = node.querySelector('.grand-trade');
+  if (!args.atm && g.heist && g.inventory.count('grand_diamond')) {
+    grand.classList.remove('hidden');
+    grand.innerHTML = `<div class="mis-card heist-card"><b>${esc(t('heist.tradeTitle'))}</b><span class="faint small">${esc(t('heist.tradeInfo'))}</span>
+      <div class="row" style="justify-content:flex-end"><button class="btn primary" data-a="grand">${esc(t('heist.tradeBtn'))}</button></div></div>`;
+    grand.querySelector('[data-a="grand"]').addEventListener('click', async (e) => {
+      ui.click();
+      e.target.disabled = true;
+      try { await g.heist.trade(); } catch (err) { e.target.disabled = false; errEl.textContent = err && err.code === 'not_yet' ? t('heist.tradeNotYet') : t('econ.err'); }
+    });
+  }
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
   applyI18n(node);
 
@@ -224,7 +237,9 @@ export function bank(args, ui) {
         <div class="bank-stat"><span class="faint">${esc(t('econ.holders'))}</span><b>${num(c.holders)}</b></div>
         <div class="bank-stat wide"><span class="faint">${esc(t('econ.backing'))}</span><b>${backing}%</b><div class="bank-meter"><i style="width:${Math.min(100, backing)}%"></i></div></div>
       </div>
-      <p class="faint small">${esc(t('econ.fare', { n: state.fare }))}</p>`;
+      <p class="faint small">${esc(t('econ.fare', { n: state.fare }))}</p>
+      <h3 class="section-label">${esc(t('heist.mayors'))}</h3>
+      <div class="bank-history small">${(state.mayors || []).length ? state.mayors.map((m) => `<div class="bank-h"><span>&#9813; ${esc(m.name)}</span><span class="faint">${esc(new Date(m.at).toLocaleDateString(getLang()))}</span></div>`).join('') : `<span class="faint">${esc(t('heist.noMayor'))}</span>`}</div>`;
   }
 
   function draw() {

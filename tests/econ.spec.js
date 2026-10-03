@@ -91,6 +91,10 @@ test.describe('Economy', () => {
     expect((await request.post('/api/econ/pay', { data: { what: 'shop', item: 'diamond', qty: 1 } })).status()).toBe(400);
     expect((await request.post('/api/econ/pay', { data: { what: 'meal', item: 'caviar' } })).status()).toBe(400);
     expect((await request.post('/api/econ/pay', { data: { what: 'taxi' } })).status()).toBe(400);
+    // the Gran Diamante pays only after the big mission's twelve tasks
+    r = await request.post('/api/econ/heist', { data: {} });
+    expect(r.status()).toBe(409);
+    expect((await r.json()).error).toBe('not_yet');
 
     // Finn has his own wallet and no coins for a second-hand diamond
     expect((await request.post('/api/auth/login', { data: { login: FINN.username, password: FINN.password } })).ok()).toBeTruthy();

@@ -314,8 +314,10 @@ export function bankPoint(P, d, a) {
 export function bankLayout(depth) {
   const vault = Math.max(6, depth - Math.max(5, Math.min(10, Math.round(depth * 0.3))));
   const counter = Math.max(3, Math.min(vault - 3, Math.round(depth * 0.35)));
-  return { counter, vault };
+  const diamond = Math.round((vault + depth) / 2);
+  return { counter, vault, diamond };
 }
+export const bankWidth = (P) => (P.side === 0 || P.side === 2 ? P.x1 - P.x0 : P.z1 - P.z0);
 
 // ---------- worker: blocks for one chunk ----------
 export function genCity(cx, cz, data, e) {
@@ -423,11 +425,14 @@ export function genCity(cx, cz, data, e) {
         const sign = front && Math.abs(a - mid) <= 2 && r === 5;
         const corner = (wx === P.x0 || wx === P.x1) && (wz === P.z0 || wz === P.z1);
         const win = !corner && r % 4 >= 2 && r % 4 <= 3 && ((a % 3) + 3) % 3 === 1 && r > 1 && d < plan.vault;
-        id = door ? B.air : sign ? B.bank_sign : win ? B.window : B.bank_stone;
+        const weak = d === depth && Math.abs(a - mid) <= 1 && r <= 2; // the weak spot in the vault's back wall (the heist map shows it)
+        id = door ? B.air : sign ? B.bank_sign : weak ? B.weak_wall : win ? B.window : B.bank_stone;
       } else if (r < HALL) {
         if (d === plan.counter && r === 1 && Math.abs(a - mid) > 1) id = B.bank_counter; // a gap in the middle to walk behind
         else if (d === plan.counter && r === 2 && Math.abs(a - mid) > 1 && a % 2 === 0) id = B.window; // the tellers' glass
         else if (d === plan.vault && r <= 4) id = Math.abs(a - mid) <= 0 && r <= 2 ? B.vault_door : B.bank_stone; // the vault's wall and door
+        else if (d === plan.diamond && a === mid && r <= 2) id = r === 1 ? B.bank_stone : B.grand_diamond; // the Gran Diamante on its pedestal
+        else if (d > plan.vault && r <= 2 && (a === 1 || a === bankWidth(P) - 1) && d % 2 === 0) id = B.vault_gold; // gold bars along the sides
         else if (d > plan.vault && r === 5) id = ((a % 5) + 5) % 5 === 2 && d % 4 === 1 ? B.bank_lamp : B.bank_stone; // the vault's ceiling, with lamps
         else if (d < plan.counter && a % 6 === 3 && d % 6 === 3 && d > 1) id = B.limestone; // pillars in the hall
       } else if (r === HALL) id = d < plan.vault && ((a % 4) + 4) % 4 === 2 && ((d % 4) + 4) % 4 === 2 ? B.bank_lamp : B.planks; // lamps in the hall's ceiling

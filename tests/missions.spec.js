@@ -78,8 +78,11 @@ test.describe('Malaga missions', () => {
     // the missions screen from the pause menu: four done, the deposit to go
     await page.evaluate(() => window.__sc.ui.openPause());
     await page.click('[data-screen="pause"] [data-act="missions"]');
-    await expect(page.locator('.mis-card')).toHaveCount(5);
-    await expect(page.locator('.mis-card.done')).toHaveCount(4);
+    await expect(page.locator('.mis-list .mis-card:not(.heist)')).toHaveCount(5);
+    await expect(page.locator('.mis-list .mis-card.done:not(.heist)')).toHaveCount(4);
+    // and the big mission: its box and its twelve tasks
+    await expect(page.locator('.heist-card')).toBeVisible();
+    await expect(page.locator('.mis-list .mis-card.heist')).toHaveCount(12);
     await expect(page.locator('.mis-card[data-id="deposit"] [data-a="track"]')).toBeVisible();
     await shot(page, 'missions-list');
     await page.evaluate(() => window.__sc.game.missions.event('deposit'));

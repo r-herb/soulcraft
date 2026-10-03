@@ -6,6 +6,7 @@ import { iconInto, statSprite, SVG } from './icons.js';
 import { settings } from '../save/settings.js';
 import { ITEMS } from '../player/items.js';
 import { wallet } from '../save/account.js';
+import { missionName } from '../quest/missions.js';
 
 export function slotEl(stack, size = 32) {
   const s = document.createElement('div');
@@ -244,7 +245,7 @@ export class Hud {
     } else if (g.missions && g.missions.active && g.missions.tracked && !g.bosses.active) {
       // a city mission: its next step, and an arrow and distance to its place
       const m = g.missions.tracked, tg = g.missions.target(m);
-      const head = t('mis.' + m.id);
+      const head = missionName(m);
       let detail = g.missions.stepText(m);
       if (tg) {
         const dx = tg.x - p.pos.x, dz = tg.z - p.pos.z;
