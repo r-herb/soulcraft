@@ -123,6 +123,8 @@ export function worldMap(args, ui) {
   function renderOverworld() {
     const k = 3; // screen pixels per sample
     const sw = Math.ceil(st.W / k), sh = Math.ceil(st.H / k);
+    // not laid out (closed before a late redraw): nothing to sample
+    if (!(sw > 0 && sh > 0)) return;
     const pic = document.createElement('canvas');
     pic.width = sw; pic.height = sh;
     const c2 = pic.getContext('2d');
