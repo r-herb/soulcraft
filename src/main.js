@@ -13,7 +13,7 @@ import { Input } from './player/input.js';
 import { Audio } from './audio/audio.js';
 import { Game, loadCityData } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
-import { initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount, account, econ } from './save/account.js';
+import { screenInfo, initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount, account, econ } from './save/account.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -108,7 +108,8 @@ async function boot() {
     presence() {
       const g = app.game;
       const on = g && g.running;
-      sendPresence({ world: on ? g.meta.name : null, room: on && g.net && g.net.isHost ? g.net.code : null, city: on ? g.meta.city || null : null });
+      const mode = !on ? null : g.net && !g.net.isHost ? 'guest' : g.meta.city ? 'malaga' : g.meta.mode === 'quest' ? 'quest' : g.creative ? 'creative' : 'survival';
+      sendPresence({ world: on ? g.meta.name : null, room: on && g.net && g.net.isHost ? g.net.code : null, city: on ? g.meta.city || null : null, mode, screen: screenInfo() });
     },
     // ---------- multiplayer ----------
     // Open the running world to friends; resolves with the room code.

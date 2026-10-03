@@ -77,7 +77,7 @@ export function checkAvatar(v) {
 export function publicUser(u) {
   if (!u) return null;
   return { id: u.id, name: u.name, username: u.username || null, email: u.email, phone: u.phone, avatar: u.avatar || null, disabled: !!u.disabled, createdAt: u.created_at, lastLogin: u.last_login || null,
-    role: u.role || 'player', bannedUntil: u.banned_until || null, banReason: u.ban_reason || null };
+    role: u.role || 'player', bannedUntil: u.banned_until || null, banReason: u.ban_reason || null, superLink: !!u.super_link };
 }
 
 // ---------- sessions ----------

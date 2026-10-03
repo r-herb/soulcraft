@@ -238,8 +238,23 @@ export class Net {
   playerState(id, s) {
     if (!id || id === this.me) return;
     let rp = this.players.get(id);
-    if (!rp) { rp = new RemotePlayer(this.game, id, this.names.get(id) || t('mp.player')); this.players.set(id, rp); }
+    if (!rp) { rp = new RemotePlayer(this.game, id, this.names.get(id) || t('mp.player')); this.players.set(id, rp); this.checkAdmins(); }
     rp.setState(s);
+  }
+
+  // which players in the room are admins (their godmode badge)
+  checkAdmins() {
+    clearTimeout(this.adminT);
+    this.adminT = setTimeout(async () => {
+      const ids = [...this.players.keys()].filter((x) => /^\d+$/.test(x));
+      if (!ids.length) return;
+      try {
+        const r = await fetch('/api/badges?ids=' + ids.join(','), { credentials: 'same-origin' });
+        if (!r.ok) return;
+        const { admins } = await r.json();
+        for (const [id, rp] of this.players) rp.setAdmin(admins.includes(Number(id)));
+      } catch { /* later */ }
+    }, 300);
   }
 
   dropPlayer(id) {
@@ -422,6 +437,15 @@ class RemotePlayer {
     this.object.add(this.tag);
   }
 
+  // an admin: the godmode badge and a golden name
+  setAdmin(on) {
+    if (!!this.badge === !!on) return;
+    if (on) {
+      this.badge = godBadge(); this.badge.position.y = 2.0; this.object.add(this.badge);
+      this.object.remove(this.tag); this.tag = nameTag(this.name, true); this.tag.position.y = 2.65; this.object.add(this.tag);
+    } else { this.object.remove(this.badge); this.badge = null; }
+  }
+
   build(skin) {
     if (this.rig) this.object.remove(this.rig.group);
     this.rig = humanoid(skinColors(skin));
@@ -455,6 +479,7 @@ class RemotePlayer {
   }
 
   update(dt) {
+    if (this.badge) { const b = this.badge.userData, k = performance.now() / 1000; b.halo.rotation.z = k * 0.8; b.glow.material.opacity = 0.18 + Math.sin(k * 3) * 0.08; b.shield.position.y = 0.3 + Math.sin(k * 2) * 0.04; }
     if (!this.seen || !this.rig) return;
     const k = Math.min(1, dt * 12);
     const before = this.pos.clone();
@@ -483,17 +508,47 @@ class RemotePlayer {
   }
 }
 
-function nameTag(name) {
+// The godmode badge over an admin's head: a glowing golden halo that turns
+// slowly, and a small gold shield with a white star floating above it.
+function godBadge() {
+  const g = new THREE.Group();
+  const gold = new THREE.MeshBasicMaterial({ color: 0xffd65c });
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.05, 8, 24), gold);
+  halo.rotation.x = Math.PI / 2;
+  g.add(halo);
+  const glow = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.12, 8, 24), new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.25, depthWrite: false }));
+  glow.rotation.x = Math.PI / 2;
+  g.add(glow);
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const x = c.getContext('2d');
+  x.fillStyle = '#ffd65c'; x.beginPath(); x.moveTo(4, 4); x.lineTo(28, 4); x.lineTo(28, 16); x.quadraticCurveTo(28, 26, 16, 30); x.quadraticCurveTo(4, 26, 4, 16); x.closePath(); x.fill();
+  x.strokeStyle = '#a8761a'; x.lineWidth = 2; x.stroke();
+  x.fillStyle = '#ffffff'; x.beginPath();
+  for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, a = -Math.PI / 2 + (i * Math.PI) / 5; x.lineTo(16 + Math.cos(a) * r, 16 + Math.sin(a) * r); }
+  x.closePath(); x.fill();
+  const tex = new THREE.CanvasTexture(c);
+  tex.magFilter = THREE.NearestFilter;
+  const shield = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+  shield.scale.set(0.34, 0.34, 1);
+  shield.position.y = 0.3;
+  g.add(shield);
+  g.userData = { halo, glow, shield };
+  return g;
+}
+
+function nameTag(name, gold = false) {
   const c = document.createElement('canvas');
   const x = c.getContext('2d');
-  const font = '28px "Tiny5", "Press Start 2P", monospace';
+  const font = '28px "Pixelify Sans", "Tiny5", monospace';
   x.font = font;
   const w = Math.ceil(x.measureText(name).width) + 24;
   c.width = w; c.height = 44;
   x.font = font;
-  x.fillStyle = 'rgba(5,4,15,0.6)';
+  x.fillStyle = gold ? 'rgba(60,40,0,0.7)' : 'rgba(5,4,15,0.6)';
   x.fillRect(0, 0, w, 44);
-  x.fillStyle = '#ffffff';
+  if (gold) { x.strokeStyle = '#ffd65c'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, w - 3, 41); }
+  x.fillStyle = gold ? '#ffd65c' : '#ffffff';
   x.textBaseline = 'middle';
   x.fillText(name, 12, 23);
   const tex = new THREE.CanvasTexture(c);

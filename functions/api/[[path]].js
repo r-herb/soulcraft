@@ -37,6 +37,7 @@ import {
 } from '../../server/lib.js';
 import { resetEmail, sendEmail } from '../../server/mail.js';
 import { vapidKeys, wake, pushEndpointOk } from '../../server/push.js';
+import { recordVisit, notePresence } from '../../server/analytics.js';
 
 const RESET_TTL = 60 * 60e3; // reset links work for an hour
 const today = () => new Date().toISOString().slice(0, 10);
@@ -90,7 +91,7 @@ async function route(parts, method, request, env, secure) {
 
   // ---------- auth ----------
   if (a === 'auth' && b === 'login' && method === 'POST') {
-    const { login, password, remember } = await body(request);
+    const { login, password, remember, screen } = await body(request);
     const ident = String(login || '').trim();
     if (!ident || !password) return err(400, 'missing_fields');
     const ip = request.headers.get('cf-connecting-ip') || 'local';
@@ -116,6 +117,7 @@ async function route(parts, method, request, env, secure) {
     await clearFailures(db, rlKey);
     await db.prepare('UPDATE users SET last_login = ? WHERE id = ?').bind(Date.now(), user.id).run();
     await noteActive(db, user.id);
+    await recordVisit(db, request, user.id, 'login', screen);
     const token = await createSession(db, user.id, 'user', !!remember);
     return json({ role: 'user', user: publicUser(user) }, 200, { 'set-cookie': sessionCookie(token, !!remember, secure) });
   }
@@ -615,7 +617,9 @@ async function route(parts, method, request, env, secure) {
   if (a === 'presence' && method === 'POST') {
     if (s.role !== 'user') return err(403, 'forbidden');
     const p = await body(request);
-    const presence = { world: p.world ? String(p.world).slice(0, 40) : null, room: /^[A-Z0-9]{6}$/.test(String(p.room || '')) ? String(p.room) : null, city: p.city ? String(p.city).slice(0, 20) : null };
+    const MODES = ['survival', 'creative', 'malaga', 'quest', 'guest', 'other'];
+    const presence = { world: p.world ? String(p.world).slice(0, 40) : null, room: /^[A-Z0-9]{6}$/.test(String(p.room || '')) ? String(p.room) : null, city: p.city ? String(p.city).slice(0, 20) : null, mode: MODES.includes(p.mode) ? p.mode : null };
+    await notePresence(db, request, s.user, presence, p.screen);
     await db.prepare('UPDATE users SET last_seen = ?, presence = ? WHERE id = ?').bind(Date.now(), JSON.stringify(presence), s.user.id).run();
     return json({ ok: true });
   }
@@ -708,6 +712,21 @@ async function route(parts, method, request, env, secure) {
   }
 
   // ---------- admin ----------
+  // which of these players are admins (a godmode badge over their heads)
+  if (a === 'badges' && method === 'GET') {
+    if (!s) return err(401, 'not_signed_in');
+    const ids = (new URL(request.url).searchParams.get('ids') || '').split(',').map(Number).filter((n) => n > 0).slice(0, 20);
+    if (!ids.length) return json({ admins: [] });
+    const { results } = await db.prepare(`SELECT id FROM users WHERE role = 'admin' AND id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
+    return json({ admins: results.map((r) => r.id) });
+  }
+  // the superadmin's player account goes back to the admin panel
+  if (a === 'me' && b === 'admin' && method === 'POST') {
+    if (!s || s.role !== 'user' || !s.user.super_link) return err(403, 'forbidden');
+    const token = await createSession(db, 0, 'superadmin', true);
+    return json({ ok: true }, 200, { 'set-cookie': sessionCookie(token, true, secure) });
+  }
+
   if (a === 'admin') {
     const sup = s.role === 'superadmin';
     if (!sup && !(s.role === 'user' && s.user.role === 'admin')) return err(403, 'forbidden');
@@ -719,6 +738,51 @@ async function route(parts, method, request, env, secure) {
       return json({ entries: results.map((r) => ({ at: r.at, actorId: r.actor_id, actorName: r.actor_name, action: r.action, targetId: r.target_id, targetName: r.target_name, detail: r.detail })) });
     }
     if (b === 'stats' && method === 'GET') return json(await stats(db, env));
+    // the superadmin plays: a player account of their own (made once), signed in at once
+    if (b === 'play' && method === 'POST') {
+      if (!sup) return err(403, 'forbidden');
+      let u = await db.prepare('SELECT * FROM users WHERE super_link = 1').first();
+      if (!u) {
+        const now = Date.now(), h = await hashPassword(randomToken(24));
+        const name = (await db.prepare("SELECT 1 FROM users WHERE username = 'superadmin'").first()) || reservedName(env, 'superadmin') ? null : 'superadmin';
+        const r = await db.prepare("INSERT INTO users (name, username, pass_hash, pass_salt, pass_iter, created_at, updated_at, role, super_link) VALUES ('Superadmin', ?, ?, ?, ?, ?, ?, 'admin', 1)")
+          .bind(name, h.hash, h.salt, h.iter, now, now).run();
+        u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(r.meta.last_row_id).first();
+        await log('superadmin_player', u);
+      }
+      await recordVisit(db, request, u.id, 'login', (await body(request)).screen);
+      const token = await createSession(db, u.id, 'user', true);
+      return json({ ok: true, user: publicUser(u) }, 200, { 'set-cookie': sessionCookie(token, true, secure) });
+    }
+    // analytics: every player's last sign-in and device, and what they played
+    if (b === 'analytics' && method === 'GET') {
+      if (!sup) return err(403, 'forbidden');
+      const since = new Date(Date.now() - 30 * 86400e3).toISOString().slice(0, 10);
+      if (!c) {
+        const { results: users } = await db.prepare(`SELECT u.id, u.name, u.username, u.role, u.last_login, u.last_seen, u.presence,
+          (SELECT v.at || '|' || ifnull(v.ip, '') || '|' || ifnull(v.country, '') || '|' || ifnull(v.city, '') || '|' || ifnull(v.device, '') || '|' || ifnull(v.screen, '') || '|' || v.kind FROM visits v WHERE v.user_id = u.id ORDER BY v.at DESC LIMIT 1) AS last,
+          (SELECT COUNT(*) FROM visits v WHERE v.user_id = u.id AND v.kind = 'login') AS logins,
+          (SELECT ifnull(SUM(seconds), 0) FROM play_time p WHERE p.user_id = u.id AND p.day >= ?) AS played30,
+          (SELECT p.mode FROM play_time p WHERE p.user_id = u.id AND p.day >= ? GROUP BY p.mode ORDER BY SUM(p.seconds) DESC LIMIT 1) AS top_mode
+          FROM users u ORDER BY ifnull(u.last_seen, 0) DESC LIMIT 500`).bind(since, since).all();
+        const now = Date.now();
+        return json({ users: users.map((u) => {
+          const [at, ip, country, city, device, screen, kind] = String(u.last || '').split('|');
+          let pr = null; try { pr = u.presence ? JSON.parse(u.presence) : null; } catch { pr = null; }
+          return { id: u.id, name: u.name, username: u.username, role: u.role, lastLogin: u.last_login || null, lastSeen: u.last_seen || null, online: !!(u.last_seen && now - u.last_seen < 150e3), now: pr && u.last_seen && now - u.last_seen < 150e3 ? pr : null,
+            last: u.last ? { at: Number(at), ip, country, city, device, screen, kind } : null, logins: u.logins, played30: u.played30, topMode: u.top_mode || null };
+        }) });
+      }
+      const id = Number(c);
+      const u = await db.prepare('SELECT id, name, username, role, created_at, last_login, last_seen FROM users WHERE id = ?').bind(id).first();
+      if (!u) return err(404, 'no_user');
+      const { results: visits } = await db.prepare('SELECT kind, at, ip, country, region, city, device, screen, ua FROM visits WHERE user_id = ? ORDER BY at DESC LIMIT 40').bind(id).all();
+      const { results: play } = await db.prepare('SELECT day, mode, world, seconds FROM play_time WHERE user_id = ? AND day >= ? ORDER BY day DESC, seconds DESC').bind(id, since).all();
+      const { results: missions } = await db.prepare('SELECT mission, at FROM missions_done WHERE user_id = ? ORDER BY at DESC').bind(id).all();
+      const w = await db.prepare('SELECT cash, bank FROM wallets WHERE user_id = ?').bind(id).first();
+      const { results: saves } = await db.prepare('SELECT slot, updated_at FROM saves WHERE user_id = ? ORDER BY updated_at DESC LIMIT 20').bind(id).all();
+      return json({ user: u, visits, play, missions, wallet: w || null, saves });
+    }
     if (b === 'insights' && method === 'GET') return json(await insights(db));
     if (b === 'feedback') {
       if (!c && method === 'GET') {

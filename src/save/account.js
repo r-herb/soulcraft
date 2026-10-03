@@ -64,8 +64,12 @@ async function migrateLocal(prefix) {
 // This account's (or the guest's) worlds, newest first.
 export function localWorlds() { return listWorlds(slot('w-')); }
 
+// the screen (for the superadmin's analytics): "1170x2532@3"
+export const screenInfo = () => { try { return `${screen.width}x${screen.height}@${Math.round((devicePixelRatio || 1) * 100) / 100}`; } catch { return null; } };
+// the superadmin's player account goes back to the admin panel
+export async function toAdminPanel() { await api('me/admin', { method: 'POST', body: {} }); location.href = '/admin'; }
 export async function signIn(login, password, remember) {
-  const r = await api('auth/login', { method: 'POST', body: { login, password, remember } });
+  const r = await api('auth/login', { method: 'POST', body: { login, password, remember, screen: screenInfo() } });
   if (r.role !== 'user') { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); const e = new Error('admin_use_panel'); e.code = 'admin_use_panel'; throw e; }
   account.user = r.user;
   await migrateLocal(`u${r.user.id}:`);

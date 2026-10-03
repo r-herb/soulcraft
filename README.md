@@ -483,6 +483,28 @@ world in the cloud. **New World** asks for a mode:
   gift), each with its own particles. `?event=bloom|harvest|frost` forces
   one for testing.
 
+## Superadmin: analytics, playing, the godmode badge
+
+- **Analytics** (superadmin only): every player with whether they are
+  online and what they are playing now, their last sign-in or visit (a new
+  visit is counted after half an hour away), the device (system, browser,
+  phone / tablet / computer, from the user agent), the screen (size and
+  pixel ratio), the IP address and the place Cloudflare finds for it (city,
+  region, country), and play time over the last 30 days. A click shows the
+  player's details: play time per mode (survival, creative, Malaga,
+  Treasure Quest, a friend's world), per world and per day, the missions
+  done, coins, the last 40 sign-ins and visits, and the cloud saves. Play
+  time is counted from the game's presence pings while it is open and
+  signed in. Visits are kept for 120 days.
+- **Play**: the superadmin's button in the admin panel signs into the game
+  with the superadmin's own player account (an admin, made on first use,
+  with its own worlds, friends and coins); **Admin** at the bottom of the
+  game's title screen goes back to the panel. Admins signed in as players
+  also get the **Admin** button.
+- **Godmode badge**: other players see a golden halo turning over an
+  admin's head, a small gold shield with a white star above it, and the
+  name in gold.
+
 ## Ideas, problems and game statistics
 
 - **Ideas & bugs** in the pause menu sends a short message (an idea or a
@@ -601,6 +623,11 @@ What the tests cover:
   restaurants finish the team's mission, a guest meeting an informant gives
   the team a piece of the plan, and a piece the guest puts in the puzzle is
   in the host's plan.
+- `tests/accounts.spec.js` (accounts) also: analytics record a sign-in with
+  the device, screen and place, and play time from presence pings; players
+  cannot see analytics; the panel's analytics tab and a player's details;
+  Play takes the superadmin into the game as an admin player and Admin
+  brings them back; the badge endpoint names the admins.
 - `tests/heist.spec.js` (desktop): twelve tasks with twelve squares of the
   plan, all done; the puzzle (a wrong square, the right one, the rest); the
   weak wall breaks; a guard who sees the player in the vault takes the

@@ -16,7 +16,7 @@ import { missions } from './missionsui.js';
 import { heistMap, mayor } from './heistui.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
-import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi } from '../save/account.js';
+import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi, toAdminPanel } from '../save/account.js';
 
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
@@ -193,7 +193,7 @@ export class UI {
           ${langButtons(lang)}
         </div>
         ${account.available ? (account.user
-    ? `${account.mp ? `<button class="btn small ghost" data-act="chat"><span data-i18n="chat.title"></span>${chatState.unread ? `<span class="dot">${chatState.unread}</span>` : ''}</button>` : ''}<button class="btn small ghost" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button><button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
+    ? `${account.mp ? `<button class="btn small ghost" data-act="chat"><span data-i18n="chat.title"></span>${chatState.unread ? `<span class="dot">${chatState.unread}</span>` : ''}</button>` : ''}<button class="btn small ghost" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button>${account.user.role === 'admin' || account.user.superLink ? '<button class="btn small god-btn" data-act="adminpanel">&#9733; Admin</button>' : ''}<button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
     : '<button class="btn small ghost acct-btn" data-act="signin" data-i18n="acct.signIn"></button>') : ''}
         </div>
         <span class="faint">${esc(t('title.version', { v: VERSION }))}</span>
@@ -228,6 +228,8 @@ export class UI {
     const fr = node.querySelector('[data-act="friends"]');
     if (fr) fr.addEventListener('click', () => { this.click(); this.open('friends'); });
     if (account.user && !this._socialT) { this._socialT = setInterval(() => refreshSocial(), 60000); refreshSocial(); social.listeners.add(() => { if (this.top && this.top.name === 'title') this.render(); }); }
+    const ap = node.querySelector('[data-act="adminpanel"]');
+    if (ap) ap.addEventListener('click', () => { this.click(); if (account.user.superLink) toAdminPanel().catch(() => this.toast(t('fr.err'), 'warn')); else location.href = '/admin'; });
     const pr = node.querySelector('[data-act="profile"]');
     if (pr) pr.addEventListener('click', () => { this.click(); this.open('profile'); });
     node.querySelector('[data-act="settings"]').addEventListener('click', () => { this.click(); this.open('settings'); });

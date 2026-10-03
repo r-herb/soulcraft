@@ -325,3 +325,48 @@ test('the superadmin makes a player an admin; admins add and ban players but can
   await expect(page.locator('.audit-list')).toContainText('Moda');
   await shot(page, 'admin-audit');
 });
+
+test('superadmin analytics: sign-ins with device, screen and place, play time; the superadmin plays and comes back; the godmode badge', async ({ page, playwright, baseURL, request }) => {
+  expect((await request.post('/api/auth/login', { data: ADMIN })).ok()).toBeTruthy();
+  const zoe = { name: 'Zoe Analytics', username: 'zoe_an', password: 'zoe-pass-1' };
+  expect([201, 409]).toContain((await request.post('/api/admin/users', { data: zoe })).status());
+  // Zoe signs in from a phone-sized screen, then plays Malaga for a moment
+  const z = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { 'user-agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36' } });
+  expect((await z.post('/api/auth/login', { data: { login: zoe.username, password: zoe.password, screen: '412x915@2.63' } })).ok()).toBeTruthy();
+  await z.post('/api/presence', { data: { world: 'Malaga', city: 'malaga', mode: 'malaga', screen: '412x915@2.63' } });
+  await new Promise((r) => setTimeout(r, 2200));
+  await z.post('/api/presence', { data: { world: 'Malaga', city: 'malaga', mode: 'malaga', screen: '412x915@2.63' } });
+  const list = (await (await request.get('/api/admin/analytics')).json()).users;
+  const row = list.find((u) => u.username === zoe.username);
+  expect(row.last).toMatchObject({ screen: '412x915@2.63', device: 'Android 14, Chrome, phone' });
+  expect(row.online).toBe(true);
+  expect(row.now).toMatchObject({ world: 'Malaga', mode: 'malaga' });
+  expect(row.played30).toBeGreaterThanOrEqual(2);
+  const det = await (await request.get('/api/admin/analytics/' + row.id)).json();
+  expect(det.visits[0]).toMatchObject({ kind: 'login', screen: '412x915@2.63' });
+  expect(det.play[0]).toMatchObject({ mode: 'malaga', world: 'Malaga' });
+  // players cannot see analytics
+  expect((await z.get('/api/admin/analytics')).status()).toBe(403);
+
+  // the panel: the analytics tab and a player's details
+  await adminSignIn(page);
+  await page.click('[data-nav="analytics"]');
+  await expect(page.locator('.analytics-table')).toContainText('Zoe Analytics');
+  await page.locator('.analytics-table tr', { hasText: 'Zoe Analytics' }).click();
+  await expect(page.locator('.analytics-detail')).toContainText('Malaga');
+  await expect(page.locator('.analytics-detail')).toContainText('412x915');
+  await shot(page, 'admin-analytics');
+
+  // the superadmin plays: into the game with an own player account (an admin), and back to the panel
+  await page.click('[data-act="play"]');
+  await expect(page.locator('[data-screen="title"]')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-act="adminpanel"]')).toBeVisible({ timeout: 15_000 });
+  const me = await page.evaluate(async () => (await (await fetch('/api/me')).json()));
+  expect(me.user).toMatchObject({ role: 'admin', superLink: true });
+  // the godmode badge: the server says who is an admin
+  const badges = await page.evaluate(async (ids) => (await (await fetch('/api/badges?ids=' + ids.join(','))).json()), [me.user.id, row.id]);
+  expect(badges.admins).toEqual([me.user.id]);
+  await page.click('[data-act="adminpanel"]');
+  await expect(page.locator('.admin-tabs')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[data-nav="analytics"]')).toBeVisible();
+});

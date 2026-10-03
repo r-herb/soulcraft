@@ -71,9 +71,9 @@ let fbNew = 0; // unread ideas and problem reports (shown on the Feedback tab)
 function topBar(active) {
   const tab = (id, label) => `<button class="${active === id ? 'on' : ''}" data-nav="${id}">${label}</button>`;
   return `<div class="admin-top"><h1>Soulcraft Admin</h1>
-    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('chats', 'Chats')}${tab('reports', 'Reports')}${tab('econ', 'Economy')}${tab('audit', 'Log')}</nav>
+    <nav class="admin-tabs">${tab('users', 'Users')}${tab('stats', 'Statistics')}${tab('feedback', `Feedback<span class="tab-badge ${fbNew ? '' : 'hidden'}" data-fb-badge>${fbNew}</span>`)}${tab('chats', 'Chats')}${tab('reports', 'Reports')}${tab('econ', 'Economy')}${SUPER ? tab('analytics', 'Analytics') : ''}${tab('audit', 'Log')}</nav>
     <span class="faint">${SUPER ? 'Superadmin' : 'Admin'}</span>
-    <a class="btn small ghost" href="/">Open the game</a><button class="btn small ember" data-act="logout">Sign out</button></div>`;
+    ${SUPER ? '<button class="btn small gold" data-act="play" title="Play the game with your own player account">&#9654; Play</button>' : '<a class="btn small ghost" href="/">Open the game</a>'}<button class="btn small ember" data-act="logout">Sign out</button></div>`;
 }
 function setFbBadge(n) {
   fbNew = n;
@@ -82,7 +82,14 @@ function setFbBadge(n) {
 }
 function bindTopBar() {
   root.querySelector('[data-act="logout"]').addEventListener('click', async () => { await api('auth/logout', { method: 'POST', body: {} }).catch(() => {}); renderLogin(); });
-  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit(), chats: () => renderChats(), reports: () => renderReports(), econ: () => renderEcon() };
+  const pages = { users: () => renderUsers(), stats: () => renderStats(), feedback: () => renderFeedback(), audit: () => renderAudit(), chats: () => renderChats(), reports: () => renderReports(), econ: () => renderEcon(), analytics: () => renderAnalytics() };
+  // the superadmin plays: signed in to the game as their own player account
+  const play = root.querySelector('[data-act="play"]');
+  if (play) play.addEventListener('click', async () => {
+    play.disabled = true;
+    try { await api('admin/play', { method: 'POST', body: { screen: `${screen.width}x${screen.height}@${Math.round((devicePixelRatio || 1) * 100) / 100}` } }); location.href = '/'; }
+    catch (e) { play.disabled = false; toast(e.message, true); }
+  });
   root.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => pages[b.dataset.nav]()));
 }
 
@@ -555,3 +562,65 @@ function confirmDialog(title, text, action) {
     renderLogin(e.status === 503 ? 'Accounts are not configured on this server yet.' : '');
   }
 })();
+
+// ---------- analytics (superadmin): sign-ins, devices, places, what was played ----------
+const MODE = { survival: 'Survival', creative: 'Creative', malaga: 'Malaga', quest: 'Treasure Quest', guest: "In a friend's world", world: 'World', other: 'Other' };
+const dur = (sec) => { if ((sec || 0) < 60) return `${sec || 0} s`; const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+const flag = (cc) => (cc && /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0))) + ' ' : '');
+const place = (v) => (v ? [v.city, v.region, v.country].filter(Boolean).join(', ') || '-' : '-');
+async function renderAnalytics() {
+  root.innerHTML = `<div class="admin-wrap">${topBar('analytics')}<div class="admin-card loading"><p class="empty">Loading...</p></div></div>`;
+  bindTopBar();
+  let r;
+  try { r = await api('admin/analytics'); } catch (e) { if (e.status === 401 || e.status === 403) { renderLogin(); return; } toast(e.message, true); return; }
+  root.querySelector('.loading').remove();
+  const online = r.users.filter((u) => u.online).length;
+  root.querySelector('.admin-wrap').insertAdjacentHTML('beforeend', `
+    <div class="admin-card">
+      <div class="chart-head"><h2>Players</h2><span class="faint">${r.users.length} players, ${online} online now. Click a player for details.</span></div>
+      <div class="table-scroll"><table class="users analytics-table"><thead><tr><th>Player</th><th>Now</th><th>Last sign-in or visit</th><th>Device</th><th>Screen</th><th>IP</th><th>Place</th><th>Played (30 days)</th><th>Mostly</th></tr></thead>
+      <tbody>${r.users.map((u) => `<tr data-uid="${u.id}" class="clickable">
+        <td><b>${esc(u.name)}</b>${u.username ? ` <span class="faint">@${esc(u.username)}</span>` : ''}${u.role === 'admin' ? ' <span class="badge">admin</span>' : ''}</td>
+        <td>${u.online ? `<span class="dot-on"></span> ${esc(u.now && u.now.world ? (MODE[u.now.mode] || 'Playing') + ': ' + u.now.world : 'In the menu')}` : `<span class="faint">${esc(fmt(u.lastSeen))}</span>`}</td>
+        <td>${u.last ? `${esc(fmt(u.last.at))} <span class="faint">(${esc(u.last.kind === 'login' ? 'sign-in' : 'visit')})</span>` : esc(fmt(u.lastLogin))}</td>
+        <td>${esc(u.last ? u.last.device : '-')}</td><td>${esc(u.last && u.last.screen ? u.last.screen : '-')}</td>
+        <td><code>${esc(u.last && u.last.ip ? u.last.ip : '-')}</code></td><td>${flag(u.last && u.last.country)}${esc(place(u.last))}</td>
+        <td>${esc(dur(u.played30))}</td><td>${esc(MODE[u.topMode] || '-')}</td></tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="admin-card analytics-detail hidden"></div>`);
+  root.querySelectorAll('[data-uid]').forEach((tr) => tr.addEventListener('click', () => showPlayer(Number(tr.dataset.uid))));
+}
+
+async function showPlayer(id) {
+  const box = root.querySelector('.analytics-detail');
+  box.classList.remove('hidden');
+  box.innerHTML = '<p class="empty">Loading...</p>';
+  let r;
+  try { r = await api('admin/analytics/' + id); } catch (e) { box.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  const u = r.user;
+  // play time per mode and per world (30 days)
+  const byMode = {}, byWorld = {}, byDay = {};
+  for (const p of r.play) { byMode[p.mode] = (byMode[p.mode] || 0) + p.seconds; const w = `${MODE[p.mode] || p.mode}: ${p.world}`; byWorld[w] = (byWorld[w] || 0) + p.seconds; byDay[p.day] = (byDay[p.day] || 0) + p.seconds; }
+  const total = Object.values(byMode).reduce((a, b) => a + b, 0);
+  const rows = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
+  box.innerHTML = `<div class="chart-head"><h2>${esc(u.name)}${u.username ? ` <span class="faint">@${esc(u.username)}</span>` : ''}</h2><span class="faint">player since ${esc(fmt(u.created_at))}</span><button class="btn small ghost" data-act="close-detail">Close</button></div>
+    <div class="stat-tiles">
+      <div class="stat-tile"><span class="st-label">Played, last 30 days</span><b class="st-value">${esc(dur(total))}</b></div>
+      <div class="stat-tile"><span class="st-label">Last sign-in</span><b class="st-value small">${esc(fmt(u.last_login))}</b></div>
+      <div class="stat-tile"><span class="st-label">Last seen</span><b class="st-value small">${esc(fmt(u.last_seen))}</b></div>
+      <div class="stat-tile"><span class="st-label">Coins</span><b class="st-value small">${r.wallet ? `${nf(r.wallet.cash)} in hand, ${nf(r.wallet.bank)} in the bank` : '-'}</b></div>
+    </div>
+    <h3>What was played (30 days)</h3>
+    ${total ? `<div class="mode-bars">${rows(byMode).map(([m, sec]) => `<div class="mode-bar"><span>${esc(MODE[m] || m)}</span><i style="width:${Math.max(2, Math.round((sec / total) * 100))}%"></i><b>${esc(dur(sec))}</b></div>`).join('')}</div>
+    <div class="table-scroll"><table class="users"><thead><tr><th>Mode and world</th><th>Time</th></tr></thead><tbody>${rows(byWorld).map(([w, sec]) => `<tr><td>${esc(w)}</td><td>${esc(dur(sec))}</td></tr>`).join('')}</tbody></table></div>
+    <div class="table-scroll"><table class="users"><thead><tr><th>Day</th><th>Time</th></tr></thead><tbody>${rows(byDay).sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([d, sec]) => `<tr><td>${esc(d)}</td><td>${esc(dur(sec))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">No play time recorded yet (it is counted while the game is open and signed in).</p>'}
+    <h3>Missions done</h3>
+    ${r.missions.length ? `<p>${r.missions.map((m) => `<span class="badge">${esc(m.mission)}</span>`).join(' ')}</p>` : '<p class="empty">None yet.</p>'}
+    <h3>Sign-ins and visits</h3>
+    <div class="table-scroll"><table class="users"><thead><tr><th>When</th><th>What</th><th>Device</th><th>Screen</th><th>IP</th><th>Place</th></tr></thead>
+    <tbody>${r.visits.map((v) => `<tr><td>${esc(fmt(v.at))}</td><td>${v.kind === 'login' ? 'Sign-in' : 'Visit'}</td><td title="${esc(v.ua || '')}">${esc(v.device || '-')}</td><td>${esc(v.screen || '-')}</td><td><code>${esc(v.ip || '-')}</code></td><td>${flag(v.country)}${esc(place(v))}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">No visits recorded yet.</td></tr>'}</tbody></table></div>
+    <h3>Cloud saves</h3>
+    ${r.saves.length ? `<p class="faint">${r.saves.map((x) => `${esc(x.slot)} (${esc(fmt(x.updated_at))})`).join(', ')}</p>` : '<p class="empty">No cloud saves.</p>'}`;
+  box.querySelector('[data-act="close-detail"]').addEventListener('click', () => box.classList.add('hidden'));
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}

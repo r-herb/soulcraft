@@ -279,6 +279,7 @@ body.touch .desktop-only { display: none !important; }
 .dev-toggle { position: absolute; left: calc(var(--sp-2) + var(--safe-l)); bottom: 50%; z-index: 31; pointer-events: auto; }
 
 /* update banner */
+.god-btn { background: linear-gradient(180deg, #ffd65c, #d8a22e); border-color: #8a5a10; color: #2b1d00; }
 .together-btn { background: linear-gradient(180deg, #2fbf71, #1f8f52); border-color: #136b3b; color: #fff; }
 .together-steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); color: var(--c-text-dim); }
 .invite-root { position: fixed; top: calc(var(--sp-3) + var(--safe-t)); left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; gap: var(--sp-2); width: min(420px, calc(100% - 32px)); pointer-events: none; }
