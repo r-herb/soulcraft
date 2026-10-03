@@ -127,7 +127,7 @@ export class Net {
       case 'join':
         this.names.set(String(msg.id), msg.name);
         g.ui.toast(t('mp.joined', { name: msg.name }), 'ok');
-        if (this.isHost) this.welcome(String(msg.id));
+        if (this.isHost) { this.welcome(String(msg.id)); g.missions.sendTeam(String(msg.id)); }
         g.ui.hud.refreshRoom && g.ui.hud.refreshRoom(this);
         if (g.ui.top && g.ui.top.name === 'room') g.ui.render();
         break;
@@ -152,6 +152,8 @@ export class Net {
       case 'kill': this.onKill(msg); break;
       case 'hurt': if (!this.isHost) { const dir = new THREE.Vector3(msg.dx || 0, 0, msg.dz || 0); g.damagePlayer(msg.dmg, 'mob', t(msg.name || 'mob.hollow'), dir.lengthSq() ? dir : null); } break;
       case 'proj': if (!this.isHost) this.spawnProj(msg); break;
+      // missions played together (see src/quest/missions.js)
+      case 'mev': case 'team': case 'mdone': case 'hplace': g.missions.onNet(msg, from); break;
       case 'save': if (this.isHost && from) { g.meta.guests = g.meta.guests || {}; g.meta.guests[from] = { player: msg.player, inventory: msg.inventory, name: this.names.get(from) }; } break;
       default: break;
     }

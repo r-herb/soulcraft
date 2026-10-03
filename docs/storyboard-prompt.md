@@ -126,6 +126,13 @@ Pirmajā reizē apmācība parāda soli pa solim: iet, skatīties, lauzt, likt, 
 - Iestatījumos **Šeideri** (ieslēgti): lapas, zāle un labība šūpojas vējā, ūdens viļņojas un mirdz saulē, saullēktā un saulrietā gaisma kļūst zeltaina, naktī zilgana.
 - Monstri elpo, pagriež galvu pret tuvu spēlētāju, sitot nolaiž rokas, no trieciena atraujas un pēc nāves nokrīt un nogrimst zemē.
 
+### Spēlēt kopā ar draugiem
+
+- Galvenajā ekrānā zaļā poga **Spēlēt ar draugiem**: redzami draugi ar atvērtām pasaulēm (Pievienoties), un var sākt savu pasauli kopā (jauna Malaga, jauna pasaule vai pēdējā). Pasaule uzreiz atveras draugiem, un draugu sarakstā pie katra drauga ir poga **Uzaicināt**.
+- Uzaicinātajam spēlē parādās karte ar **Pievienoties** (ar skaņu), bet, ja spēle ir aizvērta, viņš saņem paziņojumu.
+- **Malaga kopā:** misijas un lielā misija ir kopīgas; ko dara jebkurš komandā, skaitās visiem, un katrs saņem balvas. Kad dimants ir apmainīts, visa komanda kļūst par Malagas mēriem.
+- **Zvani:** zvans skan, līdz atbild; ja spēle ir fonā, nāk sistēmas paziņojums; ja aizvērta, Web Push pamodina telefonu (draugu sarakstā "Ieslēgt" paziņojumus).
+
 ## 5. Ciemati, tirdzniecība un Dvēseļu veikals
 
 - **Ciemati:** mājas ar durvīm uz centru un aka vidū. Ciematnieki tirgojas: dod, piemēram, 6 baļķus pret 2 maizēm. Jo biežāk tirgojies, jo lielāka draudzība un jo labāki piedāvājumi.

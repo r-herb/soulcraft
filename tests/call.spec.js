@@ -61,4 +61,52 @@ test.describe('Calls', () => {
     expect(probE).toEqual([]);
     expect(probF).toEqual([]);
   });
+
+  test('a call and an invite to play wait for a friend whose game was closed; push subscriptions', async ({ browser, playwright, baseURL, request }) => {
+    expect((await request.post('/api/auth/login', { data: ADMIN })).ok()).toBeTruthy();
+    for (const u of [EVE, FINN]) expect([201, 409]).toContain((await request.post('/api/admin/users', { data: u })).status());
+    const users = (await (await request.get('/api/admin/users?q=')).json()).users;
+    const id = (n) => users.find((u) => u.username === n).id;
+    const eveApi = await playwright.request.newContext({ baseURL });
+    await eveApi.post('/api/auth/login', { data: { login: 'eve', password: EVE.password } });
+    const finnApi = await playwright.request.newContext({ baseURL });
+    await finnApi.post('/api/auth/login', { data: { login: 'finn', password: FINN.password } });
+    await eveApi.post('/api/friends', { data: { username: 'finn' } });
+    await finnApi.post(`/api/friends/${id('eve')}/accept`, { data: {} });
+
+    // push: the server's key, a subscription only to a real push service
+    const key = (await (await finnApi.get('/api/push/key')).json()).key;
+    expect(key).toMatch(/^[A-Za-z0-9_-]{87}$/);
+    expect((await finnApi.post('/api/push/subscribe', { data: { endpoint: 'https://evil.example.com/x', lang: 'lv' } })).status()).toBe(400);
+    expect((await finnApi.post('/api/push/subscribe', { data: { endpoint: 'https://fcm.googleapis.com/fcm/send/test-finn', lang: 'lv' } })).ok()).toBeTruthy();
+
+    // Eve rings while Finn's game is closed: the call waits for him
+    expect((await eveApi.post('/api/call/signal', { data: { to: id('finn'), data: { type: 'invite', call: 'abc123', video: false } } })).ok()).toBeTruthy();
+    const pend = await (await finnApi.get('/api/push/pending')).json();
+    expect(pend.lang).toBe('lv');
+    expect(pend.events.find((e) => e.kind === 'call')).toMatchObject({ from: id('eve'), name: 'Eve', call: 'abc123' });
+    // Finn opens the game: it rings; he declines and the call stops waiting
+    const pf = await (await browser.newContext({ viewport: { width: 1100, height: 650 } })).newPage();
+    const probF = watchConsole(pf);
+    await signIn(pf, FINN);
+    await expect(pf.locator('.call-ring')).toContainText('Eve', { timeout: 15_000 });
+    await shot(pf, 'call-waiting');
+    await pf.locator('.call-ring [data-a="no"]').click();
+    await expect(pf.locator('.call-ring')).toHaveCount(0);
+    await expect.poll(async () => (await (await finnApi.get('/api/push/pending')).json()).events.filter((e) => e.kind === 'call').length).toBe(0);
+
+    // Eve opens her world and invites Finn: a card with Join comes up in his game
+    let code = null;
+    for (let i = 0; i < 60 && !code; i++) { const r = await eveApi.post('/api/mp/room', { data: { world: 'Malaga' } }); if (r.ok()) code = (await r.json()).code; else await new Promise((r2) => setTimeout(r2, 1000)); }
+    expect((await finnApi.post('/api/mp/invite', { data: { to: id('eve'), room: 'BAD', world: 'x' } })).status()).toBe(400);
+    expect((await eveApi.post('/api/mp/invite', { data: { to: id('finn'), room: code, world: 'Malaga', city: 'malaga' } })).ok()).toBeTruthy();
+    await expect(pf.locator('.invite-card')).toContainText('Eve', { timeout: 15_000 });
+    await expect(pf.locator('.invite-card [data-a="join"]')).toBeVisible();
+    await shot(pf, 'invite-card');
+    await pf.locator('.invite-card [data-a="later"]').click();
+    await expect(pf.locator('.invite-card')).toHaveCount(0);
+    await expect.poll(async () => (await (await finnApi.get('/api/push/pending')).json()).events.filter((e) => e.kind === 'game').length).toBe(0);
+    // the friends list offers to turn notifications on (when the browser can)
+    expect(probF).toEqual([]);
+  });
 });

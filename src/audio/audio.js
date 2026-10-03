@@ -160,6 +160,7 @@ export class Audio {
       case 'click': this.tone(t, 800, 600, 0.04, 'square', 0.05); break;
       case 'beep': this.tone(t, 1760, 1760, 0.09, 'square', 0.07); this.tone(t + 0.12, 2350, 2350, 0.12, 'square', 0.07); break;
       case 'buzz': this.tone(t, 180, 160, 0.35, 'sawtooth', 0.1); break;
+      case 'ring': for (let i = 0; i < 2; i++) { this.tone(t + i * 0.42, 880, 880, 0.18, 'sine', 0.16); this.tone(t + i * 0.42 + 0.2, 1100, 1100, 0.16, 'sine', 0.14); } break;
       case 'bell': this.tone(t, 1320, 1320, 0.25, 'triangle', 0.12); this.tone(t + 0.02, 1980, 1980, 0.2, 'sine', 0.06); break;
       case 'doors': this.noise(t, 0.35, 700, 0.18, 'lowpass'); this.tone(t, 300, 220, 0.3, 'sine', 0.05); break;
       case 'shoot': this.noise(t, 0.12, 2000, 0.25, 'highpass'); break;

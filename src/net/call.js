@@ -117,6 +117,8 @@ export class CallManager {
     if (!d || !d.type) return;
     const c = this.call;
     if (d.type === 'invite') {
+      // the same call again (from the server's waiting list): nothing new
+      if ((this.invite && this.invite.id === d.call) || (c && c.id === d.call)) return;
       if (c || this.invite) { this.send(from, { type: 'busy', call: d.call }); return; }
       this.invite = { from, name, id: d.call, video: !!d.video };
       this.changed();

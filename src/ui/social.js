@@ -2,7 +2,8 @@
 // in which world, and join a friend's open world with one tap.
 import { t, applyI18n } from '../i18n/index.js';
 import { SVG } from './icons.js';
-import { friends as api, account } from '../save/account.js';
+import { friends as api, account, inviteFriend } from '../save/account.js';
+import { pushState, enablePush } from '../net/notify.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -25,10 +26,34 @@ export function friends(args, ui) {
         <button class="btn primary" type="submit" data-i18n="fr.add"></button>
       </form>
       <p class="form-error" role="alert"></p>
+      <div class="notif-slot"></div>
       <div class="fr-list"><p class="faint" data-i18n="common.loading"></p></div>
     </div></div>`);
   const list = node.querySelector('.fr-list'), errEl = node.querySelector('.form-error');
   const g = ui.game;
+  // calls and invites reach me even with the game closed: notifications on this device
+  const notifSlot = node.querySelector('.notif-slot');
+  const drawNotif = async () => {
+    const st = await pushState();
+    if (st === 'on' || st === 'unsupported') { notifSlot.innerHTML = ''; return; }
+    notifSlot.innerHTML = `<div class="notif-row"><span>${esc(t(st === 'denied' ? 'notif.blocked' : 'notif.ask'))}</span>${st === 'denied' ? '' : `<button class="btn small primary" data-a="notif">${esc(t('notif.on'))}</button>`}</div>`;
+    const b = notifSlot.querySelector('[data-a="notif"]');
+    if (b) b.addEventListener('click', async () => {
+      ui.click(); b.disabled = true;
+      try { await enablePush(); ui.toast(t('notif.done'), 'ok'); } catch (e) { ui.toast(t(e && e.code === 'denied' ? 'notif.blocked' : 'notif.err'), 'warn'); }
+      drawNotif();
+    });
+  };
+  drawNotif();
+  // invite a friend into the world I am playing (opening it to friends first)
+  const invite = async (p) => {
+    const gm = ui.app.game;
+    if (!gm || !gm.running) { ui.open('together'); return; }
+    if (!gm.net) await ui.app.openRoom();
+    if (!gm.net || !gm.net.isHost) return;
+    await inviteFriend(p.id, gm.net.code, gm.meta.name, gm.meta.city || null);
+    ui.toast(t('inv2.sent', { name: p.name }), 'ok');
+  };
 
   async function load() {
     let r;
@@ -43,7 +68,8 @@ export function friends(args, ui) {
     let html = '';
     if (r.incoming.length) html += `<div class="section-label">${esc(t('fr.incoming'))}</div>` + r.incoming.map((p) => row(p, `<button class="btn small primary" data-a="accept" data-i18n="fr.accept"></button><button class="btn small ghost" data-a="remove" data-i18n="fr.decline"></button>`, esc(t('fr.wantsToBe')))).join('');
     html += `<div class="section-label">${esc(t('fr.list', { n: r.friends.length }))}</div>`;
-    html += r.friends.length ? r.friends.map((p) => row(p, `${p.online && ui.app.calls ? '<button class="btn small" data-a="call" data-i18n="call.call"></button>' : ''}${p.room ? '<button class="btn small primary" data-a="join" data-i18n="fr.join"></button>' : ''}<button class="btn small ghost" data-a="remove" data-i18n="fr.remove"></button>`, where(p))).join('') : `<p class="faint">${esc(t('fr.none'))}</p>`;
+    const playing = !!(g && g.running && !(g.net && !g.net.isHost));
+    html += r.friends.length ? r.friends.map((p) => row(p, `${p.online && ui.app.calls ? '<button class="btn small" data-a="call" data-i18n="call.call"></button>' : ''}${p.room ? '<button class="btn small primary" data-a="join" data-i18n="fr.join"></button>' : ''}${playing && !p.room ? '<button class="btn small" data-a="invite" data-i18n="inv2.invite"></button>' : ''}<button class="btn small ghost" data-a="remove" data-i18n="fr.remove"></button>`, where(p))).join('') : `<p class="faint">${esc(t('fr.none'))}</p>`;
     if (r.outgoing.length) html += `<div class="section-label">${esc(t('fr.outgoing'))}</div>` + r.outgoing.map((p) => row(p, `<button class="btn small ghost" data-a="remove" data-i18n="fr.cancel"></button>`, esc(t('fr.waiting')))).join('');
     list.innerHTML = html;
     const all = [...r.incoming, ...r.friends, ...r.outgoing];
@@ -56,6 +82,7 @@ export function friends(args, ui) {
           if (a === 'accept') { await api.accept(p.id); ui.toast(t('fr.nowFriends', { name: p.name }), 'ok'); }
           else if (a === 'remove') await api.remove(p.id);
           else if (a === 'call') { await ui.app.calls.start(p); return; }
+          else if (a === 'invite') { await invite(p); return; }
           else if (a === 'join') {
             if (g && g.running) await ui.app.quitToTitle();
             ui.app.joinRoom(p.room);

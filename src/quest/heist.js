@@ -48,6 +48,9 @@ export class Heist {
   constructor(game) { this.game = game; this.npcs = new Map(); this.guards = []; this.t = 0; this.seenT = 0; this.shotT = 0; }
 
   state() {
+    const g = this.game;
+    // a guest in a friend's world: the team's big mission (from the host)
+    if (g.net && !g.net.isHost) return (g.team && g.team.heist) || { tasks: [], slots: {}, got: [], placed: [], map: false, robbed: false, escaped: false, traded: false, mayor: false };
     const pr = this.game.profile;
     if (!pr.heist) {
       // twelve tasks at random, and a random slot of the plan for each
@@ -81,6 +84,8 @@ export class Heist {
   place(key, slot) {
     const s = this.state();
     if (!s.got.includes(key) || s.placed.includes(key) || s.slots[key] !== slot) return false;
+    // a guest puts the piece in too and tells the host (who keeps the team's plan)
+    if (this.game.net && !this.game.net.isHost) { s.placed.push(key); this.game.net.send({ t: 'hplace', key, slot }); if (s.placed.length >= PIECES) { s.map = true; this.game.giveItem('heist_map', 1); this.game.ui.toast(t('heist.mapDone'), 'soul'); } return true; }
     s.placed.push(key);
     if (s.placed.length >= PIECES && !s.map) {
       s.map = true;
@@ -116,11 +121,23 @@ export class Heist {
     if (!s.map) { g.ui.toast(t('heist.noPlan'), 'warn'); return; }
     g.world.setBlock(hit.x, hit.y, hit.z, B.air);
     g.giveItem('grand_diamond', 1);
-    s.robbed = true;
+    s.robbed = true; this.escapeSent = false;
     g.audio.sfx('crystal');
     g.ui.toast(t('heist.gotDiamond'), 'soul');
     g.missions.event('diamond');
     g.save(true);
+  }
+
+  // the team's heist is done (a friend traded the diamond): this player is a mayor too, paid on their own account
+  async teamMayor() {
+    const g = this.game;
+    if (g.profile.mayorAt && Date.now() - g.profile.mayorAt < 120_000) return; // this player traded it just now
+    let paid = 0;
+    if (account.user && account.available) { try { paid = (await econ.heist()).paid || 0; } catch { /* not all twelve tasks recorded for this account */ } }
+    g.profile.mayorAt = Date.now();
+    if (!(g.net && !g.net.isHost)) { const s = this.state(); s.traded = true; s.mayor = g.profile.mayorAt; }
+    g.save(true);
+    g.ui.open('mayor', { paid });
   }
 
   // at the bank's counter: the diamond for the biggest sum
@@ -134,6 +151,7 @@ export class Heist {
     }
     g.inventory.remove('grand_diamond', 1);
     s.traded = true; s.mayor = Date.now();
+    g.profile.mayorAt = s.mayor;
     g.missions.event('trade');
     g.save(true);
     g.ui.open('mayor', { paid });
@@ -184,12 +202,12 @@ export class Heist {
   // with the diamond, far enough from the bank: away
   checkEscape() {
     const g = this.game, s = this.state();
-    if (!s.robbed || s.escaped || !g.inventory.count('grand_diamond')) return;
+    if (!s.robbed || s.escaped || this.escapeSent || !g.inventory.count('grand_diamond')) return;
     const pl = this.plan();
     if (!pl) return;
     const P = pl.P, cx = (P.x0 + P.x1) / 2, cz = (P.z0 + P.z1) / 2, p = g.player.pos;
     if (Math.hypot(p.x - cx, p.z - cz) < 60) return;
-    s.escaped = true;
+    s.escaped = true; this.escapeSent = true;
     g.ui.toast(t('heist.escaped'), 'soul');
     g.missions.event('escape');
     g.save(true);

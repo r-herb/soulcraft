@@ -127,6 +127,15 @@ export const econ = {
   async heist() { const r = await api('econ/heist', { method: 'POST', body: {} }); if (r.wallet) setWallet(r.wallet); return r; },
   async pay(what, extra = {}) { const r = await api('econ/pay', { method: 'POST', body: { what, ...extra } }); setWallet(r.wallet); return r; },
 };
+// push notifications and what waits on the server (a call, an invite to play)
+export const pushApi = {
+  key: () => api('push/key'),
+  subscribe: (endpoint, lang) => api('push/subscribe', { method: 'POST', body: { endpoint, lang } }),
+  unsubscribe: (endpoint) => api('push/unsubscribe', { method: 'POST', body: { endpoint } }),
+  pending: () => api('push/pending'),
+  clear: (kind) => api('push/clear', { method: 'POST', body: { kind } }),
+};
+export function inviteFriend(to, room, world, city) { return api('mp/invite', { method: 'POST', body: { to, room, world, city } }); }
 export function callSignal(to, data) { return api('call/signal', { method: 'POST', body: { to, data } }); }
 export async function sendPresence(p) { if (account.user) await api('presence', { method: 'POST', body: p }).catch(() => {}); }
 export async function sendFeedback(kind, text, ctx) { await api('feedback', { method: 'POST', body: { kind, text, ctx } }); }

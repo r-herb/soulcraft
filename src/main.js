@@ -21,6 +21,8 @@ import { B } from './world/blocks.js';
 import { CITY_PLACES, bankCoords, bankPoint, bankLayout } from './world/city.js';
 import { Net, createRoom } from './net/net.js';
 import { watchUpdates, showUpdate, latestVersion } from './ui/update.js';
+import { Invites } from './ui/invites.js';
+import { fetchPending, refreshPush } from './net/notify.js';
 
 function hasWebGL() {
   try {
@@ -196,6 +198,11 @@ async function boot() {
       await app.game.start(meta, (f) => ui.setLoading(0.1 + f * 0.9, t('loading.chunks')));
       ui.closeAll();
       app.presence();
+      // "play with friends": the world opens to friends at once and the friends list comes up to invite them
+      if (app.togetherNext && !meta.guest) {
+        app.togetherNext = false;
+        app.openRoom().then(() => { ui.toast(t('together.opened'), 'ok'); ui.open('friends', { invite: true }); }).catch((e) => ui.toast(ui.mpError(e.code || 'network'), 'warn'));
+      }
       if (!(settings().tutorialDone || {}).move) setTimeout(() => ui.tutorial('move'), 800);
       else if (meta.mode === 'quest' && !meta.player) setTimeout(() => ui.toast(t('quest.obj.0'), 'soul'), 800);
     } catch (e) {
@@ -276,6 +283,19 @@ async function boot() {
   startChatWatch(ui);
   app.calls = new CallManager();
   new CallUI(app.calls, ui);
+  // invites to play, and what waited on the server while the game was closed or hidden
+  app.invites = new Invites(app, ui);
+  onHub((ev) => { if (ev.t === 'invite') app.invites.show(ev); });
+  const pending = async () => {
+    for (const ev of await fetchPending()) {
+      if (ev.kind === 'call' && Date.now() - ev.at < 40_000) app.calls.onSignal(ev.from, ev.name, { type: 'invite', call: ev.call, video: ev.video });
+      else if (ev.kind === 'game') app.invites.show(ev);
+    }
+  };
+  onAccount(() => { pending(); refreshPush(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pending(); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.t === 'pending') pending(); });
+  pending();
   const chatBtn = () => ui.hud && ui.hud.showChat && ui.hud.showChat(!!(account.user && account.mp));
   onAccount(() => { chatBtn(); refreshChat(); });
   chatBtn();
@@ -288,7 +308,7 @@ async function boot() {
   });
   onAccount(loadWallet);
   loadWallet();
-  window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, B, missionPlace: (n) => CITY_PLACES.malaga.find((p) => p.name === n), bank: { coords: bankCoords, point: bankPoint, layout: bankLayout }, get game() { return app.game; } };
+  window.__sc = { app, ui, input, audio, setSetting, pending, questLevels: QUEST_LEVELS, B, missionPlace: (n) => CITY_PLACES.malaga.find((p) => p.name === n), bank: { coords: bankCoords, point: bankPoint, layout: bankLayout }, get game() { return app.game; } };
 
   registerSW(app);
 }

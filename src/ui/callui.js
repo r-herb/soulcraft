@@ -3,6 +3,7 @@
 // invite and hang up. It floats above the game and the menus.
 import { t } from '../i18n/index.js';
 import { friends as friendsApi } from '../save/account.js';
+import { localNotify } from '../net/notify.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -42,8 +43,14 @@ export class CallUI {
       ring.querySelector('[data-a="yes"]').onclick = () => this.calls.accept().catch(() => this.ui.toast(t('call.noMic'), 'warn'));
       ring.querySelector('[data-a="no"]').onclick = () => this.calls.decline();
       this.root.appendChild(ring);
-      try { this.ui.audio.sfx('levelup'); } catch { /* no sound */ }
-    }
+      // ring (and buzz a phone) until answered, declined or given up
+      if (!this.ringT) {
+        const once = () => { try { this.ui.audio.sfx('ring'); navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch { /* no sound */ } };
+        once();
+        this.ringT = setInterval(once, 1800);
+        localNotify(t('call.incoming', { name: inv.name }), t(inv.video ? 'call.withVideo' : 'call.voice'), 'call');
+      }
+    } else if (this.ringT) { clearInterval(this.ringT); this.ringT = null; }
     if (!c) { this.videos.forEach((v) => { v.srcObject = null; }); this.videos.clear(); return; }
     const box = document.createElement('div');
     box.className = 'call-box' + (c.video ? ' video' : '');

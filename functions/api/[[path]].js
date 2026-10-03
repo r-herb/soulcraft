@@ -9,6 +9,8 @@
 //   GET  /api/mp/ws/:code       WebSocket into a room (forwarded to the ROOMS
 //                               Durable Object of the soulcraft-mp Worker)
 //   POST /api/feedback          {kind, text, ctx}  an idea or a problem report
+//   GET  /api/push/key | POST /api/push/subscribe {endpoint, lang} | GET /api/push/pending
+//   POST /api/mp/invite         {to, room, world}  invite a friend into my room
 //   GET  /api/saves             list of slots (no data)
 //   GET  /api/saves/:slot       one save
 //   PUT  /api/saves/:slot       {data, savedAt}
@@ -34,6 +36,7 @@ import {
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
 } from '../../server/lib.js';
 import { resetEmail, sendEmail } from '../../server/mail.js';
+import { vapidKeys, wake, pushEndpointOk } from '../../server/push.js';
 
 const RESET_TTL = 60 * 60e3; // reset links work for an hour
 const today = () => new Date().toISOString().slice(0, 10);
@@ -234,6 +237,19 @@ async function route(parts, method, request, env, secure) {
       h.set('X-User-Id', String(s.user.id));
       h.set('X-User-Name', s.user.name);
       return room(code).fetch(new Request(request.url, { headers: h }));
+    }
+    // invite a friend into my room: a card with Join in their game, and a push if it is closed
+    if (b === 'invite' && method === 'POST') {
+      const { to, room: code, world, city } = await body(request);
+      const other = Number(to);
+      if (!(other > 0) || !/^[A-Z0-9]{6}$/.test(String(code || ''))) return err(400, 'bad_invite');
+      const f = await db.prepare("SELECT 1 FROM friends WHERE a = ? AND b = ? AND status = 'accepted'").bind(Math.min(s.user.id, other), Math.max(s.user.id, other)).first();
+      if (!f) return err(403, 'not_friends');
+      const ev = { from: s.user.id, name: s.user.name, room: String(code), world: String(world || '').slice(0, 40), city: city ? String(city).slice(0, 20) : null };
+      await push(env, [other], { t: 'invite', ...ev });
+      await db.prepare('INSERT OR REPLACE INTO pending_events (user_id, kind, data, at) VALUES (?, ?, ?, ?)').bind(other, 'game', JSON.stringify(ev), Date.now()).run();
+      await wake(env, db, [other]);
+      return json({ ok: true });
     }
     return err(404, 'not_found');
   }
@@ -541,6 +557,38 @@ async function route(parts, method, request, env, secure) {
     return err(404, 'not_found');
   }
 
+  // ---------- push notifications: calls and game invites reach a closed game ----------
+  if (a === 'push') {
+    if (s.role !== 'user') return err(403, 'forbidden');
+    const me = s.user.id, now = Date.now();
+    if (b === 'key' && method === 'GET') return json({ key: (await vapidKeys(db)).pub });
+    if (b === 'subscribe' && method === 'POST') {
+      const { endpoint, lang } = await body(request);
+      if (!pushEndpointOk(endpoint)) return err(400, 'bad_endpoint');
+      await db.prepare('INSERT INTO push_subs (endpoint, user_id, lang, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, lang = excluded.lang')
+        .bind(endpoint, me, String(lang || '').slice(0, 5), now).run();
+      return json({ ok: true });
+    }
+    if (b === 'unsubscribe' && method === 'POST') {
+      const { endpoint } = await body(request);
+      await db.prepare('DELETE FROM push_subs WHERE endpoint = ? AND user_id = ?').bind(String(endpoint || ''), me).run();
+      return json({ ok: true });
+    }
+    // what is waiting for me (the service worker shows it; the game rings or offers to join)
+    if (b === 'pending' && method === 'GET') {
+      // a call rings for a minute, an invite to play stands for ten
+      const { results } = await db.prepare("SELECT kind, data, at FROM pending_events WHERE user_id = ? AND at > (CASE kind WHEN 'call' THEN ? ELSE ? END)").bind(me, now - 60_000, now - 600_000).all();
+      const lang = (await db.prepare('SELECT lang FROM push_subs WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').bind(me).first() || {}).lang || null;
+      return json({ lang, events: results.map((r) => ({ kind: r.kind, at: r.at, ...JSON.parse(r.data) })) });
+    }
+    if (b === 'clear' && method === 'POST') {
+      const { kind } = await body(request);
+      await db.prepare('DELETE FROM pending_events WHERE user_id = ? AND kind = ?').bind(me, String(kind || '')).run();
+      return json({ ok: true });
+    }
+    return err(404, 'not_found');
+  }
+
   // ---------- calls: the messages that set up a call, only between friends ----------
   if (a === 'call' && b === 'signal' && method === 'POST') {
     if (s.role !== 'user') return err(403, 'forbidden');
@@ -553,6 +601,13 @@ async function route(parts, method, request, env, secure) {
     if (!f) return err(403, 'not_friends');
     if (s.user.banned_until && s.user.banned_until > Date.now()) return err(403, 'banned');
     await push(env, [other], { t: 'call', from: s.user.id, name: s.user.name, data });
+    // a ringing call also waits on the server (and wakes a closed game) until answered or a minute passes
+    if (data.type === 'invite') {
+      await db.prepare('INSERT OR REPLACE INTO pending_events (user_id, kind, data, at) VALUES (?, ?, ?, ?)')
+        .bind(other, 'call', JSON.stringify({ from: s.user.id, name: s.user.name, call: String(data.call || '').slice(0, 20), video: !!data.video }), Date.now()).run();
+      await wake(env, db, [other]);
+    } else if (data.type === 'cancel') await db.prepare("DELETE FROM pending_events WHERE user_id = ? AND kind = 'call'").bind(other).run();
+    else if (['accept', 'decline', 'busy'].includes(data.type)) await db.prepare("DELETE FROM pending_events WHERE user_id = ? AND kind = 'call'").bind(s.user.id).run();
     return json({ ok: true });
   }
 

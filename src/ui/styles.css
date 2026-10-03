@@ -279,6 +279,14 @@ body.touch .desktop-only { display: none !important; }
 .dev-toggle { position: absolute; left: calc(var(--sp-2) + var(--safe-l)); bottom: 50%; z-index: 31; pointer-events: auto; }
 
 /* update banner */
+.together-btn { background: linear-gradient(180deg, #2fbf71, #1f8f52); border-color: #136b3b; color: #fff; }
+.together-steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-sm); color: var(--c-text-dim); }
+.invite-root { position: fixed; top: calc(var(--sp-3) + var(--safe-t)); left: 50%; transform: translateX(-50%); z-index: 120; display: flex; flex-direction: column; gap: var(--sp-2); width: min(420px, calc(100% - 32px)); pointer-events: none; }
+.invite-card { pointer-events: auto; display: flex; flex-direction: column; gap: 6px; background: var(--surface-panel); border: 2px solid var(--c-gold-400); border-radius: var(--r-md); padding: var(--sp-3); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), var(--glow-gold); animation: invite-in 0.3s ease-out; }
+.invite-card .row { gap: var(--sp-2); }
+@keyframes invite-in { from { transform: translateY(-20px); opacity: 0; } to { transform: none; opacity: 1; } }
+.notif-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 8px; }
+.notif-row span { flex: 1 1 180px; font-size: var(--fs-sm); }
 .update-modal { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: var(--sp-4); background: rgba(5, 4, 15, 0.45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 .update-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--sp-3); text-align: center; }
 .update-card p { margin: 0; }

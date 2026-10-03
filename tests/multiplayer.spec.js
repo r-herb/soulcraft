@@ -74,7 +74,8 @@ test.describe('Play with friends', () => {
 
     // the guest joins with the code
     await signIn(guest, GUEST);
-    await guest.click('[data-act="join"]');
+    await guest.click('[data-act=\"together\"]');
+    await guest.click('[data-screen=\"together\"] [data-act=\"t-code\"]');
     await guest.fill('#mp-code', code.toLowerCase());
     await shot(guest, 'join');
     await guest.click('[data-screen="join"] [data-act="join"]');
@@ -142,7 +143,8 @@ test.describe('Play with friends', () => {
     expect(kept).toBe(true);
 
     // rejoining brings them back
-    await guest.click('[data-act="join"]');
+    await guest.click('[data-act=\"together\"]');
+    await guest.click('[data-screen=\"together\"] [data-act=\"t-code\"]');
     await guest.fill('#mp-code', code);
     await guest.click('[data-screen="join"] [data-act="join"]');
     await running(guest);
@@ -151,7 +153,8 @@ test.describe('Play with friends', () => {
     // a wrong code is explained
     const third = await (await browser.newContext()).newPage();
     await signIn(third, HOST);
-    await third.click('[data-act="join"]');
+    await third.click('[data-act=\"together\"]');
+    await third.click('[data-screen=\"together\"] [data-act=\"t-code\"]');
     await third.fill('#mp-code', 'ZZZZZZ');
     await third.click('[data-screen="join"] [data-act="join"]');
     await expect(third.locator('[data-screen="join"] .form-error')).toHaveText('No open room with this code. Check it with your friend.');
@@ -164,6 +167,52 @@ test.describe('Play with friends', () => {
     expect(await host.evaluate(() => window.__sc.game.net)).toBeNull();
     await expect(host.locator('.room-chip')).toBeHidden();
 
+    expect(hostProblems).toEqual([]);
+    expect(guestProblems).toEqual([]);
+  });
+
+  test('Malaga together: a guest\'s deeds count for the team, the big mission is shared, the plan puzzle too', async ({ browser, request }) => {
+    test.setTimeout(300_000);
+    await makeUsers(request);
+    const host = await (await browser.newContext({ viewport: { width: 960, height: 540 } })).newPage();
+    const guest = await (await browser.newContext({ viewport: { width: 960, height: 540 } })).newPage();
+    const hostProblems = watchConsole(host), guestProblems = watchConsole(guest);
+
+    // "Play with friends": Malaga together opens the world to friends at once
+    await signIn(host, HOST);
+    await host.click('[data-act="together"]');
+    await shot(host, 'together');
+    await host.click('[data-screen="together"] [data-act="t-city"]');
+    await host.click('[data-screen="cityIntro"] [data-act="start"]');
+    await running(host);
+    await host.waitForFunction(() => !!(window.__sc.game.net && window.__sc.game.net.code), null, { timeout: 30_000 });
+    await expect(host.locator('[data-screen="friends"]')).toBeVisible();
+    const code = await host.evaluate(() => window.__sc.game.net.code);
+    await host.evaluate(() => window.__sc.ui.closeAll());
+
+    await signIn(guest, GUEST);
+    await guest.evaluate((c) => window.__sc.app.joinRoom(c), code);
+    await running(guest);
+    // the guest gets the team's state: the host's twelve tasks
+    await guest.waitForFunction(() => { const g = window.__sc.game; return g.missions.guest && g.team && g.team.heist && g.team.heist.tasks.length === 12; }, null, { timeout: 30_000 });
+    const tasks = await host.evaluate(() => window.__sc.game.heist.state().tasks);
+    expect(await guest.evaluate(() => window.__sc.game.heist.state().tasks)).toEqual(tasks);
+
+    // the guest eats in three restaurants: the team's critic mission is done, and the guest is rewarded too
+    await guest.evaluate(() => { const M = window.__sc.game.missions; for (const k of ['1,1', '5,2', '9,9']) M.event('meal', { item: 'paella', key: k }); });
+    await host.waitForFunction(() => window.__sc.game.missions.isDone('critic'), null, { timeout: 15_000 });
+    await guest.waitForFunction(() => window.__sc.game.missions.isDone('critic'), null, { timeout: 15_000 });
+
+    // the guest meets an informant (a task with just a meeting): the host's game sees it, and a piece of the plan comes
+    const t1 = await host.evaluate(() => { const H = window.__sc.game.heist; const m = H.missions().find((x) => x.steps.length === 1 && x.steps[0].ev === 'reach' && !x.steps[0].give); return m && { id: m.id, key: m.key, place: m.steps[0].near }; });
+    expect(t1).toBeTruthy();
+    await guest.evaluate((name) => { const g = window.__sc.game, q = g.missions.placeXZ(name); g.player.fly = true; g.player.pos.set(q.x + 1, 80, q.z + 1); }, t1.place);
+    await unpause(host);
+    await host.waitForFunction((id) => window.__sc.game.missions.isDone(id), t1.id, { timeout: 30_000 });
+    await guest.waitForFunction((key) => window.__sc.game.heist.state().got.includes(key), t1.key, { timeout: 30_000 });
+    // the guest puts that piece in the plan: the host's plan has it too
+    await guest.evaluate((key) => { const H = window.__sc.game.heist, s = H.state(); H.place(key, s.slots[key]); }, t1.key);
+    await host.waitForFunction((key) => window.__sc.game.heist.state().placed.includes(key), t1.key, { timeout: 15_000 });
     expect(hostProblems).toEqual([]);
     expect(guestProblems).toEqual([]);
   });

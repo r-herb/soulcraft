@@ -16,7 +16,7 @@ import { missions } from './missionsui.js';
 import { heistMap, mayor } from './heistui.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
-import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar } from '../save/account.js';
+import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi } from '../save/account.js';
 
 export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 
@@ -183,7 +183,8 @@ export class UI {
           </button>
           <div class="row"><button class="btn violet" style="flex:1" data-act="new" data-i18n="title.new"></button><button class="btn violet" style="flex:1" data-act="worlds" data-i18n="title.worlds"></button></div>
           <div class="row"><button class="btn gold" style="flex:1" data-act="quest" data-i18n="title.quest"></button><button class="btn city-btn" style="flex:1" data-act="city" data-i18n="title.city"></button></div>
-          <div class="row">${account.mp ? '<button class="btn" style="flex:1" data-act="join" data-i18n="title.join"></button>' : ''}<button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
+          ${account.available ? '<button class="btn together-btn" data-act="together" data-i18n="together.btn"></button>' : ''}
+          <div class="row"><button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
         </div>
       </div>
       <div class="title-foot">
@@ -217,8 +218,8 @@ export class UI {
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
     node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
     node.querySelector('[data-act="city"]').addEventListener('click', () => { this.click(); this.open('cityIntro', { city: 'malaga' }); });
-    const jn = node.querySelector('[data-act="join"]');
-    if (jn) jn.addEventListener('click', () => { this.click(); this.open('join'); });
+    const tg = node.querySelector('[data-act="together"]');
+    if (tg) tg.addEventListener('click', () => { this.click(); this.open('together'); });
     const si = node.querySelector('[data-act="signin"]');
     if (si) si.addEventListener('click', () => { this.click(); this.open('signin'); });
     const ch = node.querySelector('[data-act="chat"]');
@@ -822,6 +823,45 @@ export class UI {
       }
       list.appendChild(el(`<span class="faint">${esc(t('mp.count', { n: net.count, max: 4 }))}</span>`));
     }
+    return node;
+  }
+
+  // Play with friends: join a friend's open world, or pick a world of mine
+  // (a new Malaga, a new world, the last one) which opens to friends at once,
+  // then invite them; Malaga's missions are then done together.
+  screen_together() {
+    const signed = !!account.user;
+    const save = this.app.saveInfo;
+    const node = el(`<div class="screen solid" data-screen="together">
+      <div class="panel" style="width:min(520px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="together.title"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body col" style="gap:var(--sp-3)">
+        ${signed ? `<ol class="together-steps"><li data-i18n="together.step1"></li><li data-i18n="together.step2"></li><li data-i18n="together.step3"></li></ol>
+          <div class="section-label" data-i18n="together.friendsPlaying"></div>
+          <div class="together-open"><p class="faint" data-i18n="common.loading"></p></div>
+          <div class="section-label" data-i18n="together.mine"></div>
+          <div class="col" style="gap:var(--sp-2)">
+            <button class="btn city-btn" data-act="t-city" data-i18n="together.city"></button>
+            <button class="btn violet" data-act="t-new" data-i18n="together.new"></button>
+            ${save ? `<button class="btn" data-act="t-continue">${esc(t('together.continue', { name: save.name }))}</button>` : ''}
+            <button class="btn ghost" data-act="t-code" data-i18n="title.join"></button>
+          </div>` : `<p style="margin:0" data-i18n="together.signIn"></p><button class="btn primary wide" data-act="signin" data-i18n="acct.signIn"></button>`}
+        </div>
+      </div></div>`);
+    const on = (a, fn) => { const b = node.querySelector(`[data-act="${a}"]`); if (b) b.addEventListener('click', () => { this.click(); fn(); }); };
+    on('back', () => this.back());
+    on('signin', () => this.open('signin'));
+    on('t-city', () => { this.app.togetherNext = true; this.open('cityIntro', { city: 'malaga' }); });
+    on('t-new', () => { this.app.togetherNext = true; this.open('newWorld'); });
+    on('t-continue', () => { this.app.togetherNext = true; this.app.continueGame(); });
+    on('t-code', () => this.open('join'));
+    const box = node.querySelector('.together-open');
+    if (box) friendsApi.list().then((r) => {
+      const open = r.friends.filter((p) => p.online && p.room);
+      box.innerHTML = open.length ? open.map((p) => `<div class="fr-row"><span class="fr-name"><b>${esc(p.name)}</b><br><span class="fr-sub">${esc(t(p.city ? 'fr.inCity' : 'fr.inWorld', { name: p.world || '?' }))}</span></span><span class="fr-acts"><button class="btn small primary" data-room="${esc(p.room)}">${esc(t('fr.join'))}</button></span></div>`).join('') : `<p class="faint" style="margin:0">${esc(t('together.noneOpen'))}</p>`;
+      box.querySelectorAll('[data-room]').forEach((b) => b.addEventListener('click', () => { this.click(); this.app.joinRoom(b.dataset.room); }));
+    }).catch(() => { box.innerHTML = `<p class="faint">${esc(t('fr.offline'))}</p>`; });
     return node;
   }
 

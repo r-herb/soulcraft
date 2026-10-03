@@ -51,10 +51,24 @@ The crystal vault gives the Frost Monarch skin, the Frostbrand sword and
 
 ## Play with friends
 
-Signed-in players can share a world with up to 3 friends. The owner opens
-the world from the pause menu (**Play with friends > Open to friends**) and
-gets a 6-character room code; friends choose **Join friend** on the title
-screen and type it.
+Signed-in players can share a world with up to 3 friends. **Play with
+friends** on the title screen lists the friends whose worlds are open (Join)
+and starts a world of one's own together: a new Malaga, a new world or the
+last one. That world opens to friends at once and the friends list comes up
+with **Invite** next to each friend; an invited friend gets a card with
+**Join** in their game (with a sound), and a notification if their game is
+closed. A world can also be opened from the pause menu (**Play with friends
+> Open to friends**) and joined with its 6-character room code.
+
+- **Malaga together**: the missions and the big mission (El Gran Golpe) are
+  the team's. The host's game keeps the shared progress; what a guest does
+  (eating out, a bus ride, meeting an informant, a piece of the plan put
+  in, the diamond taken) is sent to the host and counts for all, and every
+  player gets the crystals and coins of each mission the team finishes. A
+  meeting counts for whoever of the team gets there; an informant who asks
+  for something takes it from the player who brings it. When the diamond is
+  traded, the whole team becomes Malaga's mayors (each paid on their own
+  account once their twelve tasks are recorded).
 
 - The host's game is the authority: it saves the world (everyone's block
   edits), runs the monsters and the time of day, and keeps each guest's
@@ -173,6 +187,16 @@ a private chat. On a computer a call has video and sound, on a phone or
 tablet sound only. **+ Friend** invites more online friends into the same
 call (everyone connects to everyone, so it suits a few friends). The call
 window floats in the corner above the game, with mute, camera and hang up.
+
+A ringing call rings (and buzzes a phone) until answered. If the friend's
+game is hidden it shows a system notification; if it is closed, **Web
+Push** wakes the phone or computer: "Turn on" in the friends list asks the
+browser once (on an iPhone the game has to be added to the home screen).
+The server makes its own push key on first use (kept in D1, nothing to set
+up), sends an empty push to the friend's push service, and the service
+worker fetches what is waiting (`/api/push/pending`: the call for a minute,
+an invite to play for ten) and shows it; opening the game then rings or
+offers Join.
 
 Calls go straight between the players' browsers (WebRTC, with public STUN
 servers); only the set-up messages pass through the chat hub, and only
@@ -569,6 +593,14 @@ What the tests cover:
 - `tests/farm2.spec.js` (desktop): an orange pip grows into a bush whose
   fruit is picked and grows again; a hen lays into a nest box; an incubator
   hatches two eggs into chicks.
+- `tests/call.spec.js` (accounts) also: a call and an invite to play wait on
+  the server for a friend whose game was closed; opening it rings, declining
+  stops it; an invite card with Join; push subscriptions only to real push
+  services.
+- `tests/multiplayer.spec.js` (accounts) also: Malaga together, a guest's
+  restaurants finish the team's mission, a guest meeting an informant gives
+  the team a piece of the plan, and a piece the guest puts in the puzzle is
+  in the host's plan.
 - `tests/heist.spec.js` (desktop): twelve tasks with twelve squares of the
   plan, all done; the puzzle (a wrong square, the right one, the rest); the
   weak wall breaks; a guard who sees the player in the vault takes the
