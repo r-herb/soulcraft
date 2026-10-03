@@ -49,6 +49,9 @@ export const CITY_PLACES = {
     { name: 'Pedregalejo', lat: 36.71900, lon: -4.38300 },
     { name: 'El Palo', lat: 36.71940, lon: -4.36140 },
     { name: 'Ciudad Jardín', lat: 36.74400, lon: -4.42500 },
+    // La Fábrica (season 1): the old tobacco factory, and El Maestro's farmhouse up the hill
+    { name: 'La Tabacalera', lat: 36.70910, lon: -4.44240 },
+    { name: 'Finca El Maestro', lat: 36.74650, lon: -4.42080 },
   ],
 };
 
@@ -203,6 +206,8 @@ export class CityData {
     const out = { city: true, seaY: this.seaY, ground, surf, wall, bid, bl, mark };
     const bank = this.bankPlan();
     if (bank && bank.old.x1 >= x0 && bank.old.x0 < x0 + W && bank.old.z1 >= z0 && bank.old.z0 < z0 + W) out.bank = bank;
+    const fab = this.fabricaPlan();
+    if (fab && fab.old.x1 >= x0 && fab.old.x0 < x0 + W && fab.old.z1 >= z0 && fab.old.z0 < z0 + W) out.fab = fab;
     return out;
   }
 
@@ -211,8 +216,25 @@ export class CityData {
   // vault go. Null when the city has none; undefined until its tile is here.
   bankPlan() {
     if (this._bank !== undefined) return this._bank;
-    const pl = (CITY_PLACES[this.id] || []).find((p) => p.name === 'Banco de España');
-    if (!pl) return (this._bank = null);
+    const r = this.standalonePlan('Banco de España');
+    if (r !== undefined) this._bank = r;
+    return r;
+  }
+  // La Fábrica: the old tobacco factory, the same way (a building of its own where it stood)
+  fabricaPlan() {
+    if (this._fab !== undefined) return this._fab;
+    const r = this.standalonePlan('La Tabacalera', 16);
+    if (r !== undefined) this._fab = r;
+    return r;
+  }
+
+  // A building of its own where a named place's biggest building stood: the
+  // biggest rectangle inside that outline (at least min across), its entrance
+  // facing the nearest street. Null when there is none, undefined until the
+  // tile is here.
+  standalonePlan(name, min = 12) {
+    const pl = (CITY_PLACES[this.id] || []).find((p) => p.name === name);
+    if (!pl) return null;
     const q = this.toXZ(pl.lat, pl.lon);
     if (!this.cell(q.x, q.z)) return undefined;
     // the biggest building by the place
@@ -239,7 +261,7 @@ export class CityData {
       }
       if (!best || seen.size > best.n) best = { gid, n: seen.size, x0, z0, x1, z1, street };
     }
-    if (!best) return (this._bank = null);
+    if (!best) return null;
     // The bank stands free on a marble square where that building was: the
     // biggest rectangle inside its outline (with what stands in its yards).
     const { gid, x0, z0, x1, z1 } = best;
@@ -259,11 +281,11 @@ export class CityData {
         for (let x2 = x; x2 < W && hgt[x2]; x2++) {
           h = Math.min(h, hgt[x2]);
           const w = x2 - x + 1, ar = w * Math.min(h, Math.round(w * 1.6));
-          if (w >= 12 && h >= 12 && ar > area) { area = ar; rect = { x0: x0 + x, x1: x0 + x2, z1: z0 + z, z0: z0 + z - Math.min(h, Math.round(w * 1.6)) + 1 }; }
+          if (w >= min && h >= min && ar > area) { area = ar; rect = { x0: x0 + x, x1: x0 + x2, z1: z0 + z, z0: z0 + z - Math.min(h, Math.round(w * 1.6)) + 1 }; }
         }
       }
     }
-    if (!rect) return (this._bank = null);
+    if (!rect) return null;
     // the entrance faces the nearest street
     const reach = (x, z, dx, dz) => { for (let k = 1; k < 40; k++) { const a = this.at(x + dx * k, z + dz * k); if (a && !a.b && STREETS.includes(a.s & 0x7f)) return k; } return 99; };
     const mx = Math.round((rect.x0 + rect.x1) / 2), mz = Math.round((rect.z0 + rect.z1) / 2);
@@ -271,7 +293,7 @@ export class CityData {
     const side = sides.indexOf(Math.min(...sides));
     const door = side === 0 ? { x: mx, z: rect.z0 } : side === 1 ? { x: rect.x1, z: mz } : side === 2 ? { x: mx, z: rect.z1 } : { x: rect.x0, z: mz };
     const base = (this.buildings.get(gid) || [this.groundAt(mx, mz)])[0];
-    return (this._bank = { gid, ...rect, side, door, base, old: { x0, z0, x1, z1 } });
+    return { gid, ...rect, side, door, base, old: { x0, z0, x1, z1 } };
   }
 
   // An open cell (not a building, the sea or a wall) near (x, z), or null.
@@ -320,6 +342,20 @@ export function bankLayout(depth) {
 }
 export const bankWidth = (P) => (P.side === 0 || P.side === 2 ? P.x1 - P.x0 : P.z1 - P.z0);
 
+// La Fábrica inside, by depth from the entrance and width across: the lobby
+// with the red phone, the print hall with its presses in rows, paper and ink
+// along the side wall, then at the back the canteen (where the workers wait)
+// and the pallet room (where the printed money piles up), and under the floor
+// the escape tunnel from a hatch in the pallet room to one under the lobby.
+export function fabLayout(depth, width) {
+  const back = Math.max(10, depth - 8), half = Math.floor(width / 2);
+  const presses = [];
+  for (let d = 7; d <= back - 3; d += 5) for (let a = 5; a <= width - 5; a += 6) presses.push([d, a]);
+  const pallets = [];
+  for (let d = back + 2; d < depth - 1 && pallets.length < 12; d += 2) for (let a = half + 2; a < width - 4 && pallets.length < 12; a += 2) pallets.push([d, a]);
+  return { lobby: 4, back, half, presses: presses.slice(0, 8), pallets, phone: [2, 2], paper: [6, 1], ink: [11, 1], backDoor: [depth, width - 3], tunnel: { a: width - 3, from: back + 2, to: 3 } };
+}
+
 // ---------- worker: blocks for one chunk ----------
 export function genCity(cx, cz, data, e) {
   const W = S + 2 * M, seaY = e.seaY;
@@ -333,6 +369,10 @@ export function genCity(cx, cz, data, e) {
     const bk = e.bank;
     if (bk && wx >= bk.x0 && wx <= bk.x1 && wz >= bk.z0 && wz <= bk.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; bankBuilding(lx, lz, wx, wz, g); continue; }
     if (bk && b === bk.gid) { b = 0; s = SURF.marble; }
+    // La Fábrica: the old tobacco factory, on a square of its own
+    const fb = e.fab;
+    if (fb && wx >= fb.x0 && wx <= fb.x1 && wz >= fb.z0 && wz <= fb.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; fabricaBuilding(lx, lz, wx, wz, g); continue; }
+    if (fb && b === fb.gid) { b = 0; s = SURF.paving; }
     data[idx(lx, 0, lz)] = B.coreite;
     const natural = NATURAL.has(s) && !b;
     for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : (y < g - 3 && cityGemAt(wx, y, wz)) || B.stone;
@@ -451,12 +491,56 @@ export function genCity(cx, cz, data, e) {
     if (edge && topY + 1 < HEIGHT) data[idx(lx, topY + 1, lz)] = B.bank_stone;
   }
 
+  // La Fábrica: brick walls with tall windows, steel doors, a concrete hall
+  // with the presses, the back rooms, and the tunnel under the floor
+  function fabricaBuilding(lx, lz, wx, wz, g) {
+    const P = e.fab, base = P.base;
+    const topY = Math.min(HEIGHT - 2, base + 9);
+    const { d, a, mid, depth } = bankCoords(P, wx, wz);
+    const width = bankWidth(P), L = fabLayout(depth, width);
+    const edge = wx === P.x0 || wx === P.x1 || wz === P.z0 || wz === P.z1;
+    for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
+    for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
+    data[idx(lx, base, lz)] = edge ? B.brick : B.concrete;
+    // the tunnel: two blocks of soft earth to dig through, from the pallet room's hatch to the lobby's
+    const tn = L.tunnel;
+    if (!edge && a === tn.a && d >= tn.to && d <= tn.from) {
+      if (base - 3 > 0) data[idx(lx, base - 3, lz)] = (d - tn.to) % 6 === 3 ? B.bank_lamp : B.stone;
+      for (const y of [base - 2, base - 1]) if (y > 0) data[idx(lx, y, lz)] = d === tn.from || d === tn.to ? B.air : B.soft_earth;
+      if (d === tn.from || d === tn.to) data[idx(lx, base, lz)] = B.sewer_grate;
+    }
+    for (let y = base + 1; y < topY; y++) {
+      const r = y - base;
+      let id = B.air;
+      if (edge) {
+        const front = d === 0 && Math.abs(a - mid) <= 1 && r <= 3;
+        const backDoor = d === depth && a === L.backDoor[1] && r <= 2;
+        const sign = d === 0 && Math.abs(a - mid) <= 3 && r === 5;
+        const win = r >= 3 && r <= 5 && ((a % 4) + 4) % 4 === 2 && !(d === 0 && Math.abs(a - mid) <= 3);
+        id = front || backDoor ? B.factory_door : sign ? B.fab_sign : win ? B.window : B.brick;
+      } else if (r === 7) id = ((a % 5) + 5) % 5 === 2 && ((d % 5) + 5) % 5 === 2 ? B.bank_lamp : B.concrete; // the ceiling, with lamps
+      else if (r < 7) {
+        const inBack = d >= L.back;
+        const door1 = Math.floor(L.half / 2), door2 = L.half + Math.floor((width - L.half) / 2);
+        if (d === L.back && !(r <= 2 && (a === door1 || a === door2))) id = B.brick; // the back rooms' wall, a door to each
+        else if (inBack && a === L.half && r < 7) id = B.brick; // between the canteen and the pallet room
+        else if (inBack && a < L.half && r === 1 && (d - L.back) % 3 === 2 && a % 3 !== 0) id = B.planks; // the canteen's tables
+        else if (r === 1 && L.presses.some(([pd, pa]) => pd === d && pa === a)) id = B.money_press;
+        else if (a === 1 && r <= 2 && d >= L.paper[0] && d < L.paper[0] + 4 && d < L.back) id = B.paper_stack;
+        else if (a === 1 && r === 1 && d >= L.ink[0] && d < L.ink[0] + 2 && d < L.back) id = B.ink_barrel;
+        else if (d === L.phone[0] && a === L.phone[1] && r === 1) id = B.red_phone;
+      }
+      data[idx(lx, y, lz)] = id;
+    }
+    data[idx(lx, topY, lz)] = B.concrete;
+  }
+
   // A hidden gem cache in about one chunk in eight: a stone lid flush with
   // the ground of a park, a garden, a beach or a square.
   if (hash3(cx, 5, cz, 31) < 0.12) {
     const lx = Math.floor(hash3(cx, 6, cz, 31) * S), lz = Math.floor(hash3(cx, 7, cz, 31) * S), k = at(lx, lz);
     const s = e.surf[k] & 0x7f, g = Math.min(HEIGHT - 2, e.ground[k]), wx = cx * S + lx, wz = cz * S + lz;
-    const inBank = e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1;
+    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1);
     if (!e.bid[k] && !e.mark[k] && !e.wall[k] && !inBank && [SURF.park, SURF.garden, SURF.sand, SURF.plaza, SURF.ground, SURF.scrub, SURF.forest].includes(s) && g > seaY) data[idx(lx, g, lz)] = B.gem_cache;
   }
 
@@ -467,6 +551,7 @@ export function genCity(cx, cz, data, e) {
     if (!(e.surf[k] & TREE_BIT) || e.bid[k]) continue;
     const lx = x - M, lz = z - M, wx = cx * S + lx, wz = cz * S + lz;
     if (e.bank && wx >= e.bank.x0 - 3 && wx <= e.bank.x1 + 3 && wz >= e.bank.z0 - 3 && wz <= e.bank.z1 + 3) continue; // none on the bank
+    if (e.fab && wx >= e.fab.x0 - 3 && wx <= e.fab.x1 + 3 && wz >= e.fab.z0 - 3 && wz <= e.fab.z1 + 3) continue; // nor on the factory
     const s = e.surf[k] & 0x7f, g = e.ground[k];
     const palm = [SURF.road, SURF.pavement, SURF.marble, SURF.plaza, SURF.sand, SURF.dock].includes(s) || hash3(wx, 9, wz, 3) < 0.25;
     const h = palm ? 6 + Math.floor(hash3(wx, 4, wz, 3) * 3) : 4 + Math.floor(hash3(wx, 4, wz, 3) * 2);

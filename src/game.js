@@ -33,6 +33,7 @@ import { Farm, harvestOf, isCrop, HATCH_SECONDS } from './world/farm.js';
 import { Livestock } from './entities/livestock.js';
 import { Missions } from './quest/missions.js';
 import { Heist } from './quest/heist.js';
+import { Fabrica } from './quest/fabrica.js';
 
 // real-city data, loaded once per city
 const cityCache = new Map();
@@ -119,6 +120,7 @@ export class Game {
     this.livestock = new Livestock(this);
     this.missions = new Missions(this);
     this.heist = new Heist(this);
+    this.fabrica = new Fabrica(this);
     this.daily = new DailyTracker(this);
     this.event = currentEvent();
     this.bosses = new BossManager(this);
@@ -524,6 +526,7 @@ export class Game {
     this.livestock.update(dt);
     this.missions.update(dt);
     this.heist.update(dt);
+    this.fabrica.update(dt);
     if (this.city && this.meta.dim === 'city') { this._tileT = (this._tileT || 0) - dt; if (this._tileT <= 0) { this._tileT = 1; this.city.ensure(pl.pos.x, pl.pos.z, 200); } }
     this.petTick(dt);
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
@@ -763,6 +766,8 @@ export class Game {
     if (fresh && this.buses && this.buses.tryBoard()) { this.useCooldown = 0.3; return; }
     // a cash machine; in the city the counter of the central bank does the rest
     if (fresh && hit && hit.id === B.atm) { this.ui.open('bank', { atm: this.meta.dim === 'city' }); this.useCooldown = 0.3; return; }
+    // La Fábrica: its doors, presses, paper, ink, the red phone, the tunnel's hatches
+    if (fresh && hit && this.fabrica.use(hit)) { this.useCooldown = 0.35; return; }
     if (fresh && hit && hit.id === B.bank_counter) { this.ui.open('bank'); this.missions.event('bank'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.market_stall) { this.ui.open('foodShop'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.restaurant) { this.ui.open('restaurant'); this.useCooldown = 0.3; return; }

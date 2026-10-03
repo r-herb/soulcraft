@@ -1,5 +1,48 @@
 [
   {
+    "id": "2026-10-04-fabrica",
+    "title": {
+      "en": "La Fábrica: season 1",
+      "lv": "La Fábrica: 1. sezona",
+      "ru": "La Fábrica: 1-й сезон",
+      "es": "La Fábrica: temporada 1"
+    },
+    "items": {
+      "en": [
+        "A new big mission in the missions list: El Maestro waits at a farmhouse above Ciudad Jardín.",
+        "His class: five lessons and a quiz, then choose your alias and join the crew (Levante, Poniente, Terral, Siroco).",
+        "Four contacts around Malaga bring the red jumpsuits, the masks, the truck and the blueprints.",
+        "Take over the old tobacco factory, now the mint, and print ten pallets of money: feed the presses, answer the red phone, hold the doors against raids. Nobody is hurt.",
+        "Dig out through the tunnel and bring the bags to El Maestro: coins, crystals, the red jumpsuit and the grinning mask.",
+        "Play it with friends: the whole crew goes in together."
+      ],
+      "lv": [
+        "Jauna lielā misija misiju sarakstā: El Maestro gaida fermā virs Ciudad Jardín.",
+        "Viņa stunda: pieci uzdevumi un viktorīna, tad izvēlies segvārdu un pievienojies komandai (Levante, Poniente, Terral, Siroco).",
+        "Četri kontakti Malagā dod sarkanos kombinezonus, maskas, kravas auto un rasējumus.",
+        "Ieņem veco tabakas fabriku, tagad naudas kaltuvi, un nodrukā desmit naudas paletes: baro preses, atbildi uz sarkano telefonu, noturi durvis pret reidiem. Neviens netiek ievainots.",
+        "Izrok tuneli un aiznes maisus El Maestro: monētas, kristāli, sarkanais kombinezons un smaidošā maska.",
+        "Spēlē ar draugiem: visa komanda iet iekšā kopā."
+      ],
+      "ru": [
+        "Новая большая миссия в списке миссий: El Maestro ждёт на ферме над Ciudad Jardín.",
+        "Его урок: пять уроков и викторина, потом выбери прозвище и вступи в команду (Levante, Poniente, Terral, Siroco).",
+        "Четыре связных по Малаге приносят красные комбинезоны, маски, грузовик и чертежи.",
+        "Захвати старую табачную фабрику, теперь монетный двор, и напечатай десять паллет денег: заряжай станки, отвечай на красный телефон, держи двери при штурме. Никто не пострадает.",
+        "Прокопай тоннель и принеси мешки El Maestro: монеты, кристаллы, красный комбинезон и улыбающаяся маска.",
+        "Играй с друзьями: вся команда заходит вместе."
+      ],
+      "es": [
+        "Una nueva gran misión en la lista: El Maestro espera en un cortijo sobre Ciudad Jardín.",
+        "Su clase: cinco lecciones y un examen; luego elige tu alias y únete a la banda (Levante, Poniente, Terral, Siroco).",
+        "Cuatro contactos por Málaga traen los monos rojos, las máscaras, el camión y los planos.",
+        "Toma la vieja fábrica de tabacos, ahora la casa de la moneda, e imprime diez palés de billetes: alimenta las prensas, contesta el teléfono rojo, aguanta las puertas en las redadas. Nadie sale herido.",
+        "Escapa por el túnel y lleva las bolsas a El Maestro: monedas, cristales, el mono rojo y la máscara sonriente.",
+        "Juega con amigos: toda la banda entra junta."
+      ]
+    }
+  },
+  {
     "id": "2026-10-03-heistways",
     "title": {
       "en": "Five more ways to rob the bank",

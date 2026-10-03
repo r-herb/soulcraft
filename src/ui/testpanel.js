@@ -14,6 +14,7 @@ import { ARENAS } from '../world/structures.js';
 import { PIECES, FINAL, heistId } from '../quest/heist.js';
 import { MISSIONS } from '../quest/missions.js';
 import { bankPoint } from '../world/city.js';
+import { TARGET, fabId } from '../quest/fabrica.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -84,6 +85,13 @@ export function testPanel(args, ui) {
           <button class="btn small" data-t="tools" data-i18n="test.tools"></button>
           <button class="btn small ember" data-t="resetHeist" data-i18n="test.resetHeist"></button>
         </div></section>
+        <section><h3 data-i18n="test.sFab"></h3><div class="test-row">
+          <button class="btn small" data-t="toFinca" data-i18n="test.toFinca"></button>
+          <button class="btn small" data-t="toFab" data-i18n="test.toFab"></button>
+          ${['class', 'entry', 'siege', 'tunnel', 'escape'].map((k) => `<button class="btn small" data-fab="${k}">${esc(t('test.fabAct.' + k))}</button>`).join('')}
+          <button class="btn small" data-t="fabPrint" data-i18n="test.fabPrint"></button>
+          <button class="btn small ember" data-t="fabReset" data-i18n="test.fabReset"></button>
+        </div></section>
         <section><h3 data-i18n="test.sMissions"></h3><div class="test-row">
           <button class="btn small" data-t="missionsDone" data-i18n="test.missionsDone"></button>
           <button class="btn small ember" data-t="missionsReset" data-i18n="test.missionsReset"></button>
@@ -144,6 +152,10 @@ export function testPanel(args, ui) {
       await save(); g.save(true);
       ui.toast(t('test.heistReset'), 'soul');
     },
+    async toFinca() { const q = g.missions.placeXZ('Finca El Maestro'); if (q) await teleport(g, q.x, q.z); },
+    async toFab() { const q = g.missions.placeXZ('La Tabacalera'); if (!q) return; await g.city.ensure(q.x, q.z, 64); const pl = g.fabrica.plan(); const f = pl ? bankPoint(pl.P, -4, pl.mid) : q; await teleport(g, f.x, f.z, 4); },
+    fabPrint() { const s = g.fabrica.state(); if (s.act !== 4) { ui.toast(t('test.fabNotSiege'), 'warn'); return; } const pl = g.fabrica.plan(); while (s.printed < TARGET - 1) { s.printed++; if (pl) g.fabrica.placePallet(pl, s.printed); g.missions.event('fab_print'); } ui.toast(t('test.done'), 'soul'); },
+    fabReset() { const M = g.missions, st = M.state(); for (const k of Object.keys(st.done)) if (k.startsWith('f_')) delete st.done[k]; for (const k of Object.keys(st.prog)) if (k.startsWith('f_')) delete st.prog[k]; profile.fabrica = null; g.fabrica.state(); g.inventory.remove('money_bag', g.inventory.count('money_bag')); g.save(true); ui.toast(t('test.done'), 'soul'); },
     missionsDone() { const st = g.missions.state(); for (const m of MISSIONS) st.done[m.id] = true; g.save(true); ui.toast(t('test.done'), 'soul'); },
     missionsReset() { const st = g.missions.state(); for (const m of MISSIONS) { delete st.done[m.id]; delete st.prog[m.id]; } st.track = 'tour'; g.save(true); ui.toast(t('test.done'), 'soul'); },
     god() { g.player.god = !g.player.god; label(); },
@@ -157,6 +169,24 @@ export function testPanel(args, ui) {
     questSkip() { if (g.quest) g.quest.devSkip(); },
   };
   node.querySelectorAll('[data-t]').forEach((b) => b.addEventListener('click', async () => { ui.click(); b.disabled = true; try { await act[b.dataset.t](); } finally { b.disabled = false; } }));
+  // La Fábrica: straight to an act (the earlier ones counted as done)
+  const ACTS = { class: 1, entry: 3, siege: 4, tunnel: 5, escape: 6 };
+  const BEFORE = { 1: ['maestro'], 3: ['maestro', 'class', 'monos', 'mascaras', 'camion', 'planos'], 4: ['maestro', 'class', 'monos', 'mascaras', 'camion', 'planos', 'entrada'], 5: ['maestro', 'class', 'monos', 'mascaras', 'camion', 'planos', 'entrada', 'asedio'], 6: ['maestro', 'class', 'monos', 'mascaras', 'camion', 'planos', 'entrada', 'asedio', 'tunel'] };
+  node.querySelectorAll('[data-fab]').forEach((b) => b.addEventListener('click', async () => {
+    ui.click();
+    const act = ACTS[b.dataset.fab], s = g.fabrica.state(), st = g.missions.state();
+    for (const k of BEFORE[act]) st.done[fabId(k)] = Date.now();
+    s.act = act; if (!s.alias) s.alias = 'biznaga';
+    if (act === 3) { st.prog[fabId('entrada')] = { step: 0, n: 0, seen: [] }; }
+    if (act === 4) { await act_.toFab(); await g.fabrica.enterTest(); }
+    if (act === 5) { s.printed = TARGET; await act_.toFab(); const pl = g.fabrica.plan(); if (pl) { for (let i = 1; i <= TARGET; i++) g.fabrica.placePallet(pl, i); g.fabrica.toLobby(pl); } }
+    if (act === 6) g.giveItem('money_bag', TARGET);
+    const next = g.missions.all().find((m) => m.fab && !g.missions.isDone(m.id));
+    if (next) g.missions.track(next.id, false);
+    g.save(true);
+    ui.toast(t('test.done'), 'soul');
+  }));
+  const act_ = act;
   node.querySelectorAll('[data-tp]').forEach((b) => b.addEventListener('click', async () => {
     ui.click();
     const q = g.missions.placeXZ(PLACES[Number(b.dataset.tp)]);

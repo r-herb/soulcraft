@@ -35,6 +35,8 @@ for (const k of HEIST_TASKS) MISSION_PAY['h_' + k] = 25;
 // the Gran Diamante traded at the bank: the biggest sum the game pays, once a player
 // what the superadmin's test button adds to their own player wallet
 export const TEST_CASH = 10000;
+// La Fábrica: what each bag of printed money pays at the end of the season (once per account, at most ten)
+export const FAB_PER_BAG = 25000, FAB_MAX_BAGS = 10;
 export const HEIST_PAY = 1000000;
 export const HEIST_NEEDS = 12; // tasks done
 export const HEIST_MIN_MS = 15 * 60 * 1000; // from the first task to the payout

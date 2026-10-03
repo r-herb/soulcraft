@@ -110,6 +110,12 @@ test.describe('Economy', () => {
     for (let i = 0; i < 10; i++) await request.post('/api/econ/pay', { data: { what: 'bus' } });
     r = await request.post('/api/econ/pay', { data: { what: 'bus' } });
     expect(r.status()).toBe(402);
+    // La Fábrica: the bags brought to El Maestro pay once per account, ten bags at most
+    expect((await request.post('/api/econ/fabrica', { data: { bags: 0 } })).status()).toBe(400);
+    r = await request.post('/api/econ/fabrica', { data: { bags: 30 } });
+    expect(await r.json()).toMatchObject({ paid: 250000 });
+    r = await request.post('/api/econ/fabrica', { data: { bags: 10 } });
+    expect((await r.json()).paid).toBe(0);
 
     // guests have no wallet
     const guest = await playwright.request.newContext({ baseURL });

@@ -28,7 +28,7 @@ test.describe('Guides', () => {
     await page.keyboard.press('KeyJ');
     const city = page.locator('[data-screen="cityGuide"]');
     await expect(city).toBeVisible();
-    await expect(city.locator('.guide-part')).toHaveCount(8);
+    await expect(city.locator('.guide-part')).toHaveCount(9);
     await shot(page, 'guide-city');
     // off to the first mission: its guide, every step and tips
     await city.locator('[data-act="start"]').click();

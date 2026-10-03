@@ -15,6 +15,13 @@ import { account, econ } from '../save/account.js';
 import { itemName } from '../ui/hud.js';
 
 // the text of a heist step (generic: the place, the item)
+// the text of a La Fábrica step
+function fabStep(st, n = 0) {
+  if (!st) return '';
+  if (st.ev === 'reach') return t('fab.s.reach', { place: st.near });
+  return t('fab.s.' + st.ev, { n, total: st.n || 1 });
+}
+
 function heistStep(st) {
   if (!st) return '';
   if (st.text) return t('heist.s.' + st.text);
@@ -36,13 +43,13 @@ export const MISSIONS = [
 ];
 export const missionById = (id) => MISSIONS.find((m) => m.id === id);
 // a mission's name: the city missions, the heist's tasks and its final
-export const missionName = (m) => (m.final ? t('heist.final') : m.approach ? t('heist.ap.' + m.key) : m.heist ? t('heist.task.' + m.key) : t('mis.' + m.id));
+export const missionName = (m) => (m.fab ? t('fab.m.' + m.key) : m.final ? t('heist.final') : m.approach ? t('heist.ap.' + m.key) : m.heist ? t('heist.task.' + m.key) : t('mis.' + m.id));
 
 export class Missions {
   constructor(game) { this.game = game; this.t = 0; }
   get active() { const g = this.game; return !!(g.meta && g.meta.dim === 'city' && g.meta.city === 'malaga' && g.city); }
   // the city missions, then the heist's tasks (and its final once the plan is whole)
-  all() { return this.game.heist ? MISSIONS.concat(this.game.heist.missions()) : MISSIONS; }
+  all() { const g = this.game; return MISSIONS.concat(g.heist ? g.heist.missions() : [], g.fabrica ? g.fabrica.missions() : []); }
   byId(id) { return this.all().find((m) => m.id === id); }
   placeXZ(name) { const pl = place(name); return pl && this.game.city ? this.game.city.toXZ(pl.lat, pl.lon) : null; }
   // a guest in a friend's world plays the host's (team) missions
@@ -71,10 +78,10 @@ export class Missions {
   // every step of a mission, as text
   stepsOf(m) {
     if (m.tour) return m.tour.map((n, i) => t('mis.tour.step', { place: n, n: i, total: m.tour.length }));
-    return m.steps.map((st, i) => (m.heist || m.final || m.approach ? heistStep(st) : t(`mis.${m.id}.s${i}`, { n: 0, total: st.n || 1 })));
+    return m.steps.map((st, i) => (m.fab ? fabStep(st) : m.heist || m.final || m.approach ? heistStep(st) : t(`mis.${m.id}.s${i}`, { n: 0, total: st.n || 1 })));
   }
   // the kind of tips a mission's guide gives
-  guideKey(m) { return m.final ? 'final' : m.approach ? 'ap_' + m.key : m.heist ? 'task' : m.id; }
+  guideKey(m) { return m.fab ? 'fab_' + m.key : m.final ? 'final' : m.approach ? 'ap_' + m.key : m.heist ? 'task' : m.id; }
   get tracked() { const s = this.state(), all = this.all(), id = this.guest ? this.localTrack || s.track : s.track; const m = all.find((x) => x.id === id); return m && !this.isDone(m.id) ? m : all.find((x) => !this.isDone(x.id)) || null; }
 
   // where a mission's current step wants the player to go (or null)
@@ -96,6 +103,7 @@ export class Missions {
     if (this.isDone(m.id)) return t('mis.done');
     if (m.tour) { const next = m.tour.find((n) => !pr.seen.includes(n)); return t('mis.tour.step', { place: next, n: pr.seen.length, total: m.tour.length }); }
     const st = m.steps[pr.step];
+    if (m.fab) return fabStep(st, pr.n);
     if (m.heist || m.final || m.approach) return heistStep(st);
     return t(`mis.${m.id}.s${pr.step}`, { n: pr.n, total: st.n || 1 });
   }
@@ -193,7 +201,9 @@ export class Missions {
     }
     // the host sends the team's state when it changed (and now and then)
     this.syncT = (this.syncT || 0) + 1;
-    if (this.host && (this.dirty || this.syncT >= 10)) this.sendTeam();
+    // (often during La Fábrica's siege: the phone, the raids)
+    const siege = g.fabrica && g.fabrica.act === 4;
+    if (this.host && (this.dirty || this.syncT >= (siege ? 2 : 10))) this.sendTeam();
     if (this.guest) return;
     // the tour: reaching each landmark (anyone in the team)
     const m = missionById('tour');
@@ -213,13 +223,13 @@ export class Missions {
     const n = this.game.net;
     if (!n || !n.isHost) return;
     this.dirty = false; this.syncT = 0;
-    n.send({ t: 'team', to, missions: this.state(), heist: this.game.heist ? this.game.heist.state() : null });
+    n.send({ t: 'team', to, missions: this.state(), heist: this.game.heist ? this.game.heist.state() : null, fabrica: this.game.fabrica ? this.game.fabrica.state() : null });
   }
   // messages of the room about the missions
   onNet(msg, from) {
     const g = this.game;
     if (msg.t === 'mev' && this.host) this.event(msg.ev, msg.data || {}, { x: msg.x, z: msg.z });
-    else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist };
+    else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist, fabrica: msg.fabrica };
     else if (msg.t === 'hplace' && this.host && g.heist) { if (g.heist.place(msg.key, msg.slot)) this.sendTeam(); }
     else if (msg.t === 'mdone' && this.guest) this.rewardMine(this.byId(msg.id) || { id: msg.id, key: msg.key, heist: !!msg.key && !msg.approach, approach: !!msg.approach, items: msg.items, reward: msg.reward, steps: [] }, true);
   }
@@ -246,6 +256,7 @@ export class Missions {
     if (this.host) { this.game.net.send({ t: 'mdone', id: m.id, key: m.key || null, reward: m.reward, items: m.items || null, approach: !!m.approach }); this.dirty = true; }
     this.rewardMine(m);
     if (m.heist && g.heist) g.heist.gotPiece(m.key);
+    if (m.fab && g.fabrica) g.fabrica.onMission(m);
     g.save(true);
     // the next mission followed: a card for its guide
     const next = this.tracked;

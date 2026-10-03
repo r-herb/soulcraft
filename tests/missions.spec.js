@@ -78,8 +78,10 @@ test.describe('Malaga missions', () => {
     // the missions screen from the pause menu: four done, the deposit to go
     await page.evaluate(() => window.__sc.ui.openPause());
     await page.click('[data-screen="pause"] [data-act="missions"]');
-    await expect(page.locator('.mis-list .mis-card:not(.heist)')).toHaveCount(5);
-    await expect(page.locator('.mis-list .mis-card.done:not(.heist)')).toHaveCount(4);
+    await expect(page.locator('.mis-list .mis-card:not(.heist):not(.fab)')).toHaveCount(5);
+    await expect(page.locator('.mis-list .mis-card.done:not(.heist):not(.fab)')).toHaveCount(4);
+    // La Fábrica's first mission: El Maestro
+    await expect(page.locator('.mis-list .mis-card.fab')).toHaveCount(1);
     // and the big mission: its box and its twelve tasks
     await expect(page.locator('.heist-card')).toBeVisible();
     await expect(page.locator('.mis-list .mis-card.heist')).toHaveCount(12);
@@ -87,7 +89,7 @@ test.describe('Malaga missions', () => {
     await shot(page, 'missions-list');
     await page.evaluate(() => window.__sc.game.missions.event('deposit'));
     // (walking past the landmarks also met some of the big mission's informants)
-    expect(await page.evaluate(() => Object.keys(window.__sc.game.profile.missions.done).filter((k) => !k.startsWith('h_')).length)).toBe(5);
+    expect(await page.evaluate(() => Object.keys(window.__sc.game.profile.missions.done).filter((k) => !k.startsWith('h_') && !k.startsWith('f_')).length)).toBe(5);
     expect(problems).toEqual([]);
   });
 });

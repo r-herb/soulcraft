@@ -259,7 +259,7 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - Pilsēta tevi ievēl par **Malagas mēru**: ceremonija ar uguņošanu virs bankas; mēru saraksts bankas cilnē "Pilsēta".
 
 ### Pamācības
-- Pirmo reizi Malagā ekrānā parādās kartīte, kas atver **pilsētas ceļvedi**: kā pārvietoties, nauda, ēdiens, misijas, El Gran Golpe, dārgakmeņi, ferma, draugi.
+- Pirmo reizi Malagā ekrānā parādās kartīte, kas atver **pilsētas ceļvedi**: kā pārvietoties, nauda, ēdiens, misijas, El Gran Golpe, La Fábrica, dārgakmeņi, ferma, draugi.
 - Katrai misijai ir **pamācība**: visi soļi pēc kārtas (izpildītie nosvītroti, pašreizējais izcelts), padomi un balva. Tā atveras, pirmo reizi sekojot misijai, un ar ? pogu.
 - Ja spēlētājs nomirst ar Gran Diamante, apsargi to aiznes atpakaļ uz seifu.
 
@@ -270,6 +270,16 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
   - **petardes** (pirotehniķis Muelle Uno): ārpus bankas visi apsargi uz 25 sekundēm skrien pie durvīm;
   - **seifa durvju kods** (nakts sargs Mercado de Atarazanas, pēc kopīgas maltītes): durvis atveras uz 40 sekundēm; naktī dežūrē tikai viens apsargs.
 - **Ar draugiem:** viens bankas zālē dejo vai māj, un apsargi skatās šovu, kamēr pārējie iet iekšā; drauga petardes dzird visi.
+
+### La Fábrica: 1. sezona
+- Otrā lielā Malagas misija, slavenā TV laupīšanas seriāla stilā, bet ar savu stāstu. Sākas misiju sarakstā.
+- **El Maestro** gaida fermā kalnā virs Ciudad Jardín. Viņa **stunda**: pieci uzdevumi uz tāfeles, tad viktorīna ar 5 jautājumiem (4 pareizi - nokārtots, citādi stunda vēlreiz). Pēc tam spēlētājs izvēlas **segvārdu** un pievienojas komandai: Levante, Poniente, Terral un Siroco (Malagas vēji).
+- **Sagatavošanās:** četri kontakti pilsētā dod sarkanos kombinezonus (Plaza de la Merced), maskas (katedrāle), kravas auto (María Zambrano stacija) un rasējumus (Teatinos).
+- **Ielaušanās:** vecā tabakas fabrika **La Tabacalera** tagad ir naudas kaltuve: preses, papīrs un tinte pie sienas, sarkanais telefons pie durvīm, ēdnīca un palešu telpa aizmugurē.
+- **Aplenkums:** jānodrukā 10 naudas paletes. Prese prasa papīra rulli un tintes kannu; dažreiz iestrēgst. Jāsaglabā **policijas pacietība**: atbildēt uz **sarkano telefonu** (mierīgas atbildes palīdz), noturēt **reidu** pie priekšējām vai aizmugurējām durvīm, noķert strādnieku, kas mēģina izlavīties. Neviens netiek ievainots. Ja pacietība beidzas, policija ielaužas un ieeja jāsāk no jauna.
+- **Tunelis:** ar 10 paletēm atveras lūka palešu telpā; caur mīkstu zemi jārok līdz lūkai vestibilā, un tā ved ārā ar naudas maisiem.
+- **Bēgšana:** maisi jānogādā El Maestro fermā: sezonas beigas, 25 000 monētu par maisu (vienreiz kontam), kristāli, **sarkanais kombinezons** un **smaidošā maska** tēlam.
+- Ar draugiem: aplenkumu vada saimnieka spēle; viesu darbības aiziet saimniekam.
 
 ### Dārgakmeņi un zelts
 
@@ -345,7 +355,7 @@ Kristāli nāk izdzīvošanas režīmā, bet monētas pilsēta izmaksā vienreiz
 - **Roblox stila tēli:** pasaule paliek kubiņos, bet spēlētājs var nomainīt pikseļu figūru pret **3D tēlu**: liela apaļa galva ar gludu seju, rokas un kājas, kas liecas elkoņos un ceļos.
   - Tēlu atbloķē par 150 dvēseļu kristāliem vai bez maksas par jebkuru sasniegumu.
   - **Garderobē** ("Mans tēls") tēls griežas 3D; var mainīt ādas toni, seju, matus un to krāsu, cepures, kreklus, bikses, brilles un lietas uz muguras (mugursoma, ģitāra, apmetnis, reaktīvā soma, spārni).
-  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi). Par īstu naudu nekas netiek pārdots.
+  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi), sarkanais kombinezons un smaidošā maska (La Fábrica). Par īstu naudu nekas netiek pārdots.
   - Emocijas: māt, dejot, priecāties; draugi tās redz.
   - F5 vai tēla poga pārslēdz kameru: no acīm, no mugurpuses, no priekšpuses.
 

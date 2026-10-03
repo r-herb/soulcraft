@@ -11,8 +11,8 @@ const el = (html) => { const d = document.createElement('div'); d.innerHTML = ht
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // what a mission is about, and what it pays (a piece of the plan, a tool, the big prize, coins)
-const descText = (m) => (m.final ? t('heist.final.desc') : m.approach ? t('heist.ap.' + m.key + '.desc') : m.heist ? t('heist.task.' + m.key + '.desc') : t('mis.' + m.id + '.desc'));
-const rewardText = (m) => (m.approach ? t('heist.rewardTool', { item: m.items.map(([k, n]) => (n > 1 ? n + ' x ' : '') + itemName(k)).join(', ') })
+const descText = (m) => (m.fab ? t('fab.m.' + m.key + '.desc') : m.final ? t('heist.final.desc') : m.approach ? t('heist.ap.' + m.key + '.desc') : m.heist ? t('heist.task.' + m.key + '.desc') : t('mis.' + m.id + '.desc'));
+const rewardText = (m) => (m.fab ? t('fab.reward', { crystals: m.reward.crystals }) : m.approach ? t('heist.rewardTool', { item: m.items.map(([k, n]) => (n > 1 ? n + ' x ' : '') + itemName(k)).join(', ') })
   : m.heist ? t('heist.rewardPiece', { crystals: m.reward.crystals }) : m.final ? t('heist.rewardFinal') : t('mis.reward', { coins: m.reward.coins, crystals: m.reward.crystals }));
 
 export function missions(args, ui) {
@@ -40,8 +40,8 @@ export function missions(args, ui) {
       const done = M.isDone(m.id), on = tracked && tracked.id === m.id;
       const reward = rewardText(m);
       const desc = descText(m);
-      return `<div class="mis-card ${done ? 'done' : ''} ${on ? 'on' : ''} ${m.heist || m.final || m.approach ? 'heist' : ''}" data-id="${m.id}">
-        <div class="row"><b>${done ? '&#10003; ' : ''}${m.approach ? '&#9881; ' : ''}${esc(missionName(m))}</b><span class="stat-chip coin-chip">${esc(reward)}</span></div>
+      return `<div class="mis-card ${done ? 'done' : ''} ${on ? 'on' : ''} ${m.heist || m.final || m.approach ? 'heist' : ''} ${m.fab ? 'fab' : ''}" data-id="${m.id}">
+        <div class="row"><b>${done ? '&#10003; ' : ''}${m.approach ? '&#9881; ' : m.fab ? '&#127917; ' : ''}${esc(missionName(m))}</b><span class="stat-chip coin-chip">${esc(reward)}</span></div>
         <span class="faint small">${esc(desc)}</span>
         <div class="row"><span class="small" style="flex:1">${esc(M.stepText(m))}</span><button class="btn small ghost mis-help" data-a="help" aria-label="${esc(t('guide.how'))}">?</button>${done ? '' : `<button class="btn small ${on ? 'primary' : ''}" data-a="track">${esc(t(on ? 'mis.tracking' : 'mis.track'))}</button>`}</div>
       </div>`;
@@ -91,7 +91,7 @@ export function missionHelp(args, ui) {
 
 // What there is to do in Malaga: shown (as a card to open) on the first
 // arrival, and from the missions screen.
-const CITY_PARTS = ['move', 'money', 'food', 'missions', 'heist', 'gems', 'farm', 'friends'];
+const CITY_PARTS = ['move', 'money', 'food', 'missions', 'heist', 'fabrica', 'gems', 'farm', 'friends'];
 export function cityGuide(args, ui) {
   const g = ui.game;
   const node = el(`<div class="screen scrim" data-screen="cityGuide">

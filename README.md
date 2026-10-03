@@ -274,6 +274,7 @@ or come only from an **achievement**, never for real money:
 | Realm knight | all 5 bosses (any survival worlds) | knight's helmet and armor |
 | El Gran Golpe | robbing the bank's vault | robber's mask and shirt |
 | Mayor of Malaga | trading the Gran Diamante | mayor's crown and suit |
+| La Fábrica | season 1 to the end | red jumpsuit, grinning mask |
 
 The bosses beaten and the best day follow the player between worlds (in the
 profile); a new achievement is announced once. "Play as my avatar" switches
@@ -365,6 +366,49 @@ the missions list) each give a tool:
 | With friends | - | a teammate dancing, waving or cheering (G) in the public part of the hall holds every guard's eyes: they turn to watch and see nobody else beyond about 2 blocks |
 
 The plan shows the sewer (brown dots) and the coded door too.
+
+## La Fábrica: season 1
+
+A second big mission in Malaga, in the style of a famous TV heist series but
+with a story of its own. It starts in the missions list.
+
+1. **El Maestro.** The mastermind waits at a farmhouse on the hill above
+   Ciudad Jardín (Finca El Maestro). His **class**: five lessons on a
+   blackboard (the place, the rules, the presses, the police, the way out), then
+   a five-question quiz (four right answers pass, otherwise the class
+   again). The player then picks an **alias** (Biznaga, Cenachero, Boquerón,
+   Pimpi, Espeto or Moraga) and joins the crew: Levante, Poniente, Terral
+   and Siroco, named after Malaga's winds.
+2. **Preparations.** Four contacts around the city: the red jumpsuits
+   (Plaza de la Merced), the masks (the Cathedral), the truck (María
+   Zambrano station) and the blueprints (Teatinos).
+3. **The way in.** The old tobacco factory, **La Tabacalera**, is now the
+   mint: a brick building of its own with a hall of money presses, paper
+   and ink by the wall, the red phone by the door, a canteen and a pallet
+   room at the back. At its front door the crew goes in (friends in the
+   same world are taken inside too).
+4. **The siege.** Ten pallets of money to print. A press takes a roll of
+   paper and a can of ink (from the stacks and barrels by the wall) and
+   prints a pallet in 26 seconds; sometimes it **jams** and needs a hand.
+   The crew starts an idle press every 40 seconds. Meanwhile the **police
+   patience** (a bar on the screen) has to last: the **red phone** rings
+   (four answers: calm ones add patience, stalling delays the next raid, a
+   rude one costs 12), a **raid** comes to the front or the back door (stand
+   at it and use it in 25 seconds, or two pallets are lost), and a worker
+   slips out of the canteen towards the front door (catch them on the way).
+   Nobody is hurt: the workers sit in the canteen. If patience runs out, the
+   police storm in, the money is lost and the entry starts again.
+5. **The tunnel.** With ten pallets, the hatch in the pallet room opens onto
+   a tunnel of soft earth to dig through to the hatch in the lobby; it
+   leads out across the street with the bags of money.
+6. **The escape.** The bags go to El Maestro at the farmhouse: the end of
+   the season, 25,000 coins a bag (once per account, signed in), soul
+   crystals, and the **red jumpsuit** and the **grinning mask** for the
+   avatar.
+
+Played together, the host's game runs the siege; a guest's presses, doors
+and phone answers go to the host, and the state comes back every two
+seconds. The superadmin's test panel jumps to any act.
 
 ## Gems and gold
 
@@ -695,6 +739,15 @@ What the tests cover:
   catches him; firecrackers send every guard to the door and the vault is
   open; a teammate's show in the hall holds the guards' eyes; at night only
   the vault's guard is on duty.
+- `tests/fabrica.spec.js` (desktop): El Maestro's farmhouse opens the
+  class; a failed quiz starts it again, a passed one gives the alias; the
+  contacts lead to the entry; the factory has its door, presses, paper, ink,
+  red phone, hatches and tunnel; a press needs paper and ink, prints a
+  pallet, jams and is fixed; the phone's calm answer adds patience; a raid
+  held loses nothing, one not held takes two pallets; a slipping worker is
+  caught; no patience left means the police storm in and the entry starts
+  again; ten pallets open the tunnel, which leads out with ten bags; the
+  bags at the farmhouse end the season.
 - `tests/guides.spec.js` (desktop): the Malaga card opens the city guide,
   its start button the tour's guide (the plaza ticked off), the ? of a
   mission and following one the first time open its guide (not the second

@@ -16,6 +16,7 @@ import { missions, missionHelp, cityGuide } from './missionsui.js';
 import { heistMap, mayor } from './heistui.js';
 import { wardrobe, emotes } from './wardrobe.js';
 import { testPanel, isTester } from './testpanel.js';
+import { fabLesson, fabPhone, fabFinale } from './fabricaui.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi, toAdminPanel } from '../save/account.js';
@@ -71,7 +72,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor, wardrobe, emotes, testPanel, missionHelp, cityGuide })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor, wardrobe, emotes, testPanel, missionHelp, cityGuide, fabLesson, fabPhone, fabFinale })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }

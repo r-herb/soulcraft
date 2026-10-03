@@ -315,6 +315,21 @@ const painters = {
     for (let x = 3; x < 13; x++) for (let y = 3; y < 13; y++) if (Math.abs(Math.hypot(x - 7.5, y - 7.5) - 3.6) < 0.8) p.set(x, y, hex('#d1d5db'));
     p.set(7, 7, hex('#374151')); p.set(8, 8, hex('#374151')); p.set(7, 8, hex('#374151')); p.set(8, 7, hex('#374151'));
   },
+  // La Fábrica
+  soft_earth: (p) => { p.noise(['#7a5634', '#6d4b2c', '#86603b', '#5f4126']); p.speckle('#9a7650', 10); },
+  factory_door: (p) => { p.noise(['#5d6b73', '#56636b', '#64727a']); p.border('#2f3a40'); for (let y = 2; y < 14; y += 3) for (let x = 1; x < 15; x++) p.set(x, y, hex('#46525a')); p.set(12, 8, hex('#d1d5db')); p.set(12, 9, hex('#d1d5db')); },
+  fab_sign: (p) => { p.noise(['#1d2a44', '#22314f']); p.border('#d24a24'); for (const [x, y] of [[3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [4, 5], [5, 5], [4, 7], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [9, 5], [10, 5], [9, 7], [10, 7], [9, 9], [10, 9], [12, 5], [12, 6], [12, 7], [12, 8], [12, 9]]) p.set(x, y, hex('#ffd65c')); },
+  money_press: (p) => { p.noise(['#4b5563', '#465060', '#525c6c']); p.border('#2d333d'); for (let x = 2; x < 14; x++) { p.set(x, 5, hex('#1f2937')); p.set(x, 10, hex('#1f2937')); } for (let x = 4; x < 12; x++) for (let y = 7; y < 9; y++) p.set(x, y, hex('#9fd6a6')); },
+  money_press_top: (p) => { p.noise(['#525c6c', '#4b5563']); p.border('#2d333d'); for (let x = 3; x < 13; x++) for (let y = 4; y < 12; y++) p.set(x, y, hex('#c8e6c9')); for (let x = 3; x < 13; x += 2) p.set(x, 8, hex('#2e7d32')); },
+  money_press_on: (p) => { p.noise(['#4b5563', '#465060', '#525c6c']); p.border('#2d333d'); for (let x = 2; x < 14; x++) { p.set(x, 5, hex('#1f2937')); p.set(x, 10, hex('#1f2937')); } for (let x = 4; x < 12; x++) for (let y = 7; y < 9; y++) p.set(x, y, hex('#7dff8a')); p.set(13, 3, hex('#ff5a3a')); },
+  paper_stack: (p) => { p.noise(['#f2efe6', '#ebe7dc', '#f7f4ec']); for (let y = 1; y < 16; y += 2) for (let x = 0; x < 16; x++) p.set(x, y, hex('#d8d3c5')); },
+  paper_stack_top: (p) => { p.noise(['#f7f4ec', '#f2efe6']); p.border('#d8d3c5'); },
+  ink_barrel: (p) => { p.noise(['#1f3a5f', '#22416a', '#1b3354']); for (const y of [3, 12]) for (let x = 0; x < 16; x++) p.set(x, y, hex('#9aa0a8')); },
+  ink_barrel_top: (p) => { p.noise(['#1f3a5f', '#22416a']); p.border('#9aa0a8'); for (let x = 6; x < 10; x++) for (let y = 6; y < 10; y++) p.set(x, y, hex('#0d1b2e')); },
+  red_phone: (p) => { p.noise(['#8a5a2a', '#7a5030']); for (let x = 3; x < 13; x++) for (let y = 4; y < 13; y++) p.set(x, y, hex('#c81e1e')); for (let x = 5; x < 11; x++) p.set(x, 8, hex('#2b0a0a')); },
+  red_phone_top: (p) => { p.noise(['#8a5a2a', '#7a5030']); for (let x = 2; x < 14; x++) for (let y = 4; y < 12; y++) p.set(x, y, hex('#c81e1e')); for (let x = 3; x < 13; x++) { p.set(x, 5, hex('#e84a4a')); p.set(x, 10, hex('#e84a4a')); } },
+  cash_pallet: (p) => { p.noise(['#4f8a4f', '#5a965a', '#468046']); for (let y = 2; y < 14; y += 3) for (let x = 0; x < 16; x++) p.set(x, y, hex('#e8f5e9')); for (let x = 0; x < 16; x++) p.set(x, 15, hex('#8a6238')); },
+  cash_pallet_top: (p) => { p.noise(['#5a965a', '#4f8a4f']); for (let x = 2; x < 14; x++) p.set(x, 8, hex('#e8f5e9')); for (let y = 2; y < 14; y++) p.set(8, y, hex('#e8f5e9')); },
   // a cast-iron manhole cover with slots (the sewer under the bank)
   sewer_grate: (p) => {
     p.noise(['#3b3f45', '#42464d', '#363a40']); p.border('#24272b');

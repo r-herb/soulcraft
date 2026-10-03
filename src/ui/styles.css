@@ -207,6 +207,27 @@ body.touch .desktop-only { display: none !important; }
 .tutorial p { margin: 0; font-size: var(--fs-sm); }
 .guide-card { position: absolute; top: calc(var(--sp-2) + var(--safe-t) + 118px); left: 50%; transform: translateX(-50%); max-width: min(520px, 70vw); display: flex; gap: var(--sp-2); align-items: center; background: var(--surface-panel); border: 2px solid var(--c-gold-500); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); box-shadow: var(--glow-gold); pointer-events: auto; animation: popIn var(--t-med); }
 .guide-card p { margin: 0; font-size: var(--fs-sm); flex: 1; }
+.fab-panel-ui { width: min(620px, 100%); max-height: 100%; }
+.fab-panel-ui .fab-body { display: flex; flex-direction: column; gap: var(--sp-3); overflow: auto; }
+.blackboard, .quiz { background: #1e3a2a; border: 6px solid #7a5530; border-radius: var(--r-sm); padding: var(--sp-3) var(--sp-4); color: #f2f2e6; box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.45); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+.blackboard h3, .quiz h3 { margin: 4px 0 8px; font-size: 20px; color: #fff8d6; }
+.blackboard p { margin: 0; font-size: 16px; line-height: 1.5; }
+.bb-n { font-size: 12px; color: #c8e6c9; text-transform: uppercase; letter-spacing: 0.08em; }
+.quiz .quiz-a { justify-content: flex-start; text-align: left; }
+.alias-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.fab-panel-ui .neg-line { margin: 0; font-size: 17px; line-height: 1.45; font-style: italic; }
+.fab-panel-ui.finale { text-align: center; display: flex; flex-direction: column; gap: var(--sp-2); align-items: center; width: min(480px, 100%); }
+.mis-card.fab { border-color: #c81e1e; }
+.fab-panel { position: absolute; left: calc(var(--sp-2) + var(--safe-l)); top: calc(var(--safe-t) + 96px); width: 210px; background: rgba(40, 6, 6, 0.72); border: 2px solid #c81e1e; border-radius: var(--r-md); padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.fab-panel .fp-title { color: #ffb4a8; font-size: var(--fs-sm); }
+.fab-panel .fp-printed { font-size: var(--fs-sm); color: #b9f5c0; }
+.fab-panel .fp-bar { height: 8px; background: rgba(0, 0, 0, 0.5); border-radius: 4px; overflow: hidden; }
+.fab-panel .fp-bar i { display: block; height: 100%; background: #6fe39a; transition: width 0.4s; }
+.fab-panel .fp-bar i.low { background: #ff5a3a; }
+.fab-panel .fp-pat { color: var(--c-text-dim); }
+.fab-panel .fp-alerts p { margin: 2px 0 0; font-size: var(--fs-xs); color: #ffd65c; animation: fabBlink 1s infinite; }
+@keyframes fabBlink { 50% { opacity: 0.55; } }
+@media (max-height: 420px) { .fab-panel { top: calc(var(--safe-t) + 84px); width: 180px; } }
 .guide-card kbd { font-size: 10px; opacity: 0.7; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; margin-left: 6px; }
 .guide-panel { width: min(600px, 100%); max-height: 100%; }
 .guide-panel .panel-body { overflow: auto; touch-action: pan-y; }
