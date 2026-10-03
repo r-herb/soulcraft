@@ -7,7 +7,7 @@ const NOT_ITEMS = new Set(['farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3
   'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on', 'lamp_off', 'lamp_on',
   'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
   'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent',
-  'bank_counter', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp']);
+  'bank_counter', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp', 'gem_cache', 'gem_cache_open']);
 for (const b of BLOCKS) {
   if (!b || NOT_ITEMS.has(b.key)) continue;
   ITEMS[b.key] = { key: b.key, block: b.id, stack: 64, kind: 'block' };
@@ -21,6 +21,11 @@ item('fiber');
 item('iron_ingot');
 item('gold_ingot');
 item('diamond');
+// gems, cheap to precious (see src/world/gems.js), and gold from panning
+for (const g of ['quartz', 'amethyst', 'topaz', 'emerald', 'sapphire', 'ruby']) item(g, { gem: true });
+ITEMS.diamond.gem = true;
+item('gold_nugget');
+item('gold_pan', { stack: 1, special: 'pan' });
 item('emberite_shard');
 item('emberite_ingot');
 item('soul_crystal', { currency: true });

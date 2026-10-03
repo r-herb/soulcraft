@@ -28,6 +28,8 @@ export const TILES = [
   'road_paint', 'paint_dark', 'bus_stop', 'bus_stop_top', 'diamond_ore', 'atm', 'market_stall', 'restaurant', 'farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_0', 'tomato_1', 'tomato_2', 'tomato_3', 'carrot_0', 'carrot_1', 'carrot_2', 'carrot_3', 'num_0', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'num_6', 'num_7', 'num_8', 'num_9',
   // the central bank
   'bank_counter', 'bank_counter_top', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp',
+  // gems
+  'quartz_ore', 'amethyst_ore', 'topaz_ore', 'emerald_ore', 'sapphire_ore', 'ruby_ore', 'gem_cache', 'gem_cache_open',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -174,6 +176,14 @@ const LIST = [
   def(120, 'vault_door', { tex: 'vault_door', hardness: -1 }),
   def(121, 'vault_floor', { tex: 'vault_floor', hardness: -1 }),
   def(122, 'bank_lamp', { tex: 'bank_lamp', hardness: -1, light: 15 }),
+  def(123, 'quartz_ore', { tex: 'quartz_ore', hardness: 2, tool: 'pick', tier: 1, drop: 'quartz' }),
+  def(124, 'amethyst_ore', { tex: 'amethyst_ore', hardness: 2.5, tool: 'pick', tier: 2, drop: 'amethyst', light: 3 }),
+  def(125, 'topaz_ore', { tex: 'topaz_ore', hardness: 2.5, tool: 'pick', tier: 2, drop: 'topaz' }),
+  def(126, 'emerald_ore', { tex: 'emerald_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'emerald' }),
+  def(127, 'sapphire_ore', { tex: 'sapphire_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'sapphire' }),
+  def(128, 'ruby_ore', { tex: 'ruby_ore', hardness: 3, tool: 'pick', tier: 3, drop: 'ruby', light: 3 }),
+  def(129, 'gem_cache', { tex: { top: 'gem_cache', side: 'rubble', bottom: 'rubble' }, hardness: -1, light: 4 }),
+  def(130, 'gem_cache_open', { tex: { top: 'gem_cache_open', side: 'rubble', bottom: 'rubble' }, hardness: -1 }),
   def(99, 'bus_stop', { tex: { top: 'bus_stop_top', side: 'bus_stop', bottom: 'bus_stop_top' }, hardness: 1.5, tool: 'pick' }),
   ...Array.from({ length: 10 }, (_, d) => def(89 + d, 'num_' + d, { tex: { top: 'plaster_white', side: 'num_' + d, bottom: 'plaster_white' }, hardness: 1, tool: 'pick' })),
   def(67, 'glow_crystal', { tex: 'glow_crystal', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0.8, light: 12 }),

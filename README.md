@@ -202,6 +202,20 @@ not connect; a TURN relay (for example Cloudflare's) would fix that.
 - The world owner's game grows the crops and runs the animals; in a shared
   world guests see them through the room like the monsters.
 
+## Gems and gold
+
+Gems are ranked as in the real world, from cheap to precious: **quartz,
+amethyst, topaz, emerald, sapphire, ruby, diamond** (the exchange pays 3,
+6, 12, 35, 45, 60 and 80 coins). Their ores grow in the stone underground,
+the precious ones rarer and deeper (amethyst and topaz need a stone pickaxe,
+emerald, sapphire, ruby and diamond an iron one); the stone under Malaga
+holds them too. About one chunk in eight of Malaga hides a **gem cache**, a
+stone lid with coloured stones flush with a park, a garden, a beach or a
+square: using it gives two to four gems and often gold nuggets, once. A
+**gold pan** (three iron ingots) used in water (a river, the sea, a
+fountain) turns up a gold nugget about one time in four, now and then a
+small gem; nine nuggets make a gold ingot.
+
 ## Money: the bank and the exchange
 
 Signed-in players have a wallet: 20 coins to start, coins in hand and
@@ -483,6 +497,10 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/gems.spec.js` (desktop): the exchange prices gems in the order of
+  their real value; gem ores lie underground, a ruby ore drops a ruby,
+  panning finds gold only in water; Malaga hides gem caches that open once,
+  and gems lie under the city.
 - `tests/bank.spec.js` (desktop): the Banco de España building has its
   door on the street, the counter with tellers and the vault door; the
   counter opens the whole bank and a city cash machine only the account.

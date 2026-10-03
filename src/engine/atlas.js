@@ -304,6 +304,21 @@ const painters = {
     for (let x = 3; x < 13; x++) for (let y = 3; y < 13; y++) if (Math.abs(Math.hypot(x - 7.5, y - 7.5) - 3.6) < 0.8) p.set(x, y, hex('#d1d5db'));
     p.set(7, 7, hex('#374151')); p.set(8, 8, hex('#374151')); p.set(7, 8, hex('#374151')); p.set(8, 7, hex('#374151'));
   },
+  quartz_ore: (p) => { painters.stone(p); p.blobs(['#f4f4f4', '#dcdcdc', '#ffffff'], 4); },
+  amethyst_ore: (p) => { painters.stone(p); p.blobs(['#9b59d0', '#b57edc', '#6c3483'], 4, '#e3c6f5'); },
+  topaz_ore: (p) => { painters.stone(p); p.blobs(['#f5b041', '#f8c471', '#b9770e'], 4); },
+  emerald_ore: (p) => { painters.stone(p); p.blobs(['#2ecc71', '#58d68d', '#1e8449'], 3, '#abebc6'); },
+  sapphire_ore: (p) => { painters.stone(p); p.blobs(['#2e6fdb', '#5b8def', '#1a3f8a'], 3, '#aed6f1'); },
+  ruby_ore: (p) => { painters.stone(p); p.blobs(['#e0245e', '#f1467a', '#8a1238'], 3, '#f5b7c8'); },
+  gem_cache: (p) => {
+    p.noise(['#8d8579', '#857d71', '#958d81']); p.border('#5f574c');
+    for (let i = 3; i < 13; i++) { p.set(i, 3, hex('#5f574c')); p.set(i, 12, hex('#5f574c')); p.set(3, i, hex('#5f574c')); p.set(12, i, hex('#5f574c')); }
+    for (const [x, y, c] of [[6, 6, '#e0245e'], [9, 7, '#2ecc71'], [7, 9, '#2e6fdb'], [10, 10, '#f5b041'], [5, 10, '#ffffff']]) { p.set(x, y, hex(c)); p.set(x + 1, y, hex(c)); }
+  },
+  gem_cache_open: (p) => {
+    p.noise(['#8d8579', '#857d71', '#958d81']); p.border('#5f574c');
+    for (let x = 3; x < 13; x++) for (let y = 3; y < 13; y++) p.set(x, y, hex('#2b2620'));
+  },
   bank_lamp: (p) => { p.noise(['#fff3c4', '#ffeaa0', '#fff8dc']); p.border('#c9a227'); for (let i = 4; i < 12; i++) { p.set(i, 7, hex('#ffffff')); p.set(7, i, hex('#ffffff')); } },
   vault_floor: (p) => { p.noise(['#5b6168', '#555b62']); for (let i = 0; i < 16; i += 4) for (let j = 0; j < 16; j++) { p.set(i, j, hex('#3f454c')); p.set(j, i, hex('#3f454c')); } },
   farmland: (p) => {

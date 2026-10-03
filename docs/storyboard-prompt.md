@@ -227,6 +227,13 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Lidošana** radošajā režīmā: 4 ātrumi (V vai poga): 1x, 2,5x, 5x, 10x.
 - Pasaules kartē ir slānis **Autobusi** ar līnijām, pieturām un kustīgiem autobusiem.
 
+### Dārgakmeņi un zelts
+
+- Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).
+- Rūdas aug akmenī pazemē, dārgākās retākas un dziļāk; arī zem Malagas.
+- Apmēram katrā astotajā Malagas gabalā ir **dārgakmeņu slēptuve** (akmens vāks ar krāsainiem akmeņiem parkā, dārzā, pludmalē vai laukumā): tā dod 2 līdz 4 dārgakmeņus un bieži zelta graudiņus, vienreiz.
+- **Zelta skalojamā panna** (3 dzelzs stieņi) ūdenī (upē, jūrā, strūklakā) apmēram katru ceturto reizi atrod zelta graudiņu; 9 graudiņi = zelta stienis.
+
 ### Nauda, banka un birža
 
 - Katram pierakstītam spēlētājam ir maks: **20 monētas** sākumā, monētas kabatā un bankā.

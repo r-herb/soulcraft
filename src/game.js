@@ -6,6 +6,7 @@ import { createAtlasTexture, createChunkMaterials } from './engine/material.js';
 import { World, WorkerPool } from './engine/world.js';
 import { Sky, isNight } from './engine/sky.js';
 import { Player, EYE, FLY_GEARS } from './player/player.js';
+import { cacheLoot, panLoot } from './world/gems.js';
 import { Inventory } from './player/inventory.js';
 import { ITEMS, blockDrop } from './player/items.js';
 import { BLOCKS, B, SHAPE } from './world/blocks.js';
@@ -20,6 +21,7 @@ import { saveWorld } from './save/db.js';
 import { slot, pushSave, storeProfile, newWorldId } from './save/account.js';
 import { t } from './i18n/index.js';
 import { setIconAtlas } from './ui/icons.js';
+import { itemName } from './ui/hud.js';
 import { QuestManager, newQuestState } from './quest/questManager.js';
 import { QUEST_SEED, QUEST_SPAWN } from './world/quest.js';
 import { CityData } from './world/city.js';
@@ -699,6 +701,9 @@ export class Game {
     if (fresh && hit && hit.id === B.restaurant) { this.ui.open('restaurant'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }
     if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
+    // gems: open a hidden cache, pan for gold in water
+    if (fresh && hit && hit.id === B.gem_cache) { this.openCache(hit); this.useCooldown = 0.3; return; }
+    if (def && def.special === 'pan' && fresh) { this.pan(); this.useCooldown = 1.2; return; }
     // farm animals take their food; crates release an animal; seeds are planted
     if (ent && ent.passive && fresh) { this.livestock.feed(ent); this.useCooldown = 0.3; return; }
     if (def && def.animal && fresh) { if (this.livestock.release(def.animal, hit)) this.useCooldown = 0.3; return; }
@@ -996,6 +1001,31 @@ export class Game {
     this.meta.stats.crystals += n;
     this.audio.sfx('crystal');
     this.ui.toast(t(n === 1 ? 'toast.crystal' : 'toast.crystals', { n }), 'soul');
+  }
+
+  // a hidden gem cache: a handful of gems (and gold), once
+  openCache(hit) {
+    this.world.setBlock(hit.x, hit.y, hit.z, B.gem_cache_open);
+    const loot = cacheLoot();
+    for (const [item, n] of Object.entries(loot)) this.giveItem(item, n);
+    this.audio.sfx('crystal');
+    this.entities.burst(hit.x + 0.5, hit.y + 1, hit.z + 0.5, 0);
+    this.ui.toast(t('gems.cache', { list: Object.entries(loot).map(([k, n]) => `${n}x ${itemName(k)}`).join(', ') }), 'soul');
+    this.missions.event('cache');
+    return loot;
+  }
+
+  // panning: standing in water (or right by it) with a gold pan
+  pan(rand = Math.random) {
+    const p = this.player.pos, w = this.world;
+    let water = this.player.inWater;
+    for (let dz = -1; dz <= 1 && !water; dz++) for (let dx = -1; dx <= 1 && !water; dx++) for (const dy of [-1, 0]) if (w.getBlock(Math.floor(p.x) + dx, Math.floor(p.y) + dy, Math.floor(p.z) + dz) === B.water) water = true;
+    if (!water) { this.ui.toast(t('gems.panNoWater'), 'warn'); return null; }
+    this.audio.sfx('step');
+    const got = panLoot(rand);
+    if (got) { this.giveItem(got, 1); this.audio.sfx('pickup'); this.ui.toast(t('gems.panFound', { item: itemName(got) }), 'ok'); this.missions.event('pan', { item: got }); }
+    else this.ui.toast(t('gems.panNothing'));
+    return got;
   }
 
   giveItem(item, count = 1) {

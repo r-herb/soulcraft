@@ -5,6 +5,7 @@
 // blocks here. Map data (c) OpenStreetMap contributors, ODbL 1.0.
 import { CHUNK, HEIGHT, B } from './blocks.js';
 import { hash3 } from './noise.js';
+import { cityGemAt } from './gems.js';
 
 const S = CHUNK;
 const idx = (x, y, z) => x + z * S + y * S * S;
@@ -331,7 +332,7 @@ export function genCity(cx, cz, data, e) {
     if (bk && b === bk.gid) { b = 0; s = SURF.marble; }
     data[idx(lx, 0, lz)] = B.coreite;
     const natural = NATURAL.has(s) && !b;
-    for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : B.stone;
+    for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : (y < g - 3 && cityGemAt(wx, y, wz)) || B.stone;
     // surface
     if (s === SURF.water && g < seaY) {
       data[idx(lx, g, lz)] = B.sand;
@@ -435,6 +436,15 @@ export function genCity(cx, cz, data, e) {
     }
     data[idx(lx, topY, lz)] = B.bank_stone;
     if (edge && topY + 1 < HEIGHT) data[idx(lx, topY + 1, lz)] = B.bank_stone;
+  }
+
+  // A hidden gem cache in about one chunk in eight: a stone lid flush with
+  // the ground of a park, a garden, a beach or a square.
+  if (hash3(cx, 5, cz, 31) < 0.12) {
+    const lx = Math.floor(hash3(cx, 6, cz, 31) * S), lz = Math.floor(hash3(cx, 7, cz, 31) * S), k = at(lx, lz);
+    const s = e.surf[k] & 0x7f, g = Math.min(HEIGHT - 2, e.ground[k]), wx = cx * S + lx, wz = cz * S + lz;
+    const inBank = e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1;
+    if (!e.bid[k] && !e.mark[k] && !e.wall[k] && !inBank && [SURF.park, SURF.garden, SURF.sand, SURF.plaza, SURF.ground, SURF.scrub, SURF.forest].includes(s) && g > seaY) data[idx(lx, g, lz)] = B.gem_cache;
   }
 
   // Trees (from OpenStreetMap, plus a scattering in parks): palms on the

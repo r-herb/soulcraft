@@ -1,4 +1,5 @@
 // Chunk generation for all four realms. Runs inside the mesh worker.
+import { gemOre } from './gems.js';
 import { CHUNK, HEIGHT, SEA, B } from './blocks.js';
 import { Layout, CHAMBER, ARENAS } from './structures.js';
 import { Noise, hash3 } from './noise.js';
@@ -56,6 +57,7 @@ function oreAt(seed, x, y, z, stoneId) {
     else if (h < 0.1 && y < 34) { type = B.gold_ore; r = 1.1; }
     else if (h < 0.26 && y < 60) { type = B.iron_ore; r = 1.4; }
     else if (h < 0.48) { type = B.char_ore; r = 1.6; }
+    else { type = gemOre(h, y); r = 1.0; }
   }
   if (!type) return 0;
   const px = cx * 6 + 1 + hash3(seed, cx, cy, cz + 9) * 4;

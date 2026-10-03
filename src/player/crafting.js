@@ -6,7 +6,7 @@ const K = {
   E: 'emberite_ingot', e: 'emberite_shard', F: 'fiber', D: 'sand', A: 'ashstone', W: 'glowbell', g: 'glass',
   s: 'spiritstone', V: 'void_scale', T: 'stone', w: 'wool',
   t: 'tomato', r: 'rice', f: 'sardine', O: 'olive_oil', u: 'flour',
-  k: 'wheat', c: 'raw_chicken', b: 'raw_beef', m: 'raw_mutton',
+  k: 'wheat', c: 'raw_chicken', b: 'raw_beef', m: 'raw_mutton', n: 'gold_nugget',
 };
 
 function r(id, pattern, out, count = 1, extra = {}) {
@@ -34,6 +34,8 @@ export const RECIPES = [
   r('arrow', ['R', 'S', 'F'], 'arrow', 4),
   r('spear', ['  I', ' S ', 'S  '], 'spear'),
   r('emberite_ingot', ['ee', 'eG'], 'emberite_ingot'),
+  r('gold_pan', ['I I', ' I '], 'gold_pan'),
+  r('gold_from_nuggets', ['nnn', 'nnn', 'nnn'], 'gold_ingot'),
   r('glass', ['DD', 'DD'], 'glass', 4),
   r('sandstone', ['D', 'D'], 'sandstone', 2),
   r('brick', ['RD', 'DR'], 'brick', 4),
