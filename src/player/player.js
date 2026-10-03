@@ -38,6 +38,8 @@ export function moveBody(world, pos, vel, w, h, dt, out = {}) {
   return out;
 }
 
+export const FLY_GEARS = [1, 2.5, 5, 10];
+
 export class Player {
   constructor() {
     this.pos = new THREE.Vector3(0, 80, 0);
@@ -60,6 +62,7 @@ export class Player {
     this.walkPhase = 0;
     this.moving = false;
     this.fly = false;
+    this.flyGear = 0; // creative flight speed: 1x, 2.5x, 5x, 10x
     this.coyote = 0;
     this.knock = new THREE.Vector3();
     this._out = {};
@@ -84,7 +87,7 @@ export class Player {
     this.inMagma = feet === B.magma || body === B.magma;
 
     const sprint = inp.sprint && inp.move.z > 0.5;
-    let speed = this.fly ? (sprint ? 12 : 8.5) : sprint ? 5.9 : 4.4;
+    let speed = this.fly ? (sprint ? 12 : 8.5) * FLY_GEARS[this.flyGear || 0] : sprint ? 5.9 : 4.4;
     if (this.inWater) speed *= 0.55;
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
     const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
@@ -108,7 +111,8 @@ export class Player {
     this.knock.set(0, 0, 0);
 
     if (this.fly) {
-      this.vel.y = inp.jump ? 8 : inp.down ? -8 : 0;
+      const up = 8 * Math.max(1, FLY_GEARS[this.flyGear || 0] / 2);
+      this.vel.y = inp.jump ? up : inp.down ? -up : 0;
       this.fallStart = null;
     } else if (this.inWater || this.inMagma) {
       this.vel.y -= 10 * dt;

@@ -27,6 +27,8 @@ export const capFor = (item) => DAILY_CAP[item] || 256;
 export const MISSION_PAY = { deposit: 10, tour: 60, bus: 40, paella: 50, critic: 30 };
 export const START_CASH = 20;
 export const BUS_FARE = 2;
+// bus tickets: a single ride, or a bonobús card of ten rides
+export const TICKETS = { single: { price: 2, rides: 1 }, bonobus: { price: 13, rides: 10 } };
 const REF = 200;
 
 // the mid price after `supply` units have been sold (negative: bought)

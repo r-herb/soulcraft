@@ -20,6 +20,7 @@ import { LEVELS as QUEST_LEVELS } from './world/quest.js';
 import { B } from './world/blocks.js';
 import { CITY_PLACES } from './world/city.js';
 import { Net, createRoom } from './net/net.js';
+import { watchUpdates, showUpdate, latestVersion } from './ui/update.js';
 
 function hasWebGL() {
   try {
@@ -289,24 +290,25 @@ async function boot() {
   loadWallet();
   window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, B, missionPlace: (n) => CITY_PLACES.malaga.find((p) => p.name === n), get game() { return app.game; } };
 
-  registerSW();
+  registerSW(app);
 }
 
-function registerSW() {
+function registerSW(app) {
+  const save = () => (app.game && app.game.running ? app.game.save(true) : Promise.resolve());
+  const opts = { save, reg: null };
+  watchUpdates(opts);
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
   if (new URLSearchParams(location.search).get('nosw') === '1') return;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('/sw.js').then((reg) => {
+    opts.reg = reg;
     // A new deploy installs a new worker which takes over at once (it never
-    // serves stale HTML - see public/sw.js). Offer a reload so this tab runs
-    // the new code too.
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!hadController || document.querySelector('.update-banner')) return;
-      const b = document.createElement('div');
-      b.className = 'update-banner';
-      b.innerHTML = `<span>${t('update.ready')}</span><button class="btn small primary">${t('update.reload')}</button>`;
-      b.querySelector('button').addEventListener('click', () => location.reload());
-      document.body.appendChild(b);
+    // serves stale HTML - see src/sw-template.js): show the update window so
+    // this tab runs the new code too.
+    navigator.serviceWorker.addEventListener('controllerchange', async () => {
+      if (!hadController) return;
+      const v = await latestVersion();
+      if (v) showUpdate(v, opts);
     });
     setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
   }).catch((e) => console.warn('SW registration failed', e));

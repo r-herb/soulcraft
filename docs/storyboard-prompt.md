@@ -218,9 +218,13 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - Līnijas: 72 no 74 virzieniem ar īsto sarakstu; ir arī nakts līnijas, piemēram, N1.
 - **Pieturas:** 860 pieturas (1037 zilas pieturas zīmes). Izmantojot zīmi, redzi nākamos autobusus katrai līnijai (pēc minūtēm un pulksteņa laika) un vari parādīt līnijas uz kartes.
 - **Iekāpšana:**
-  - kad autobuss stāv pieturā, izmanto to un iekāp; biļete maksā **2 monētas**;
-  - lēciens izkāpj;
-  - pa kāpnītēm autobusa aizmugurē var **uzrāpties uz jumta** un braukt līdzi bez maksas.
+  - biļetes pērk pie pieturas zīmes (viens brauciens **2 monētas**, bonobús 10 braucieni **13**) vai pie vadītāja;
+  - autobusi ir divstāvu ar **atvērtu augšējo stāvu**; pieturā atveras durvis un var iekāpt;
+  - iekšā ir vadītājs un **kontrolieris**; biļeti **nopīkstina** dzeltenajā validatorā (zaļa gaisma); bez biļetes kontrolieris izsēdina, kad durvis aizveras;
+  - ar derīgu biļeti var **uzkāpt augšā** un braukt ar skatu pār pilsētu;
+  - **STOP** (X) - izkāpt nākamajā pieturā; no augšējā stāva var arī **izlēkt**;
+  - viesi un radošajā režīmā brauc bez maksas.
+- **Lidošana** radošajā režīmā: 4 ātrumi (V vai poga): 1x, 2,5x, 5x, 10x.
 - Pasaules kartē ir slānis **Autobusi** ar līnijām, pieturām un kustīgiem autobusiem.
 
 ### Nauda, banka un birža

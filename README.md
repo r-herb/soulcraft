@@ -123,9 +123,16 @@ friends like any other world.
   drive their real routes on Malaga's clock (Europe/Madrid), with the real
   timetable when the city data has the EMT GTFS feed and every 15 minutes
   otherwise. Blue stop signs stand at the stops; using one shows the next
-  buses of each line and the lines on the map. A bus standing at a stop can
-  be boarded (jump gets off), and the ladder at the back leads to the roof,
-  where a player rides along.
+  buses of each line and the lines on the map, and sells tickets (a single
+  ride for 2 coins, a bonobús of 10 rides for 13). The buses are open-top
+  double-deckers: at a stop the doors open and a player can step in; inside,
+  the driver and an inspector wait by the yellow validator, where the ticket
+  is validated with a beep (or bought from the driver). Validated, the rider
+  may go up to the open top deck and ride with the view over the city;
+  without a ticket the inspector puts the rider out when the doors close.
+  STOP (X) gets off at the next stop, and from the top deck one can jump off.
+  Guests and creative players ride free.
+- Creative flight has four speeds (V or the gear button): 1x, 2.5x, 5x, 10x.
 - **Missions** (pause menu > Malaga missions; the HUD follows one, with an
   arrow and the distance to its next place, and the minimap shows a star):
   the tourist route (Plaza de la Constitucion, the Cathedral, the Alcazaba,
@@ -210,8 +217,8 @@ village well, and by each real bank in Malaga) to open the bank:
   circulation and how much of them the gold covers. Gold ingots sold to the
   exchange go into the reserve; bought ones come out of it.
 
-A bus ride in Malaga costs 2 coins from your hand (paid when you get in);
-without coins you can still climb onto the roof for free. Diamonds are a
+A bus ride in Malaga needs a ticket: 2 coins for one ride or 13 for a
+bonobús of ten, bought at a stop sign or from the driver. Diamonds are a
 new ore deep underground (below y 20, needs an iron pickaxe).
 
 **Food.** Market stalls (in every village and at Malaga's 449 real food
@@ -471,8 +478,11 @@ What the tests cover:
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
 - `tests/bus.spec.js` (desktop): with the clock fixed, a stop shows its next
-  buses, a bus is boarded, carries the player and is left, and the roof of
-  a driving bus carries a player.
+  buses and sells tickets, the doors open at a stop, a bus is boarded, the
+  ticket is validated (no ticket: the inspector puts the player out), the
+  top deck is reached, STOP gets off at the next stop, a jump from the top
+  deck lands in the street, and the top deck of a driving bus carries a
+  player.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
 - `tests/friends.spec.js`: a friend request by username, accepting it, the

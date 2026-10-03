@@ -172,6 +172,8 @@ body.touch .desktop-only { display: none !important; }
 .act.fly, .act.down { width: var(--ctl-btn-sm); height: var(--ctl-btn-sm); border-radius: var(--r-md); border-color: rgba(246, 198, 103, 0.7); }
 .act.fly { right: calc(var(--ctl-btn) * 2.05); bottom: calc(var(--ctl-btn) * 0.1); }
 .act.down { right: calc(var(--ctl-btn) * 0.15); bottom: calc(var(--ctl-btn) * -0.05 + var(--ctl-btn) * 2.3); }
+.act.flyspeed { right: calc(var(--ctl-btn) * 1.15); bottom: calc(var(--ctl-btn) * -0.05 + var(--ctl-btn) * 2.3); width: var(--ctl-btn-sm); height: var(--ctl-btn-sm); border-radius: var(--r-md); border-color: rgba(246, 198, 103, 0.7); }
+.act.flyspeed .gear { font-family: var(--font-display); font-size: 12px; pointer-events: none; }
 #hud:not(.creative) .creative-only { display: none; }
 .act.inv { right: calc(var(--ctl-btn) * 1.9); bottom: calc(var(--ctl-btn) * 1.5); width: var(--ctl-btn-sm); height: var(--ctl-btn-sm); border-radius: var(--r-md); }
 
@@ -277,7 +279,14 @@ body.touch .desktop-only { display: none !important; }
 .dev-toggle { position: absolute; left: calc(var(--sp-2) + var(--safe-l)); bottom: 50%; z-index: 31; pointer-events: auto; }
 
 /* update banner */
-.update-banner { position: fixed; bottom: calc(var(--sp-3) + var(--safe-b)); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; gap: var(--sp-3); align-items: center; background: var(--surface-panel); border: 2px solid var(--c-soul-500); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); }
+.update-modal { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: var(--sp-4); background: rgba(5, 4, 15, 0.45); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.update-card { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--sp-3); text-align: center; }
+.update-card p { margin: 0; }
+.update-vers { display: flex; align-items: center; justify-content: center; gap: var(--sp-3); flex-wrap: wrap; }
+.update-vers span { display: flex; flex-direction: column; gap: 2px; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 6px 10px; }
+.update-vers small { color: var(--c-text-dim); font-size: 11px; }
+.update-vers b { font-family: var(--font-display); font-size: 11px; font-weight: 400; color: var(--c-gold-400); }
+.update-vers i { font-style: normal; font-size: 20px; color: var(--c-soul-300); }
 
 /* compact layouts for small landscape phones */
 @media (max-height: 420px) {
@@ -322,6 +331,17 @@ body.touch .desktop-only { display: none !important; }
 #hud.overlay-open .hud-top-right { display: none !important; }
 
 /* Treasure Quest */
+/* riding a bus: the line, the ticket, the action and STOP */
+.bus-ride { position: absolute; left: calc(var(--sp-3) + var(--safe-l, 0px)); top: 26%; width: min(250px, 44vw); display: flex; flex-direction: column; gap: 6px; background: rgba(5, 4, 15, 0.62); border: 2px solid rgba(200, 16, 46, 0.8); border-radius: var(--r-md); padding: var(--sp-2); }
+.bus-ride .br-head b { display: block; font-family: var(--font-display); font-size: 10px; font-weight: 400; color: #ffd36b; text-shadow: var(--text-shadow); }
+.bus-ride .br-head span, .bus-ride .br-hint { font-size: var(--fs-xs, 12px); color: var(--c-text-dim, #cfd3e6); margin: 0; }
+.bus-ride .br-ticket { font-size: var(--fs-sm); color: #ffb3a8; }
+.bus-ride .br-ticket.ok { color: #7dffa0; }
+.bus-ride .br-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.bus-ride .br-acts .btn { flex: 1 1 auto; gap: 6px; }
+.bus-ride kbd { font-size: 10px; opacity: 0.7; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; }
+.bus-ride .br-stop { background: #8a0d22; border-color: #ff5a6e; color: #fff; }
+.bus-ride .br-stop.on { background: #ff3b30; box-shadow: 0 0 10px #ff3b30; }
 .quest-obj { position: absolute; top: calc(var(--sp-2) + var(--safe-t)); left: 50%; transform: translateX(-50%); max-width: min(46vw, 440px); text-align: center; background: rgba(5, 4, 15, 0.55); border: 2px solid rgba(246, 198, 103, 0.55); border-radius: var(--r-md); padding: 4px var(--sp-3); pointer-events: none; }
 .quest-obj b { display: block; font-family: var(--font-display); font-size: 10px; font-weight: 400; color: var(--c-gold-400); text-shadow: var(--text-shadow); margin-bottom: 3px; }
 .quest-obj span { font-size: var(--fs-sm); text-shadow: var(--text-shadow); }
@@ -430,6 +450,8 @@ body.touch .desktop-only { display: none !important; }
 
 /* ---------- bus stops ---------- */
 .bus-panel { width: min(620px, 100%); display: flex; flex-direction: column; gap: var(--sp-2); }
+.bus-tickets { display: flex; flex-direction: column; gap: 6px; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 8px; }
+.bus-tickets .row { flex-wrap: wrap; gap: 6px; }
 .bus-list { display: flex; flex-direction: column; gap: 6px; max-height: 52vh; overflow: auto; }
 .bus-row { display: grid; grid-template-columns: 44px 1fr auto; gap: var(--sp-2); align-items: center; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: 6px 8px; }
 .bus-ref { display: inline-grid; place-items: center; min-width: 38px; height: 26px; border-radius: 4px; color: #fff; font-weight: 700; text-shadow: var(--text-shadow); }

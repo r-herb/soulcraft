@@ -51,6 +51,9 @@ export class Hud {
         <button class="hud-btn pe" data-b="pause" data-i18n-aria="hud.pause">${SVG.pause}</button>
       </div>
       <button class="minimap pe hidden" data-b="map" data-i18n-aria="hud.map"><canvas></canvas><i class="mm-n">N</i></button>
+      <div class="bus-ride pe hidden"><div class="br-head"><b class="br-line"></b><span class="br-next"></span></div><span class="br-ticket"></span>
+        <div class="br-acts"><button class="btn small primary" data-a="busact"><span></span><kbd class="desktop-only">F</kbd></button><button class="btn small br-stop" data-a="busstop">STOP<kbd class="desktop-only">X</kbd></button></div>
+        <p class="br-hint"></p></div>
       <div class="quest-obj hidden"><b></b><span></span><i class="mis-arrow hidden">&#9650;</i></div>
       <div class="boss-bar hidden"><div class="boss-name"></div><div class="boss-hp"><i></i></div><div class="boss-hint"></div></div>
       <div class="held-name"></div>
@@ -62,6 +65,7 @@ export class Hud {
         <button class="act jump" data-a="jump" data-i18n-aria="hud.jump">${SVG.jump}</button>
         <button class="act fly creative-only" data-a="fly" data-i18n-aria="hud.fly">${SVG.fly}</button>
         <button class="act down creative-only" data-a="down" data-i18n-aria="hud.down">${SVG.down}</button>
+        <button class="act flyspeed creative-only" data-a="flyspeed" data-i18n-aria="hud.flySpeed"><b class="gear">1x</b></button>
       </div>
       <div class="tut-slot"></div>
       <div class="card-slot"></div>`;
@@ -74,6 +78,7 @@ export class Hud {
     this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
     this.questObj = q('.quest-obj');
     this.misArrow = q('.mis-arrow');
+    this.busRide = q('.bus-ride');
     this.roomChip = q('.room-chip');
     this.chatBtn = q('[data-b="chat"]');
     this.livesChip = q('.lives-chip'); this.livesN = q('.lives-n');

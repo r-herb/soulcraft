@@ -97,6 +97,10 @@ test.describe('Economy', () => {
     s = await (await request.get('/api/econ')).json();
     expect(s.wallet).toEqual({ cash: 20, bank: 0 });
     expect((await request.post('/api/econ/buy', { data: { item: 'diamond', qty: 1 } })).status()).toBe(402);
+    // bus tickets: a bonobús of ten rides costs 13; an unknown ticket is refused
+    r = await request.post('/api/econ/pay', { data: { what: 'ticket', kind: 'bonobus' } });
+    expect(await r.json()).toMatchObject({ total: 13, wallet: { cash: 7 } });
+    expect((await request.post('/api/econ/pay', { data: { what: 'ticket', kind: 'toString' } })).status()).toBe(400);
     for (let i = 0; i < 10; i++) await request.post('/api/econ/pay', { data: { what: 'bus' } });
     r = await request.post('/api/econ/pay', { data: { what: 'bus' } });
     expect(r.status()).toBe(402);

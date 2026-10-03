@@ -5,7 +5,7 @@ import { buildAtlas } from './engine/atlas.js';
 import { createAtlasTexture, createChunkMaterials } from './engine/material.js';
 import { World, WorkerPool } from './engine/world.js';
 import { Sky, isNight } from './engine/sky.js';
-import { Player, EYE } from './player/player.js';
+import { Player, EYE, FLY_GEARS } from './player/player.js';
 import { Inventory } from './player/inventory.js';
 import { ITEMS, blockDrop } from './player/items.js';
 import { BLOCKS, B, SHAPE } from './world/blocks.js';
@@ -553,6 +553,12 @@ export class Game {
   // ---------- interaction ----------
   interact(dt, inp) {
     const pl = this.player;
+    // on a bus: no mining or building, the use button is the bus's action
+    if (this.buses && this.buses.riding) {
+      this.outline.visible = false; this.target = null; this.targetEntity = null;
+      if (inp.pressed.has('use')) this.buses.action();
+      return;
+    }
     const eye = pl.eye;
     const dir = pl.lookDir();
     this.attackCooldown -= dt;
@@ -817,6 +823,14 @@ export class Game {
       p.fly = !p.fly;
       p.vel.y = 0;
       this.ui.toast(t(p.fly ? 'toast.flyOn' : 'toast.flyOff'));
+    }
+    // flight speed gears (V or the gear button): 1x, 2.5x, 5x, 10x
+    if (inp.pressed.has('flyspeed')) {
+      p.flyGear = ((p.flyGear || 0) + 1) % FLY_GEARS.length;
+      const g = FLY_GEARS[p.flyGear];
+      const lbl = this.ui.hud && this.ui.hud.el.querySelector('.act.flyspeed .gear');
+      if (lbl) lbl.textContent = `${g}x`;
+      this.ui.toast(t('toast.flySpeed', { n: g }));
     }
   }
 

@@ -28,7 +28,7 @@
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import { monthIndex, monthStart, scDate, PAY, SALARY_CAP, QUEST_MAX, TICKET, MAX_TICKETS } from '../../server/calendar.js';
-import { MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
+import { MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -383,7 +383,7 @@ async function route(parts, method, request, env, secure) {
       const fzi = await db.prepare('SELECT frozen_until, frozen_reason FROM wallets WHERE user_id = ?').bind(uid).first();
       return json({
         frozen: fzi && fzi.frozen_until > now ? { until: fzi.frozen_until, reason: fzi.frozen_reason || '' } : null,
-        wallet: await wallet(), goods, central: { gold, money: money.m || 0, holders: money.n || 0, goldPrice: buyPrice('gold_ingot', sup.gold_ingot || 0) }, fare: BUS_FARE, shop: SHOP, menu: MENU,
+        wallet: await wallet(), goods, central: { gold, money: money.m || 0, holders: money.n || 0, goldPrice: buyPrice('gold_ingot', sup.gold_ingot || 0) }, fare: BUS_FARE, tickets: TICKETS, shop: SHOP, menu: MENU,
         date: scDate(now), salary: { quests, earned, pay: PAY, cap: SALARY_CAP, last: lastPay || null },
         lottery: { ticket: TICKET, max: MAX_TICKETS, tickets: pool.n || 0, mine: pool.mine || 0, pot: Math.floor((pool.n || 0) * TICKET * 0.9), last: last ? { draw: last.draw, pot: last.pot, tickets: last.tickets, winner: last.name, you: last.winner === uid } : null },
       });
@@ -503,9 +503,14 @@ async function route(parts, method, request, env, secure) {
       return json({ ok: true, wallet: await wallet() });
     }
     if (b === 'pay') {
-      // a bus fare, groceries from a food shop, or a meal at a restaurant
+      // a bus fare or tickets, groceries from a food shop, or a meal at a restaurant
       let price, item = null, qty = null;
       if (inp.what === 'bus') price = BUS_FARE;
+      else if (inp.what === 'ticket') {
+        const k = TICKETS[inp.kind];
+        if (!k || !Object.hasOwn(TICKETS, inp.kind)) return err(400, 'bad_item');
+        item = inp.kind; qty = k.rides; price = k.price;
+      }
       else if (inp.what === 'shop') {
         item = String(inp.item || ''); qty = Math.floor(Number(inp.qty) || 0);
         if (!SHOP[item]) return err(400, 'bad_item');
