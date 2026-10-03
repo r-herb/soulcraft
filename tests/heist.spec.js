@@ -90,7 +90,12 @@ test.describe('El Gran Golpe', () => {
     // seen by a guard in the vault (creative: caught and walked out; the diamond goes back)
     await page.evaluate(() => {
       const g = window.__sc.game, gd = g.heist.guards[2], o = gd.rig.group.position;
-      gd.r.speed = 0; // stand still
+      // in the middle of the round (a guard starts anywhere on it; at an end, two steps ahead is the wall), standing still
+      gd.u = 0.5; gd.r.speed = 0;
+    });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      const g = window.__sc.game, gd = g.heist.guards[2], o = gd.rig.group.position;
       g.player.pos.set(o.x + Math.sin(gd.yaw) * 2, o.y, o.z + Math.cos(gd.yaw) * 2);
     });
     await page.waitForFunction(() => window.__sc.game.inventory.count('grand_diamond') === 0, null, { timeout: 10_000 });

@@ -20,7 +20,7 @@ import { LEVELS as QUEST_LEVELS } from './world/quest.js';
 import { B } from './world/blocks.js';
 import { CITY_PLACES, bankCoords, bankPoint, bankLayout } from './world/city.js';
 import { Net, createRoom } from './net/net.js';
-import { watchUpdates, showUpdate, latestVersion } from './ui/update.js';
+import { watchUpdates, showUpdate, latestInfo } from './ui/update.js';
 import { Invites } from './ui/invites.js';
 import { fetchPending, refreshPush } from './net/notify.js';
 
@@ -328,8 +328,8 @@ function registerSW(app) {
     // this tab runs the new code too.
     navigator.serviceWorker.addEventListener('controllerchange', async () => {
       if (!hadController) return;
-      const v = await latestVersion();
-      if (v) showUpdate(v, opts);
+      const info = await latestInfo();
+      if (info) showUpdate(info.version, opts, info.notes);
     });
     setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
   }).catch((e) => console.warn('SW registration failed', e));

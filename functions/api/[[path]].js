@@ -30,7 +30,7 @@
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import { monthIndex, monthStart, scDate, PAY, SALARY_CAP, QUEST_MAX, TICKET, MAX_TICKETS } from '../../server/calendar.js';
-import { HEIST_PAY, HEIST_NEEDS, HEIST_MIN_MS, MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
+import { HEIST_PAY, HEIST_NEEDS, HEIST_MIN_MS, TEST_CASH, MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -444,11 +444,19 @@ async function route(parts, method, request, env, secure) {
     // twelve tasks of the big mission; the player becomes the city's mayor
     if (b === 'heist') {
       const r0 = await db.prepare("SELECT COUNT(*) AS n, MIN(at) AS first FROM missions_done WHERE user_id = ? AND mission LIKE 'h\\_%' ESCAPE '\\'").bind(uid).first();
-      if ((r0.n || 0) < HEIST_NEEDS || now - (r0.first || now) < HEIST_MIN_MS) return err(409, 'not_yet', 'The big mission is not done yet.');
+      // the superadmin's own player account tests the payout without the twelve tasks
+      const tester = !!s.user.super_link;
+      if (!tester && ((r0.n || 0) < HEIST_NEEDS || now - (r0.first || now) < HEIST_MIN_MS)) return err(409, 'not_yet', 'The big mission is not done yet.');
       const r = await db.prepare('INSERT OR IGNORE INTO missions_done (user_id, mission, at) VALUES (?, ?, ?)').bind(uid, 'heist', now).run();
       if (!r.meta.changes) return json({ ok: true, paid: 0, wallet: await wallet() });
       await db.batch([db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(HEIST_PAY, now, uid), entry('heist', 'grand_diamond', 1, HEIST_PAY)]);
       return json({ ok: true, paid: HEIST_PAY, wallet: await wallet() });
+    }
+    // test money for the superadmin's own player account (to try the shops, buses and bank)
+    if (b === 'testcash') {
+      if (!s.user.super_link) return err(403, 'forbidden');
+      await db.batch([db.prepare('UPDATE wallets SET cash = MIN(cash + ?, 1000000000), updated_at = ? WHERE user_id = ?').bind(TEST_CASH, now, uid), entry('test', null, null, TEST_CASH)]);
+      return json({ ok: true, paid: TEST_CASH, wallet: await wallet() });
     }
     // a quest done: counts toward this month's salary (once per quest per month)
     if (b === 'quest') {

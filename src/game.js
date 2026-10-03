@@ -556,6 +556,8 @@ export class Game {
     if (P.has('fps')) this.ui.toggleFps();
     if (P.has('view')) this.cycleView();
     if (P.has('emote')) { this.ui.open('emotes'); return; }
+    // J: the guide on the card, else the missions (the mouse stays in the game)
+    if (P.has('guide')) { if (this.ui.hud.guideAction) this.ui.hud.guideAction(); else if (this.missions.active) this.ui.open('missions'); return; }
     for (let i = 0; i < 9; i++) if (P.has('slot' + i)) this.selectSlot(i);
     if (P.has('nextSlot')) this.selectSlot((this.inventory.selected + 1) % 9);
     if (P.has('prevSlot')) this.selectSlot((this.inventory.selected + 8) % 9);
@@ -997,6 +999,7 @@ export class Game {
     const causes = this.meta.stats.causes || (this.meta.stats.causes = {});
     causes[cause] = (causes[cause] || 0) + 1;
     if (this.quest) this.quest.noteFail();
+    if (this.heist) this.heist.onDeath();
     this.audio.sfx('death');
     this.resetBreaking();
     this.input.exitLock();

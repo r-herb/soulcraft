@@ -57,7 +57,24 @@ export class Missions {
   }
   prog(id) { const s = this.state(); return (s.prog[id] = s.prog[id] || { step: 0, n: 0, seen: [] }); }
   isDone(id) { return !!this.state().done[id]; }
-  track(id) { if (this.guest) this.localTrack = id; else this.state().track = id; }
+  // follow a mission; its guide opens the first time
+  track(id, guide = true) { if (this.guest) this.localTrack = id; else this.state().track = id; if (guide) this.showGuide(id); }
+  // a mission's guide (what to do, step by step), once per mission unless asked for
+  showGuide(id, force = false) {
+    const g = this.game, pr = g.profile;
+    if (!pr || !this.byId(id)) return;
+    const seen = pr.guidesSeen || (pr.guidesSeen = {});
+    if (seen['m:' + id] && !force) return;
+    seen['m:' + id] = true;
+    g.ui.open('missionHelp', { id });
+  }
+  // every step of a mission, as text
+  stepsOf(m) {
+    if (m.tour) return m.tour.map((n, i) => t('mis.tour.step', { place: n, n: i, total: m.tour.length }));
+    return m.steps.map((st, i) => (m.heist || m.final ? heistStep(st) : t(`mis.${m.id}.s${i}`, { n: 0, total: st.n || 1 })));
+  }
+  // the kind of tips a mission's guide gives
+  guideKey(m) { return m.final ? 'final' : m.heist ? 'task' : m.id; }
   get tracked() { const s = this.state(), all = this.all(), id = this.guest ? this.localTrack || s.track : s.track; const m = all.find((x) => x.id === id); return m && !this.isDone(m.id) ? m : all.find((x) => !this.isDone(x.id)) || null; }
 
   // where a mission's current step wants the player to go (or null)
@@ -144,6 +161,13 @@ export class Missions {
     if (this.t < 1) return;
     this.t = 0;
     if (!this.active) return;
+    // the first time in Malaga: a card that opens the city guide
+    const prof = this.game.profile;
+    if (prof && !this._cityCard && !(prof.guidesSeen && prof.guidesSeen.city)) {
+      this._cityCard = true;
+      const seen = () => { (prof.guidesSeen || (prof.guidesSeen = {})).city = true; };
+      this.game.ui.hud.showGuideCard(t('guide.city.card'), t('guide.city.open'), () => { seen(); this.game.ui.open('cityGuide'); }, seen);
+    }
     // steps that ask to reach a place (meeting an informant), some with something to hand over
     const g = this.game;
     for (const m of this.all()) {
@@ -221,5 +245,15 @@ export class Missions {
     this.rewardMine(m);
     if (m.heist && g.heist) g.heist.gotPiece(m.key);
     g.save(true);
+    // the next mission followed: a card for its guide
+    const next = this.tracked;
+    if (next && !this.guest) this.guideCard(next.id);
+  }
+
+  // a card on the HUD that opens a mission's guide (if it was never seen)
+  guideCard(id) {
+    const g = this.game, pr = g.profile, m = this.byId(id);
+    if (!m || (pr.guidesSeen && pr.guidesSeen['m:' + id])) return;
+    g.ui.hud.showGuideCard(t('guide.card', { name: missionName(m) }), t('guide.how'), () => this.showGuide(id, true));
   }
 }

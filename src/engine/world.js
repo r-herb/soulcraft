@@ -101,6 +101,16 @@ export class World {
     return IS_SOLID[id] === 1;
   }
 
+  // like setBlock, but a chunk that is not loaded gets the edit for when it is
+  setBlockAnywhere(x, y, z, id) {
+    x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
+    if (y < 0 || y >= HEIGHT) return;
+    const cx = Math.floor(x / S), cz = Math.floor(z / S), c = this.chunks.get(ckey(cx, cz));
+    if (c && c.data) { this.setBlock(x, y, z, id); return; }
+    const k = ckey(cx, cz);
+    (this.edits[k] || (this.edits[k] = {}))[lidx(x - cx * S, y, z - cz * S)] = id;
+  }
+
   setBlock(x, y, z, id, record = true) {
     x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
     if (y < 0 || y >= HEIGHT) return false;

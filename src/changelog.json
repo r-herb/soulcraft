@@ -1,0 +1,115 @@
+[
+  {
+    "id": "2026-10-03-guides",
+    "title": {
+      "en": "Guides, tests and a fairer heist",
+      "lv": "Pamācības, testi un godīgāka aplaupīšana",
+      "ru": "Подсказки, тесты и честное ограбление",
+      "es": "Guías, pruebas y un golpe más justo"
+    },
+    "items": {
+      "en": [
+        "Every mission has a guide: what to do, step by step, with tips. It opens when you start following a mission, and the ? button on each mission brings it back.",
+        "A Malaga city guide: what you can do in the city, shown when you arrive (and from the missions screen).",
+        "This window now lists what is new in each update.",
+        "El Gran Golpe: if you die with the Gran Diamante, the guards take it back to the vault.",
+        "The superadmin's test panel: everything unlocked, Malaga straight away, test coins and shortcuts for the big mission.",
+        "The admin panel and the test panel use a clear, easy-to-read font.",
+        "Fixed: a window that opened right after another one could not be clicked on a computer (the mouse stayed captured in the game)."
+      ],
+      "lv": [
+        "Katrai misijai ir pamācība: kas jādara soli pa solim, ar padomiem. Tā atveras, kad sāc sekot misijai, un ar ? pogu pie misijas to var atvērt vēlreiz.",
+        "Malagas pilsētas ceļvedis: ko pilsētā var darīt; parādās, ierodoties pilsētā (un misiju ekrānā).",
+        "Šajā logā tagad redzams, kas jauns katrā atjauninājumā.",
+        "El Gran Golpe: ja nomirsti ar Gran Diamante, apsargi to aiznes atpakaļ uz seifu.",
+        "Superadmina testa panelis: viss atbloķēts, Malaga uzreiz, testa monētas un īsceļi lielajai misijai.",
+        "Admina panelis un testa panelis izmanto skaidru, viegli lasāmu fontu.",
+        "Izlabots: datorā logu, kas atvērās tūlīt pēc cita loga, nevarēja noklikšķināt (pele palika notverta spēlē)."
+      ],
+      "ru": [
+        "У каждой миссии есть подсказка: что делать шаг за шагом, с советами. Она открывается, когда начинаешь следить за миссией, а кнопка ? у миссии открывает её снова.",
+        "Путеводитель по Малаге: что можно делать в городе; появляется по прибытии (и на экране миссий).",
+        "В этом окне теперь видно, что нового в каждом обновлении.",
+        "El Gran Golpe: если погибнешь с Gran Diamante, охрана вернёт его в хранилище.",
+        "Тестовая панель суперадмина: всё открыто, Малага сразу, тестовые монеты и быстрые шаги большой миссии.",
+        "Панель администратора и тестовая панель используют чёткий, легко читаемый шрифт.",
+        "Исправлено: на компьютере окно, открывшееся сразу после другого, не нажималось (мышь оставалась захваченной игрой)."
+      ],
+      "es": [
+        "Cada misión tiene una guía: qué hacer paso a paso, con consejos. Se abre al empezar a seguir una misión, y el botón ? de cada misión la vuelve a abrir.",
+        "Una guía de Málaga: qué se puede hacer en la ciudad; aparece al llegar (y en la pantalla de misiones).",
+        "Esta ventana ahora muestra las novedades de cada actualización.",
+        "El Gran Golpe: si mueres con el Gran Diamante, los guardias lo devuelven a la cámara.",
+        "El panel de pruebas del superadmin: todo desbloqueado, Málaga al instante, monedas de prueba y atajos para la gran misión.",
+        "El panel de administración y el de pruebas usan una fuente clara y fácil de leer.",
+        "Corregido: en el ordenador, una ventana abierta justo después de otra no se podía pulsar (el ratón seguía capturado por el juego)."
+      ]
+    }
+  },
+  {
+    "id": "2026-10-03-avatars",
+    "title": {
+      "en": "Roblox-style avatars",
+      "lv": "Roblox stila tēli",
+      "ru": "Аватары в стиле Roblox",
+      "es": "Avatares estilo Roblox"
+    },
+    "items": {
+      "en": [
+        "A 3D avatar with elbows and knees, unlocked with soul crystals or any achievement.",
+        "The wardrobe (Shop > Avatar): skin, face, hair, hats, tops, pants, glasses, wings, capes and more.",
+        "The best items come from achievements: the mayor's crown, the robber's mask, the knight's helmet...",
+        "F5 or the figure button: see yourself from behind or in front. G or the smiley: wave, dance, cheer.",
+        "Friends see your avatar and your emotes."
+      ],
+      "lv": [
+        "3D tēls ar elkoņiem un ceļgaliem, atbloķējams par dvēseļu kristāliem vai par jebkuru sasniegumu.",
+        "Garderobe (Veikals > Tēls): āda, seja, mati, cepures, krekli, bikses, brilles, spārni, apmetņi un vēl.",
+        "Labākās lietas dod sasniegumi: mēra kronis, laupītāja maska, bruņinieka ķivere...",
+        "F5 vai tēla poga: redzi sevi no mugurpuses vai no priekšpuses. G vai smaidiņš: māt, dejot, priecāties.",
+        "Draugi redz tavu tēlu un emocijas."
+      ],
+      "ru": [
+        "3D-аватар с локтями и коленями: открывается за кристаллы души или за любое достижение.",
+        "Гардероб (Магазин > Аватар): кожа, лицо, волосы, шапки, верх, штаны, очки, крылья, плащи и многое другое.",
+        "Лучшие вещи дают достижения: корона мэра, маска грабителя, шлем рыцаря...",
+        "F5 или кнопка с фигурой: смотри на себя сзади или спереди. G или смайлик: помахать, танцевать, ликовать.",
+        "Друзья видят твой аватар и эмоции."
+      ],
+      "es": [
+        "Un avatar 3D con codos y rodillas, desbloqueable con cristales de alma o con cualquier logro.",
+        "El vestidor (Tienda > Avatar): piel, cara, pelo, sombreros, camisetas, pantalones, gafas, alas, capas y más.",
+        "Lo mejor viene de los logros: la corona del alcalde, el antifaz del ladrón, el yelmo del caballero...",
+        "F5 o el botón de la figura: mírate desde detrás o desde delante. G o la carita: saludar, bailar, celebrar.",
+        "Tus amigos ven tu avatar y tus gestos."
+      ]
+    }
+  },
+  {
+    "id": "2026-10-03-admin",
+    "title": {
+      "en": "Analytics and the godmode badge",
+      "lv": "Analītika un dievišķā režīma zīme",
+      "ru": "Аналитика и значок божественного режима",
+      "es": "Analíticas y la insignia de modo dios"
+    },
+    "items": {
+      "en": [
+        "The superadmin plays straight from the admin panel and goes back with one button.",
+        "Admins carry a golden halo with a shield over their heads, and a golden name."
+      ],
+      "lv": [
+        "Superadmins spēlē tieši no admina paneļa un atgriežas ar vienu pogu.",
+        "Adminiem virs galvas ir zelta oreols ar vairogu un zelta vārds."
+      ],
+      "ru": [
+        "Суперадмин играет прямо из панели администратора и возвращается одной кнопкой.",
+        "У админов над головой золотой нимб со щитом и золотое имя."
+      ],
+      "es": [
+        "El superadmin juega directamente desde el panel y vuelve con un botón.",
+        "Los admins llevan un halo dorado con un escudo sobre la cabeza y el nombre en oro."
+      ]
+    }
+  }
+]

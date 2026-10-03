@@ -72,6 +72,7 @@ export class Hud {
         <button class="act flyspeed creative-only" data-a="flyspeed" data-i18n-aria="hud.flySpeed"><b class="gear">1x</b></button>
       </div>
       <div class="tut-slot"></div>
+      <div class="guide-slot"></div>
       <div class="card-slot"></div>`;
     const q = (s) => this.el.querySelector(s);
     this.hearts = q('.hearts'); this.foods = q('.foods'); this.armorBar = q('.armor');
@@ -79,7 +80,7 @@ export class Hud {
     this.hotbar = q('.hotbar'); this.heldName = q('.held-name');
     this.fpsEl = q('.fps'); this.bossBar = q('.boss-bar');
     this.hurt = q('.hurt-flash'); this.water = q('.underwater'); this.magma = q('.inmagma');
-    this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot');
+    this.tutSlot = q('.tut-slot'); this.cardSlot = q('.card-slot'); this.guideSlot = q('.guide-slot');
     this.questObj = q('.quest-obj');
     this.misArrow = q('.mis-arrow');
     this.busRide = q('.bus-ride');
@@ -169,7 +170,7 @@ export class Hud {
     this.refreshHotbar();
     this.update(game, 0);
   }
-  hide() { this.el.classList.add('hidden'); this.bossBar.classList.add('hidden'); this.tutSlot.innerHTML = ''; this.cardSlot.innerHTML = ''; }
+  hide() { this.el.classList.add('hidden'); this.bossBar.classList.add('hidden'); this.tutSlot.innerHTML = ''; this.cardSlot.innerHTML = ''; this.guideSlot.innerHTML = ''; this.guideAction = null; }
 
   refreshHotbar() {
     const g = this.game;
@@ -316,4 +317,21 @@ export class Hud {
     b.addEventListener('click', () => { this.tutSlot.innerHTML = ''; onDone && onDone(); });
   }
   clearTutorial() { this.tutSlot.innerHTML = ''; }
+
+  // a card that leads to a guide (the city's, a mission's): open it, or close the card
+  showGuideCard(text, label, onOpen, onClose) {
+    clearTimeout(this.guideT);
+    this.guideSlot.innerHTML = `<div class="guide-card pe"><p></p><button class="btn small primary" data-g="open"><span></span><kbd class="desktop-only">J</kbd></button><button class="btn small ghost" data-g="x" aria-label="x">&#10005;</button></div>`;
+    this.guideSlot.querySelector('p').textContent = text;
+    const ob = this.guideSlot.querySelector('[data-g="open"]');
+    ob.querySelector('span').textContent = label;
+    const clear = () => { this.guideSlot.innerHTML = ''; this.guideAction = null; clearTimeout(this.guideT); };
+    // the card's button, or J on a keyboard (the mouse stays captured in the game)
+    this.guideAction = () => { clear(); onOpen && onOpen(); };
+    for (const b of this.guideSlot.querySelectorAll('button')) b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    ob.addEventListener('click', (e) => { e.stopPropagation(); this.guideAction(); });
+    this.guideSlot.querySelector('[data-g="x"]').addEventListener('click', (e) => { e.stopPropagation(); clear(); onClose && onClose(); });
+    // it goes by itself after a while
+    this.guideT = setTimeout(clear, 45000);
+  }
 }

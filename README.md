@@ -220,6 +220,32 @@ and raised (hold use) stops a blow from the front completely, not from the
 side or behind, slows the player while raised, and wears out after 336
 blocks.
 
+## Guides, the what's-new list and the superadmin's test panel
+
+**Guides.** The first time in Malaga a card on the screen opens the **city
+guide**: getting around, money, food, missions, El Gran Golpe, gems and
+gold, the farm, playing with friends. Every mission has a **guide**: what it
+asks, every step in order (done ones ticked, the current one lit), tips on
+how to do them in the city and the reward. It opens the first time a
+mission is followed, a card offers it for the next mission when one is done
+and for the heist's final when the plan is whole, and the ? button by each
+mission (or J on a keyboard, for the card) brings it back.
+
+**What's new.** `src/changelog.json` (newest first, in the four languages)
+goes into `version.json` at build time; the update window lists the entries
+the running build does not have yet.
+
+**Test panel.** The superadmin's own player account (Play in the admin
+panel) has a **Test panel** button on the title screen and in the pause
+menu: unlock everything (99,999 crystals, every skin, pet and avatar item,
+the achievements' items), +10,000 test coins (server-checked, that account
+only), a Malaga world at once (survival or creative), teleports around the
+city, to the bank's door and to the weak wall, all twelve pieces of the
+plan, the finished plan, the big mission reset, city missions done or
+reset, god mode, the best gear, day and night, the realms and the bosses.
+The bank pays the Gran Diamante to that account without the twelve tasks.
+The admin panel and the test panel use a clear system font, not the pixel one.
+
 ## Roblox-style avatars
 
 The world stays voxel, but players can swap the classic pixel figure for a
@@ -486,6 +512,7 @@ for real, in order, through the Soul Map.
 | FPS counter | Settings | F3 |
 | Camera: first person, behind, in front | Figure button | F5 |
 | Emotes (wave, dance, cheer) | Smiley button | G |
+| The guide on the card, else the Malaga missions | The card's button | J |
 
 Control size, opacity, look sensitivity, auto-jump, vibration, the control
 type (Auto, Touch, Mouse) and whether scrolling changes the item are all in
@@ -646,6 +673,13 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/guides.spec.js` (desktop): the Malaga card opens the city guide,
+  its start button the tour's guide (the plaza ticked off), the ? of a
+  mission and following one the first time open its guide (not the second
+  time), the finished plan offers the final's guide, and dying with the
+  Gran Diamante puts it back on its pedestal and the final at its first step.
+- `tests/update.spec.js` also: the update window lists only the changelog
+  entries the running build does not have.
 - `tests/avatar.spec.js`: the avatar unlocked for crystals in the wardrobe,
   free hair and a hair color worn at once, a hat tried on and bought, the
   mayor's crown locked until the achievement, the achievements tab, being

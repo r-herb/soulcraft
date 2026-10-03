@@ -33,6 +33,8 @@ export const MISSION_PAY = { deposit: 10, tour: 60, bus: 40, paella: 50, critic:
 export const HEIST_TASKS = ['airport', 'stadium', 'university', 'station', 'market', 'elpalo', 'pedregalejo', 'huelin', 'misericordia', 'gibralfaro', 'alcazaba', 'cathedral', 'muelle', 'limonar', 'jardin', 'merced', 'larios', 'parque'];
 for (const k of HEIST_TASKS) MISSION_PAY['h_' + k] = 25;
 // the Gran Diamante traded at the bank: the biggest sum the game pays, once a player
+// what the superadmin's test button adds to their own player wallet
+export const TEST_CASH = 10000;
 export const HEIST_PAY = 1000000;
 export const HEIST_NEEDS = 12; // tasks done
 export const HEIST_MIN_MS = 15 * 60 * 1000; // from the first task to the payout

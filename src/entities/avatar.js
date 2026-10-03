@@ -47,7 +47,8 @@ export const ACHIEVEMENTS = [
   { id: 'heist', test: (p) => !!(p.heist && (p.heist.robbed || p.heist.traded)) },
   { id: 'mayor', test: (p) => !!p.mayorAt },
 ];
-export const hasAch = (p, id) => { const a = ACHIEVEMENTS.find((x) => x.id === id); return !!(a && a.test(p)); };
+// (the superadmin's test account wears every achievement's items)
+export const hasAch = (p, id) => { if (p.testAll) return true; const a = ACHIEVEMENTS.find((x) => x.id === id); return !!(a && a.test(p)); };
 export const anyAch = (p) => ACHIEVEMENTS.some((a) => a.test(p));
 export const avatarUnlocked = (p) => !!(p.avatar && p.avatar.unlocked) || anyAch(p);
 export const itemOf = (slot, id) => (SLOTS[slot] || []).find((x) => x.id === id) || null;

@@ -258,6 +258,11 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - Aiznes dimantu 60 blokus prom, tad pie bankas letes apmaini to pret lielāko summu spēlē: **1 000 000 monētu** (vienreiz kontam; serveris maksā tikai pēc 12 reģistrētiem uzdevumiem).
 - Pilsēta tevi ievēl par **Malagas mēru**: ceremonija ar uguņošanu virs bankas; mēru saraksts bankas cilnē "Pilsēta".
 
+### Pamācības
+- Pirmo reizi Malagā ekrānā parādās kartīte, kas atver **pilsētas ceļvedi**: kā pārvietoties, nauda, ēdiens, misijas, El Gran Golpe, dārgakmeņi, ferma, draugi.
+- Katrai misijai ir **pamācība**: visi soļi pēc kārtas (izpildītie nosvītroti, pašreizējais izcelts), padomi un balva. Tā atveras, pirmo reizi sekojot misijai, un ar ? pogu.
+- Ja spēlētājs nomirst ar Gran Diamante, apsargi to aiznes atpakaļ uz seifu.
+
 ### Dārgakmeņi un zelts
 
 - Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).

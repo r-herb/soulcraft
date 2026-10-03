@@ -90,8 +90,9 @@ export class Heist {
     if (s.placed.length >= PIECES && !s.map) {
       s.map = true;
       this.game.giveItem('heist_map', 1);
-      this.game.missions.track(FINAL.id);
       this.game.ui.toast(t('heist.mapDone'), 'soul');
+      this.game.missions.track(FINAL.id, false);
+      this.game.missions.guideCard(FINAL.id);
       this.game.save(true);
     }
     return true;
@@ -290,14 +291,27 @@ export class Heist {
     g.damagePlayer(5, 'guard');
   }
 
-  caught(pl) {
+  // the Gran Diamante goes back on its pedestal, and the final mission back to its first step
+  returnDiamond(pl = this.plan()) {
     const g = this.game, s = this.state();
-    if (g.inventory.count('grand_diamond')) {
-      g.inventory.remove('grand_diamond', 1);
-      const q = bankPoint(pl.P, pl.diamond, pl.mid);
-      g.world.setBlock(q.x, pl.P.base + 2, q.z, B.grand_diamond);
-      s.robbed = false;
-    }
+    if (!g.inventory.count('grand_diamond')) return false;
+    g.inventory.remove('grand_diamond', g.inventory.count('grand_diamond'));
+    if (pl) { const q = bankPoint(pl.P, pl.diamond, pl.mid); g.world.setBlockAnywhere(q.x, pl.P.base + 2, q.z, B.grand_diamond); }
+    s.robbed = false; s.escaped = false; this.escapeSent = false;
+    if (g.missions && !g.missions.isDone(FINAL.id)) { const pr = g.missions.prog(FINAL.id); pr.step = 0; pr.n = 0; pr.seen = []; }
+    return true;
+  }
+
+  // killed (by the guards or anything else) with the diamond: it is taken back
+  onDeath() {
+    if (!this.game.missions || !this.game.missions.active) return;
+    if (this.returnDiamond()) this.game.ui.toast(t('heist.lostDiamond'), 'warn');
+    this.seenT = 0;
+  }
+
+  caught(pl) {
+    const g = this.game;
+    this.returnDiamond(pl);
     const out = bankPoint(pl.P, -4, pl.mid);
     g.player.pos.set(out.x + 0.5, pl.P.base + 1.05, out.z + 0.5);
     g.placeOnGround();

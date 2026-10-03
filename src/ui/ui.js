@@ -12,9 +12,10 @@ import { friends, social, refreshSocial } from './social.js';
 import { chat, chatState } from './chat.js';
 import { bank } from './bank.js';
 import { foodShop, restaurant } from './food.js';
-import { missions } from './missionsui.js';
+import { missions, missionHelp, cityGuide } from './missionsui.js';
 import { heistMap, mayor } from './heistui.js';
 import { wardrobe, emotes } from './wardrobe.js';
+import { testPanel, isTester } from './testpanel.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi, toAdminPanel } from '../save/account.js';
@@ -70,7 +71,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor, wardrobe, emotes })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor, wardrobe, emotes, testPanel, missionHelp, cityGuide })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -194,7 +195,7 @@ export class UI {
           ${langButtons(lang)}
         </div>
         ${account.available ? (account.user
-    ? `${account.mp ? `<button class="btn small ghost" data-act="chat"><span data-i18n="chat.title"></span>${chatState.unread ? `<span class="dot">${chatState.unread}</span>` : ''}</button>` : ''}<button class="btn small ghost" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button>${account.user.role === 'admin' || account.user.superLink ? '<button class="btn small god-btn" data-act="adminpanel">&#9733; Admin</button>' : ''}<button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
+    ? `${account.mp ? `<button class="btn small ghost" data-act="chat"><span data-i18n="chat.title"></span>${chatState.unread ? `<span class="dot">${chatState.unread}</span>` : ''}</button>` : ''}<button class="btn small ghost" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button>${account.user.role === 'admin' || account.user.superLink ? '<button class="btn small god-btn" data-act="adminpanel">&#9733; Admin</button>' : ''}${isTester() ? '<button class="btn small god-btn" data-act="testpanel" data-i18n="test.button"></button>' : ''}<button class="btn small ghost acct-btn" data-act="profile">${account.user.avatar ? `<img class="avatar-sm" alt="" src="${esc(account.user.avatar)}">` : '<span class="avatar-sm ph"></span>'}<span>${esc(account.user.name)}</span></button>`
     : '<button class="btn small ghost acct-btn" data-act="signin" data-i18n="acct.signIn"></button>') : ''}
         </div>
         <span class="faint">${esc(t('title.version', { v: VERSION }))}</span>
@@ -230,6 +231,8 @@ export class UI {
     if (fr) fr.addEventListener('click', () => { this.click(); this.open('friends'); });
     if (account.user && !this._socialT) { this._socialT = setInterval(() => refreshSocial(), 60000); refreshSocial(); social.listeners.add(() => { if (this.top && this.top.name === 'title') this.render(); }); }
     const ap = node.querySelector('[data-act="adminpanel"]');
+    const tp = node.querySelector('[data-act="testpanel"]');
+    if (tp) tp.addEventListener('click', () => { this.click(); this.open('testPanel'); });
     if (ap) ap.addEventListener('click', () => { this.click(); if (account.user.superLink) toAdminPanel().catch(() => this.toast(t('fr.err'), 'warn')); else location.href = '/admin'; });
     const pr = node.querySelector('[data-act="profile"]');
     if (pr) pr.addEventListener('click', () => { this.click(); this.open('profile'); });
@@ -630,6 +633,7 @@ export class UI {
           ${this.game.isQuest || this.game.creative ? '' : `<button class="btn gold" data-act="daily"><span data-i18n="daily.title"></span>${this.game.daily.unclaimed ? `<span class="dot">${this.game.daily.unclaimed}</span>` : ''}</button>`}
           ${account.user ? `<div class="row">${account.mp ? `<button class="btn" style="flex:1" data-act="chat"><span data-i18n="chat.title"></span>${chatState.unread ? `<span class="dot">${chatState.unread}</span>` : ''}</button>` : ''}<button class="btn" style="flex:1" data-act="friends"><span data-i18n="fr.title"></span>${social.incoming ? `<span class="dot">${social.incoming}</span>` : ''}</button></div>` : ''}
           ${account.user && account.mp && !this.game.isQuest ? `<button class="btn violet" data-act="room"><span data-i18n="mp.title"></span>${this.game.net ? `<span class="dot">${this.game.net.count}</span>` : ''}</button>` : ''}
+          ${isTester() ? '<button class="btn gold" data-act="testpanel" data-i18n="test.button"></button>' : ''}
           <button class="btn ember" data-act="quit" data-i18n="${this.game.isGuest ? 'mp.leave' : 'pause.quit'}"></button>
         </div>
       </div></div>`);
@@ -644,6 +648,7 @@ export class UI {
     on('map', () => this.openMap());
     on('shop', () => this.open('shop'));
     on('missions', () => this.open('missions'));
+    on('testpanel', () => this.open('testPanel'));
     on('settings', () => this.open('settings'));
     on('save', () => this.game.save());
     on('quit', () => this.app.quitToTitle());
@@ -686,7 +691,7 @@ export class UI {
     const mac = /Mac/.test(navigator.platform || navigator.userAgent || '');
     const rows = touch
       ? ['joy', 'look', 'jump', 'attack', 'use', 'slots', 'inv', 'view', 'emote', 'pause']
-      : ['capture', 'wasd', 'mouse', 'arrows', 'jump', 'sprint', 'attack', mac ? 'useMac' : 'use', mac ? 'slotsMac' : 'slots', 'inv', 'drop', 'map', 'view', 'emote', 'help', 'esc'];
+      : ['capture', 'wasd', 'mouse', 'arrows', 'jump', 'sprint', 'attack', mac ? 'useMac' : 'use', mac ? 'slotsMac' : 'slots', 'inv', 'drop', 'map', 'view', 'emote', 'guide', 'help', 'esc'];
     const node = el(`<div class="screen scrim" data-screen="help">
       <div class="panel" style="width:min(560px,100%)">
         <div class="panel-head"><h2 class="panel-title" data-i18n="help.title"></h2>

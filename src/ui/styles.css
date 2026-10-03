@@ -205,6 +205,29 @@ body.touch .desktop-only { display: none !important; }
 /* tutorial */
 .tutorial { position: absolute; top: calc(var(--sp-2) + var(--safe-t) + 54px); left: 50%; transform: translateX(-50%); max-width: min(520px, 70vw); display: flex; gap: var(--sp-3); align-items: center; background: var(--surface-panel); border: 2px solid var(--c-soul-500); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); box-shadow: var(--glow-soul); pointer-events: auto; animation: popIn var(--t-med); }
 .tutorial p { margin: 0; font-size: var(--fs-sm); }
+.guide-card { position: absolute; top: calc(var(--sp-2) + var(--safe-t) + 118px); left: 50%; transform: translateX(-50%); max-width: min(520px, 70vw); display: flex; gap: var(--sp-2); align-items: center; background: var(--surface-panel); border: 2px solid var(--c-gold-500); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); box-shadow: var(--glow-gold); pointer-events: auto; animation: popIn var(--t-med); }
+.guide-card p { margin: 0; font-size: var(--fs-sm); flex: 1; }
+.guide-card kbd { font-size: 10px; opacity: 0.7; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; margin-left: 6px; }
+.guide-panel { width: min(600px, 100%); max-height: 100%; }
+.guide-panel .panel-body { overflow: auto; touch-action: pan-y; }
+.guide-h { display: block; color: var(--c-gold-400); font-size: var(--fs-sm); margin-bottom: 4px; }
+.guide-steps, .guide-tips { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 4px; }
+.guide-steps li, .guide-tips li { font-size: var(--fs-sm); line-height: 1.4; }
+.guide-steps li.done { color: var(--c-ok); text-decoration: line-through; opacity: 0.8; }
+.guide-steps li.now { color: var(--c-soul-300); font-weight: 700; }
+.guide-tips li { color: var(--c-text-dim); }
+.guide-reward { margin: 0; color: var(--c-gold-400); }
+.guide-part { background: var(--surface-slot); border: 2px solid var(--border-slot); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.guide-part b { color: var(--c-soul-300); font-size: var(--fs-sm); }
+.guide-part p { margin: 2px 0 0; color: var(--c-text-dim); line-height: 1.4; }
+.mis-help { min-width: 36px; padding: 0 8px; }
+.test-panel { width: min(760px, 100%); max-height: 100%; --font-display: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; --font-body: var(--font-display); --fs-display-md: 22px; font-family: var(--font-body); }
+.test-panel .panel-title { font-weight: 800; }
+.test-panel .btn { font-family: var(--font-body); letter-spacing: 0; }
+.test-body { overflow: auto; touch-action: pan-y; display: flex; flex-direction: column; gap: var(--sp-3); }
+.test-body section h3 { margin: 0 0 6px; font-size: var(--fs-sm); color: var(--c-gold-400); }
+.test-row { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-height: 420px) { .guide-card { top: calc(var(--sp-2) + var(--safe-t) + 96px); } }
 
 /* inventory / crafting */
 .inv-panel { width: min(820px, 100%); }
@@ -351,6 +374,12 @@ body.touch .desktop-only { display: none !important; }
 .update-vers small { color: var(--c-text-dim); font-size: 11px; }
 .update-vers b { font-family: var(--font-display); font-size: 11px; font-weight: 400; color: var(--c-gold-400); }
 .update-vers i { font-style: normal; font-size: 20px; color: var(--c-soul-300); }
+.update-card { max-height: calc(100dvh - 2 * var(--sp-4)); }
+.update-notes { text-align: left; background: var(--c-night-700); border: var(--px) solid var(--c-ink); border-radius: var(--r-sm); padding: var(--sp-2) var(--sp-3); overflow: auto; min-height: 0; flex: 0 1 auto; max-height: 40vh; touch-action: pan-y; }
+.update-notes > b { display: block; color: var(--c-gold-400); font-size: var(--fs-sm); margin-bottom: 4px; }
+.update-notes .un-title { font-weight: 700; font-size: var(--fs-sm); margin: 6px 0 2px; }
+.update-notes ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 3px; }
+.update-notes li { font-size: var(--fs-sm); color: var(--c-text-dim); line-height: 1.35; }
 
 /* compact layouts for small landscape phones */
 @media (max-height: 420px) {

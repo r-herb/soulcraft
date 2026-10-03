@@ -366,6 +366,21 @@ test('superadmin analytics: sign-ins with device, screen and place, play time; t
   // the godmode badge: the server says who is an admin
   const badges = await page.evaluate(async (ids) => (await (await fetch('/api/badges?ids=' + ids.join(','))).json()), [me.user.id, row.id]);
   expect(badges.admins).toEqual([me.user.id]);
+  // the test panel (only on this account): everything unlocked, test coins, the heist paid without the tasks
+  await page.click('[data-act="testpanel"]');
+  const T = page.locator('[data-screen="testPanel"]');
+  await expect(T).toBeVisible();
+  await expect(T.locator('[data-t="malaga"]')).toBeVisible();
+  await T.locator('[data-t="unlock"]').click();
+  await expect.poll(() => page.evaluate(() => { const p = window.__sc.app.profile; return p.crystals >= 99999 && p.testAll && p.avatar.unlocked && p.skins.includes('treasure') && p.avOwned.includes('back:dragon'); })).toBe(true);
+  const cash = () => page.evaluate(async () => (await (await fetch('/api/econ')).json()).wallet.cash);
+  const before = await cash();
+  await T.locator('[data-t="cash"]').click();
+  await expect.poll(cash).toBe(before + 10000);
+  const heist = await page.evaluate(async () => { const r = await fetch('/api/econ/heist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); return { status: r.status, paid: (await r.json()).paid }; });
+  expect(heist).toEqual({ status: 200, paid: 1000000 });
+  await shot(page, 'test-panel');
+  await T.locator('[data-act="close"]').click();
   await page.click('[data-act="adminpanel"]');
   await expect(page.locator('.admin-tabs')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('[data-nav="analytics"]')).toBeVisible();

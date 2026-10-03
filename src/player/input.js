@@ -87,6 +87,7 @@ export class Input {
         if (k === 'F3') { this.pressed.add('fps'); e.preventDefault(); }
         if (k === 'F5') { this.pressed.add('view'); e.preventDefault(); }
         if (k === 'KeyG') this.pressed.add('emote');
+        if (k === 'KeyJ') this.pressed.add('guide');
         if (/^Digit[1-9]$/.test(k)) this.pressed.add('slot' + (Number(k.slice(5)) - 1));
       }
       this.keys.add(k);
@@ -145,6 +146,9 @@ export class Input {
     document.addEventListener('pointerlockchange', () => {
       const was = this.pointerLocked;
       this.pointerLocked = document.pointerLockElement === this.canvas;
+      // a lock asked for when a window closed, granted after the next one opened:
+      // let go, or the mouse is stuck in the game and that window cannot be clicked
+      if (this.pointerLocked && !this.enabled) { this.exitLock(); return; }
       if (was && !this.pointerLocked && this.enabled) this.pressed.add('lockLost');
     });
   }

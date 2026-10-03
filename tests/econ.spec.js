@@ -95,6 +95,8 @@ test.describe('Economy', () => {
     r = await request.post('/api/econ/heist', { data: {} });
     expect(r.status()).toBe(409);
     expect((await r.json()).error).toBe('not_yet');
+    // test coins are only for the superadmin's own player account
+    expect((await request.post('/api/econ/testcash', { data: {} })).status()).toBe(403);
 
     // Finn has his own wallet and no coins for a second-hand diamond
     expect((await request.post('/api/auth/login', { data: { login: FINN.username, password: FINN.password } })).ok()).toBeTruthy();

@@ -129,6 +129,7 @@ export const econ = {
   async buyOffer(id) { const r = await api(`econ/offers/${id}/buy`, { method: 'POST', body: {} }); setWallet(r.wallet); return r; },
   cancelOffer: (id) => api(`econ/offers/${id}/cancel`, { method: 'POST', body: {} }),
   async heist() { const r = await api('econ/heist', { method: 'POST', body: {} }); if (r.wallet) setWallet(r.wallet); return r; },
+  async testCash() { const r = await api('econ/testcash', { method: 'POST', body: {} }); if (r.wallet) setWallet(r.wallet); return r; },
   async pay(what, extra = {}) { const r = await api('econ/pay', { method: 'POST', body: { what, ...extra } }); setWallet(r.wallet); return r; },
 };
 // push notifications and what waits on the server (a call, an invite to play)
