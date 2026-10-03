@@ -308,6 +308,12 @@ body.touch .desktop-only { display: none !important; }
   /* inventory: bag on the left, crafting above the recipes on the right */
   .inv-panel { height: 100%; }
   .inv-layout { grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "bag craft" "bag recipes"; }
+  /* armor: a short column of small slots beside the crafting grid */
+  .craft-area { flex-wrap: nowrap; gap: var(--sp-2); }
+  .inv-armor { grid-template-columns: repeat(2, 26px); gap: 2px; }
+  .inv-armor .slot { width: 26px; height: 26px; min-width: 26px; min-height: 26px; }
+  .inv-armor .slot canvas, .inv-armor .slot img { width: 20px; height: 20px; }
+  .inv-armor .armor-pts { display: none; }
   .inv-bag .item-info { min-height: 0; font-size: var(--fs-xs); }
   .map-node { gap: 4px; padding: var(--sp-2); }
   .map-node .glyph { width: 40px; height: 40px; }

@@ -1,6 +1,7 @@
 // The update notice: the game asks the server which version is deployed
 // (/version.json, written by the build) when it starts, every few minutes and
-// whenever the tab comes back. When it is newer than the running one, a window
+// whenever the game comes back (tab shown, focus, back-forward cache, online)
+// - on computers, Android and iPhone alike. When it is newer than the running one, a window
 // over the blurred game names both versions; Update saves the game, lets the
 // new service worker take over and reloads.
 import { t } from '../i18n/index.js';
@@ -66,6 +67,11 @@ export function watchUpdates(opts = {}) {
   };
   setTimeout(check, 4000);
   setInterval(check, 5 * 60 * 1000);
+  // phones (Android, iPhone) freeze a page in the background or bring it back from the back-forward
+  // cache without reloading it: check whenever the game is seen again or back online
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('pageshow', check);
+  window.addEventListener('focus', check);
+  window.addEventListener('online', check);
   return check;
 }
