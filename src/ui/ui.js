@@ -506,10 +506,20 @@ export class UI {
       </div></div>`);
     node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
     const pErr = node.querySelector('[data-err="profile"]'), wErr = node.querySelector('[data-err="password"]');
+    // the passwords being typed survive the screen being drawn again (a photo saved meanwhile)
+    const PW = ['#pw-cur', '#pw-new', '#pw-rep'];
+    const keep = () => Object.fromEntries(PW.map((k) => [k, node.querySelector(k) && node.querySelector(k).value]));
     const save = async (fields) => {
       pErr.textContent = '';
-      try { await updateProfile(fields); this.toast(t('acct.saved'), 'ok'); this.render(); }
-      catch (e) { pErr.textContent = this.acctError(e); }
+      try {
+        await updateProfile(fields);
+        this.toast(t('acct.saved'), 'ok');
+        // the typed passwords stay; the profile fields show what was just saved
+        const typed = keep();
+        this.render();
+        const fresh = this.root.querySelector('[data-screen="profile"]');
+        if (fresh) for (const k of PW) { const i = fresh.querySelector(k); if (i && typed[k]) i.value = typed[k]; }
+      } catch (e) { pErr.textContent = this.acctError(e); }
     };
     node.querySelector('[data-form="profile"]').addEventListener('submit', (ev) => {
       ev.preventDefault(); this.click();
