@@ -35,6 +35,8 @@ export const RECIPES = [
   r('spear', ['  I', ' S ', 'S  '], 'spear'),
   r('emberite_ingot', ['ee', 'eG'], 'emberite_ingot'),
   r('gold_pan', ['I I', ' I '], 'gold_pan'),
+  r('nest_box', ['P P', 'PkP'], 'nest_box'),
+  r('incubator', ['ggg', 'gCg', 'PPP'], 'incubator'),
   r('gold_from_nuggets', ['nnn', 'nnn', 'nnn'], 'gold_ingot'),
   r('glass', ['DD', 'DD'], 'glass', 4),
   r('sandstone', ['D', 'D'], 'sandstone', 2),

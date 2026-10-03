@@ -1165,5 +1165,19 @@
   "heist.task.larios.desc": "Ювелир на Calle Larios хочет топаз.",
   "heist.task.parque": "Банковский служащий",
   "heist.task.parque.desc": "Служащий гуляет по Paseo del Parque; потом сам осмотри стойку банка.",
-  "heist.s.toBank": "Иди к Banco de España (с задней стороны)"
+  "block.orange_0": "Росток апельсина",
+  "block.orange_1": "Молодой апельсиновый куст",
+  "block.orange_2": "Апельсиновый куст",
+  "block.orange_3": "Апельсиновый куст с плодами",
+  "block.nest_box": "Гнездо-ящик",
+  "block.incubator": "Инкубатор",
+  "item.orange_seed": "Апельсиновая косточка",
+  "farm.picked": "Собрано апельсинов: {n}. Куст снова даст плоды.",
+  "farm.eggs": "Яиц из гнезда: {n}.",
+  "farm.nestEmpty": "Гнездо пустое. Куры рядом несутся в него.",
+  "farm.incubating": "Яйцо в инкубаторе ({n}/4).",
+  "farm.incubatorFull": "Инкубатор полон (4 яйца).",
+  "farm.incubatorState": "Греются яйца: {n}; первый цыплёнок через {s} с.",
+  "farm.incubatorHint": "Положи яйца (держи яйцо и используй), чтобы вывести цыплят.",
+  "farm.hatched": "Вылупились цыплята: {n}!"
 }

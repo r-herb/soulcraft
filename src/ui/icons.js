@@ -87,6 +87,7 @@ const DRAW = {
   ruby: (c) => gem(c, '#f1467a', '#8a1238'),
   grand_diamond: (c) => { gem(c, '#b6fbff', '#2aa9b8'); rect(c, 2, 7, 2, 2, '#ffffff'); rect(c, 12, 4, 2, 2, '#ffffff'); px(c, 13, 12, '#ffffff'); },
   heist_map: (c) => { rect(c, 2, 3, 12, 10, '#1f4e9c'); rect(c, 3, 4, 10, 8, '#2a62bd'); line(c, 4, 6, 12, 6, '#d6e4ff'); line(c, 6, 4, 6, 11, '#d6e4ff'); line(c, 9, 8, 11, 10, '#ff5a6e', 2); line(c, 11, 8, 9, 10, '#ff5a6e', 2); },
+  orange_seed: (c) => { for (const [x, y] of [[5, 7], [9, 6], [7, 10], [11, 10]]) { rect(c, x, y, 2, 3, '#f2e3b5'); px(c, x, y, '#fff6d8'); } },
   gold_nugget: (c) => { rect(c, 5, 7, 6, 5, '#e8b93a'); rect(c, 6, 6, 4, 1, '#ffd65c'); rect(c, 7, 8, 2, 2, '#fff1b0'); px(c, 4, 9, '#c48f2e'); px(c, 11, 10, '#c48f2e'); },
   gold_pan: (c) => { rect(c, 2, 8, 12, 3, '#9aa0a8'); rect(c, 3, 11, 10, 1, '#6b7078'); rect(c, 4, 7, 8, 1, '#c9ccd2'); px(c, 7, 9, '#ffd65c'); px(c, 9, 9, '#ffd65c'); line(c, 13, 8, 15, 6, '#7a5530', 2); },
   coin: (c) => { rect(c, 4, 3, 8, 10, '#e8b93a'); rect(c, 3, 4, 10, 8, '#e8b93a'); rect(c, 5, 5, 6, 6, '#ffd65c'); rect(c, 7, 6, 2, 4, '#c48f2e'); },

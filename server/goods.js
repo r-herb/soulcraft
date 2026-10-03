@@ -8,7 +8,7 @@ export const GOODS = {
   // gems, in the real world's order of value, and gold from panning
   quartz: 3, amethyst: 6, topaz: 12, emerald: 35, sapphire: 45, ruby: 60, gold_nugget: 3,
   // the farm
-  wheat: 2, tomato: 2, carrot: 2, egg: 2, wool: 4, raw_chicken: 4, raw_mutton: 5, raw_beef: 6,
+  wheat: 2, tomato: 2, carrot: 2, orange: 2, egg: 2, wool: 4, raw_chicken: 4, raw_mutton: 5, raw_beef: 6,
 };
 // food shops (fixed prices) and restaurant meals (eaten on the spot, dearer
 // than cooking the same dish yourself)
@@ -23,7 +23,7 @@ export const DAILY_CAP = {
   log: 256, planks: 512, rubble: 512, sand: 512, glass: 256, charcoal: 128,
   iron_ingot: 64, gold_ingot: 32, emberite_ingot: 16, diamond: 8,
   quartz: 64, amethyst: 48, topaz: 32, emerald: 16, sapphire: 12, ruby: 10, gold_nugget: 96,
-  wheat: 256, tomato: 128, carrot: 128, egg: 64, wool: 64, raw_chicken: 32, raw_mutton: 32, raw_beef: 32,
+  wheat: 256, tomato: 128, carrot: 128, orange: 128, egg: 64, wool: 64, raw_chicken: 32, raw_mutton: 32, raw_beef: 32,
 };
 export const capFor = (item) => DAILY_CAP[item] || 256;
 // coins the city pays once for each finished city mission

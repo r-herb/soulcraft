@@ -86,7 +86,8 @@ test.describe('Malaga missions', () => {
     await expect(page.locator('.mis-card[data-id="deposit"] [data-a="track"]')).toBeVisible();
     await shot(page, 'missions-list');
     await page.evaluate(() => window.__sc.game.missions.event('deposit'));
-    expect(await page.evaluate(() => Object.keys(window.__sc.game.profile.missions.done).length)).toBe(5);
+    // (walking past the landmarks also met some of the big mission's informants)
+    expect(await page.evaluate(() => Object.keys(window.__sc.game.profile.missions.done).filter((k) => !k.startsWith('h_')).length)).toBe(5);
     expect(problems).toEqual([]);
   });
 });

@@ -1165,5 +1165,19 @@
   "heist.task.larios.desc": "A jeweller on Calle Larios wants a topaz.",
   "heist.task.parque": "The bank clerk",
   "heist.task.parque.desc": "A clerk walks in the Paseo del Parque; then see the bank's counter for yourself.",
-  "heist.s.toBank": "Go to the Banco de España (round the back)"
+  "block.orange_0": "Orange Sapling",
+  "block.orange_1": "Young Orange Bush",
+  "block.orange_2": "Orange Bush",
+  "block.orange_3": "Orange Bush with Fruit",
+  "block.nest_box": "Nest Box",
+  "block.incubator": "Incubator",
+  "item.orange_seed": "Orange Pip",
+  "farm.picked": "You picked {n} oranges. The bush will fruit again.",
+  "farm.eggs": "{n} eggs from the nest box.",
+  "farm.nestEmpty": "The nest box is empty. Hens nearby lay into it.",
+  "farm.incubating": "Egg in the incubator ({n}/4).",
+  "farm.incubatorFull": "The incubator is full (4 eggs).",
+  "farm.incubatorState": "{n} eggs warming; the first chick in {s} s.",
+  "farm.incubatorHint": "Put eggs in (hold an egg and use it) to hatch chicks.",
+  "farm.hatched": "{n} chicks hatched!"
 }

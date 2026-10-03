@@ -28,7 +28,7 @@ import { CityData } from './world/city.js';
 import { MAX_LIVES } from './player/lives.js';
 import { BusNet } from './world/bus.js';
 import { BusManager } from './entities/buses.js';
-import { Farm, harvestOf, isCrop } from './world/farm.js';
+import { Farm, harvestOf, isCrop, HATCH_SECONDS } from './world/farm.js';
 import { Livestock } from './entities/livestock.js';
 import { Missions } from './quest/missions.js';
 import { Heist } from './quest/heist.js';
@@ -671,6 +671,8 @@ export class Game {
     } else if (drop) {
       this.entities.dropItem(drop, 1, new THREE.Vector3(hit.x + 0.5, hit.y + 0.4, hit.z + 0.5));
     }
+    // leaves of a tree now and then drop an orange pip
+    if (hit.id === B.leaves && Math.random() < 0.08) this.entities.dropItem('orange_seed', 1, new THREE.Vector3(hit.x + 0.5, hit.y + 0.4, hit.z + 0.5));
     // blocks that can't float (plants/torches) above the broken one pop off
     const above = this.world.getBlock(hit.x, hit.y + 1, hit.z);
     if (above > 0 && (SHAPE[above] === 2 || SHAPE[above] === 3)) {
@@ -713,6 +715,29 @@ export class Game {
     if (def && def.special === 'heistMap' && fresh) { this.ui.open('heistMap'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.gem_cache) { this.openCache(hit); this.useCooldown = 0.3; return; }
     if (def && def.special === 'pan' && fresh) { this.pan(); this.useCooldown = 1.2; return; }
+    // farm 2: ripe oranges picked, eggs from a nest box, eggs into an incubator
+    if (fresh && hit && hit.id === B.orange_3) {
+      const n = this.farm.pick(hit.x, hit.y, hit.z);
+      if (n) { this.giveItem('orange', n); this.audio.sfx('pickup'); this.held.swing(); this.ui.toast(t('farm.picked', { n }), 'ok'); }
+      this.useCooldown = 0.3; return;
+    }
+    if (fresh && hit && hit.id === B.nest_box && !(def && def.block !== undefined)) {
+      const n = this.farm.collect(hit.x, hit.y, hit.z);
+      if (n) { this.giveItem('egg', n); this.audio.sfx('pickup'); }
+      this.ui.toast(n ? t('farm.eggs', { n }) : t('farm.nestEmpty'));
+      this.useCooldown = 0.3; return;
+    }
+    if (fresh && hit && hit.id === B.incubator && !(def && def.block !== undefined)) {
+      if (h && h.item === 'egg') {
+        if (this.farm.incubate(hit.x, hit.y, hit.z)) { if (!this.creative) this.inventory.consumeHeld(1); this.audio.sfx('place'); this.ui.toast(t('farm.incubating', { n: this.farm.incubator(hit.x, hit.y, hit.z).eggs.length })); }
+        else this.ui.toast(t('farm.incubatorFull'), 'warn');
+      } else {
+        const inc = this.farm.incubator(hit.x, hit.y, hit.z), n = inc ? inc.eggs.length : 0;
+        const left = n ? Math.max(0, Math.ceil(HATCH_SECONDS - ((this.meta.playTime || 0) - Math.min(...inc.eggs)))) : 0;
+        this.ui.toast(n ? t('farm.incubatorState', { n, s: left }) : t('farm.incubatorHint'));
+      }
+      this.useCooldown = 0.3; return;
+    }
     // farm animals take their food; crates release an animal; seeds are planted
     if (ent && ent.passive && fresh) { this.livestock.feed(ent); this.useCooldown = 0.3; return; }
     if (def && def.animal && fresh) { if (this.livestock.release(def.animal, hit)) this.useCooldown = 0.3; return; }

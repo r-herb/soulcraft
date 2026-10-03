@@ -198,7 +198,18 @@ not connect; a TURN relay (for example Cloudflare's) would fix that.
   Animals flee when hit and are never attacked by pets. Animals you walk
   away from (over 64 blocks) are kept in the save and come back when you
   return.
-- Wheat, tomatoes, carrots, eggs, wool and raw meat sell on the exchange.
+- **Oranges**: breaking the leaves of a tree drops an orange pip now and
+  then. Planted, it grows into an orange bush (four stages); "use" on a ripe
+  bush picks two to four oranges and it fruits again a stage later, so a
+  grove keeps giving. Breaking a ripe bush gives oranges and the pip back.
+- **Chicken coop**: a nest box (five planks and a wheat) gathers the eggs of
+  the hens within six blocks; "use" on it collects them. Chickens also peck
+  about the parks of Malaga by day.
+- **Incubator** (glass, charcoal and planks): "use" with an egg in hand puts
+  it in (up to four); after three minutes of play each egg hatches into a
+  chick beside it, so a flock grows without buying crates.
+- Wheat, tomatoes, carrots, oranges, eggs, wool and raw meat sell on the
+  exchange; keeping the seeds, pips and eggs grows the next harvest instead.
 - The world owner's game grows the crops and runs the animals; in a shared
   world guests see them through the room like the monsters.
 
@@ -526,6 +537,9 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/farm2.spec.js` (desktop): an orange pip grows into a bush whose
+  fruit is picked and grows again; a hen lays into a nest box; an incubator
+  hatches two eggs into chicks.
 - `tests/heist.spec.js` (desktop): twelve tasks with twelve squares of the
   plan, all done; the puzzle (a wrong square, the right one, the rest); the
   weak wall breaks; a guard who sees the player in the vault takes the

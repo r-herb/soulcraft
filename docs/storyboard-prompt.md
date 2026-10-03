@@ -109,7 +109,10 @@ Pirmajā reizē apmācība parāda soli pa solim: iet, skatīties, lauzt, likt, 
   - seko spēlētājam, ja tas tur rokā to barību;
   - divi pabaroti pieaugušie dabū mazuli;
   - vistas dēj olas, aitas dod vilnu, gaļu cep ar oglēm.
-- Ražu, olas, vilnu un gaļu var pārdot biržā.
+- **Apelsīni:** koku lapas reizēm nomet apelsīna sēklu; iestādīta tā izaug par apelsīnu krūmu; nogatavojušos augļus noplūc ar "izmantot" (2 līdz 4), un krūms ražo atkal.
+- **Vistu kūts:** ligzdas kaste (5 dēļi un kvieši) savāc olas no vistām 6 bloku attālumā; ar "izmantot" tās paņem. Malagas parkos dienā arī staigā vistas.
+- **Inkubators** (stikls, ogles, dēļi): ieliec līdz 4 olām; pēc 3 minūtēm spēles katra izšķiļas par cāli, tā vistu bizness aug bez kastu pirkšanas.
+- Ražu, apelsīnus, olas, vilnu un gaļu var pārdot biržā, vai paturēt sēklas un olas un audzēt vairāk.
 
 ## 5. Ciemati, tirdzniecība un Dvēseļu veikals
 

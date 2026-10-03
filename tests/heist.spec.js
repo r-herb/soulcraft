@@ -71,7 +71,7 @@ test.describe('El Gran Golpe', () => {
       await c.ensure(q.x, q.z, 96);
       const pl = H.plan(), K = window.__sc.bank;
       const pt = (d, a) => K.point(pl.P, d, a);
-      return { base: pl.P.base, weak: pt(pl.depth, pl.mid), out: pt(pl.depth + 3, pl.mid), inVault: pt(pl.depth - 1, pl.mid), diamond: pt(pl.diamond, pl.mid), far: pt(pl.depth + 80, pl.mid) };
+      return { base: pl.P.base, weak: pt(pl.depth, pl.mid), out: pt(pl.depth + 3, pl.mid), inVault: pt(pl.depth - 1, pl.mid), diamond: pt(pl.diamond, pl.mid), far: pt(pl.depth + 80, pl.mid), hall: pt(pl.counter - 2, pl.mid) };
     });
     await page.evaluate(({ out, weak, base }) => { const g = window.__sc.game, p = g.player; p.fly = false; p.pos.set(out.x + 0.5, base + 1.05, out.z + 0.5); p.yaw = Math.atan2(-(weak.x - out.x), -(weak.z - out.z)); p.pitch = -0.05; }, plan);
     await page.waitForFunction(({ w, y }) => window.__sc.game.world.getBlock(w.x, y, w.z) === window.__sc.B.weak_wall, { w: plan.weak, y: plan.base + 1 }, { timeout: 60_000 });
@@ -105,8 +105,8 @@ test.describe('El Gran Golpe', () => {
     }, plan);
     await page.waitForFunction(() => window.__sc.game.heist.state().escaped, null, { timeout: 10_000 });
 
-    // at the counter: the diamond traded; the city's new mayor
-    await page.evaluate(() => { const g = window.__sc.game; g.ui.open('bank'); });
+    // back at the counter: the diamond traded; the city's new mayor
+    await page.evaluate(({ hall, base }) => { const g = window.__sc.game; g.player.pos.set(hall.x + 0.5, base + 1.05, hall.z + 0.5); g.ui.open('bank'); }, plan);
     await page.click('[data-screen="bank"] [data-a="grand"]');
     await expect(page.locator('[data-screen="mayor"]')).toBeVisible();
     await shot(page, 'heist-mayor');

@@ -39,7 +39,7 @@ export const HEIST_POOL = [
   { key: 'parque', steps: [{ ev: 'reach', near: 'Paseo del Parque', r: 30 }, { ev: 'bank' }] },
 ];
 export const heistId = (key) => 'h_' + key;
-export const FINAL = { id: 'heist', final: true, reward: { coins: 0, crystals: 100 }, steps: [{ ev: 'reach', near: 'Banco de España', r: 60, text: 'toBank' }, { ev: 'diamond' }, { ev: 'escape' }, { ev: 'trade' }] };
+export const FINAL = { id: 'heist', final: true, reward: { coins: 0, crystals: 100 }, steps: [{ ev: 'diamond', near: 'Banco de España', r: 90 }, { ev: 'escape' }, { ev: 'trade', near: 'Banco de España', r: 90 }] };
 
 const INFORMANT = { skin: '#c99872', hair: '#2b2b2b', shirt: '#3a3a44', shirt2: '#2b2b33', pants: '#22222a', accent: '#c9a227', eye: '#2a1a10' };
 const GUARD = { skin: '#d9a066', hair: '#1a1a1a', shirt: '#2f4f6f', shirt2: '#2f4f6f', pants: '#1f2f3f', accent: '#111111', eye: '#2a1a10' };

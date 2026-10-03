@@ -102,15 +102,16 @@ export class Livestock {
       this.restore(r);
       L.splice(i, 1);
     }
-    // a few animals on the grass by day, away from the player's sight
-    if (g.meta.dim !== 'overworld' || isNight(g.meta.time) || Math.random() > 0.3) return;
+    // a few animals on the grass by day, away from the player's sight (in a city: chickens in the parks)
+    const city = g.meta.dim === 'city';
+    if ((g.meta.dim !== 'overworld' && !city) || isNight(g.meta.time) || Math.random() > (city ? 0.12 : 0.3)) return;
     const around = this.active().length + L.filter((r) => near(r) < KEEP).length;
     if (around >= 8) return;
     const a = Math.random() * Math.PI * 2, rr = 22 + Math.random() * 14;
     const x = Math.floor(p.x + Math.cos(a) * rr), z = Math.floor(p.z + Math.sin(a) * rr);
     const y = g.world.topSolid(x, z);
     if (y < 0 || g.world.getBlock(x, y, z) !== B.grass || g.world.getBlock(x, y + 1, z) !== B.air) return;
-    const kind = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+    const kind = city ? 'chicken' : ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
     const n = 2 + Math.floor(Math.random() * 2);
     for (let i = 0; i < n; i++) this.spawn(kind, x + 0.5 + (Math.random() - 0.5) * 2, y + 1.05, z + 0.5 + (Math.random() - 0.5) * 2);
   }

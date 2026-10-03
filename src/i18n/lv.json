@@ -1165,5 +1165,19 @@
   "heist.task.larios.desc": "Juvelieris Calle Larios grib topāzu.",
   "heist.task.parque": "Bankas ierēdnis",
   "heist.task.parque.desc": "Ierēdnis pastaigājas Paseo del Parque; tad apskati bankas leti pats.",
-  "heist.s.toBank": "Ej pie Banco de España (no aizmugures)"
+  "block.orange_0": "Apelsīna stāds",
+  "block.orange_1": "Jauns apelsīnu krūms",
+  "block.orange_2": "Apelsīnu krūms",
+  "block.orange_3": "Apelsīnu krūms ar augļiem",
+  "block.nest_box": "Ligzdas kaste",
+  "block.incubator": "Inkubators",
+  "item.orange_seed": "Apelsīna sēkla",
+  "farm.picked": "Tu noplūci {n} apelsīnus. Krūms ražos atkal.",
+  "farm.eggs": "{n} olas no ligzdas kastes.",
+  "farm.nestEmpty": "Ligzdas kaste ir tukša. Vistas tuvumā dēj tajā.",
+  "farm.incubating": "Ola inkubatorā ({n}/4).",
+  "farm.incubatorFull": "Inkubators ir pilns (4 olas).",
+  "farm.incubatorState": "Silda {n} olas; pirmais cālis pēc {s} s.",
+  "farm.incubatorHint": "Ieliec olas (turi olu un izmanto), lai izšķiltos cāļi.",
+  "farm.hatched": "Izšķīlās {n} cāļi!"
 }

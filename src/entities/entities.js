@@ -433,7 +433,11 @@ export class Mob extends Entity {
     if (this.type === 'chicken' && !this.baby) {
       if (this.eggT === undefined) this.eggT = 90 + Math.random() * 150;
       this.eggT -= dt;
-      if (this.eggT <= 0) { this.eggT = 150 + Math.random() * 150; g.entities.dropItem('egg', 1, this.pos.clone().setY(this.pos.y + 0.3)); }
+      if (this.eggT <= 0) {
+        this.eggT = 150 + Math.random() * 150;
+        // into a nest box nearby, else on the ground
+        if (!g.farm.layNear(this.pos.x, this.pos.y, this.pos.z)) g.entities.dropItem('egg', 1, this.pos.clone().setY(this.pos.y + 0.3));
+      }
     }
     if (this.loveT > 0 && Math.random() < dt * 3) g.entities.particles.emit(this.pos.x, this.pos.y + this.h + 0.2, this.pos.z, 1, 0.45, 0.6, 1, 0.8, 0.8, false);
   }

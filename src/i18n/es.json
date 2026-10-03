@@ -1165,5 +1165,19 @@
   "heist.task.larios.desc": "Un joyero de Calle Larios quiere un topacio.",
   "heist.task.parque": "El empleado del banco",
   "heist.task.parque.desc": "Un empleado pasea por el Paseo del Parque; luego mira tú mismo el mostrador del banco.",
-  "heist.s.toBank": "Ve al Banco de España (por detrás)"
+  "block.orange_0": "Plantón de naranjo",
+  "block.orange_1": "Naranjo joven",
+  "block.orange_2": "Naranjo",
+  "block.orange_3": "Naranjo con fruta",
+  "block.nest_box": "Nidal",
+  "block.incubator": "Incubadora",
+  "item.orange_seed": "Pepita de naranja",
+  "farm.picked": "Has cogido {n} naranjas. El naranjo volverá a dar fruta.",
+  "farm.eggs": "{n} huevos del nidal.",
+  "farm.nestEmpty": "El nidal está vacío. Las gallinas cercanas ponen en él.",
+  "farm.incubating": "Huevo en la incubadora ({n}/4).",
+  "farm.incubatorFull": "La incubadora está llena (4 huevos).",
+  "farm.incubatorState": "{n} huevos calentándose; el primer pollito en {s} s.",
+  "farm.incubatorHint": "Mete huevos (sostén un huevo y úsalo) para que nazcan pollitos.",
+  "farm.hatched": "¡Han nacido {n} pollitos!"
 }

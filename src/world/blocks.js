@@ -32,6 +32,8 @@ export const TILES = [
   'quartz_ore', 'amethyst_ore', 'topaz_ore', 'emerald_ore', 'sapphire_ore', 'ruby_ore', 'gem_cache', 'gem_cache_open',
   // the heist
   'weak_wall', 'grand_diamond', 'vault_gold',
+  // farm 2
+  'orange_0', 'orange_1', 'orange_2', 'orange_3', 'nest_box', 'nest_box_top', 'incubator', 'incubator_top',
 ];
 export const TILE = Object.fromEntries(TILES.map((n, i) => [n, i]));
 export const ATLAS_COLS = 8;
@@ -188,6 +190,12 @@ const LIST = [
   def(131, 'weak_wall', { tex: 'weak_wall', hardness: 6, tool: 'pick', tier: 2, drop: 'none' }),
   def(132, 'grand_diamond', { tex: { top: 'grand_diamond', side: 'grand_diamond', bottom: 'bank_stone' }, hardness: -1, light: 14 }),
   def(133, 'vault_gold', { tex: { top: 'gold_block', side: 'vault_gold', bottom: 'vault_gold' }, hardness: -1 }),
+  def(134, 'orange_0', { tex: 'orange_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 0 }),
+  def(135, 'orange_1', { tex: 'orange_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 1 }),
+  def(136, 'orange_2', { tex: 'orange_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 2 }),
+  def(137, 'orange_3', { tex: 'orange_3', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 3 }),
+  def(138, 'nest_box', { tex: { top: 'nest_box_top', side: 'nest_box', bottom: 'planks' }, hardness: 1, tool: 'axe' }),
+  def(139, 'incubator', { tex: { top: 'incubator_top', side: 'incubator', bottom: 'planks' }, hardness: 1, tool: 'axe', light: 6 }),
   def(130, 'gem_cache_open', { tex: { top: 'gem_cache_open', side: 'rubble', bottom: 'rubble' }, hardness: -1 }),
   def(99, 'bus_stop', { tex: { top: 'bus_stop_top', side: 'bus_stop', bottom: 'bus_stop_top' }, hardness: 1.5, tool: 'pick' }),
   ...Array.from({ length: 10 }, (_, d) => def(89 + d, 'num_' + d, { tex: { top: 'plaster_white', side: 'num_' + d, bottom: 'plaster_white' }, hardness: 1, tool: 'pick' })),

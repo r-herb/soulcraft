@@ -103,6 +103,17 @@ function cropPainters() {
       };
     }
   }
+  // the orange bush: a sapling, a young bush, a grown one, and one with fruit
+  for (let st = 0; st < 4; st++) {
+    out[`orange_${st}`] = (p) => {
+      p.clear();
+      const trunk = hex('#6b4a2b'), leaf = hex('#2f7d32'), leaf2 = hex('#3f9a3f');
+      const top = [11, 8, 4, 3][st], r = [2, 3.5, 5.5, 6][st];
+      for (let y = 15; y > top + 2; y--) { p.set(7, y, trunk); p.set(8, y, trunk); }
+      for (let x = 0; x < 16; x++) for (let y = 0; y < 16; y++) if (Math.hypot(x - 7.5, y - (top + r)) < r) p.set(x, y, (x + y) % 3 ? leaf : leaf2);
+      if (st === 3) for (const [x, y] of [[4, 6], [10, 5], [7, 9], [12, 9], [3, 10], [9, 12]]) { p.set(x, y, hex('#ff8c1a')); p.set(x + 1, y, hex('#ff8c1a')); p.set(x, y + 1, hex('#e06f0a')); }
+    };
+  }
   return out;
 }
 
@@ -317,6 +328,10 @@ const painters = {
     for (const [x, y] of [[5, 5], [10, 6], [7, 10]]) p.set(x, y, hex('#ffffff'));
   },
   vault_gold: (p) => { p.noise(['#3b3226', '#342c22']); for (let y = 1; y < 16; y += 5) for (let x = 0; x < 16; x++) { p.set(x, y, hex('#ffd65c')); p.set(x, y + 1, hex('#e8b93a')); p.set(x, y + 2, hex('#c48f2e')); } },
+  nest_box: (p) => { p.noise(['#b0874f', '#a77f49']); p.border('#6b4a2b'); for (let x = 3; x < 13; x++) for (let y = 5; y < 12; y++) p.set(x, y, hex('#3a2a18')); for (let x = 3; x < 13; x++) p.set(x, 11, hex('#d9b45a')); },
+  nest_box_top: (p) => { p.noise(['#d9b45a', '#cfa94f', '#e3c06a']); p.border('#6b4a2b'); for (const [x, y] of [[6, 6], [9, 8], [7, 10]]) { p.set(x, y, hex('#f4ecd8')); p.set(x + 1, y, hex('#f4ecd8')); p.set(x, y + 1, hex('#e6dcc4')); } },
+  incubator: (p) => { p.noise(['#d9d9d9', '#cfcfcf']); p.border('#7a7a7a'); for (let x = 3; x < 13; x++) for (let y = 3; y < 11; y++) p.set(x, y, hex('#ffb347')); for (const [x, y] of [[5, 6], [9, 7]]) { p.set(x, y, hex('#fff3dc')); p.set(x + 1, y, hex('#fff3dc')); } for (let x = 4; x < 12; x += 2) p.set(x, 13, hex('#e0342a')); },
+  incubator_top: (p) => { p.noise(['#bfe6ff', '#b3dcf5']); p.border('#7a7a7a'); },
   gem_cache: (p) => {
     p.noise(['#8d8579', '#857d71', '#958d81']); p.border('#5f574c');
     for (let i = 3; i < 13; i++) { p.set(i, 3, hex('#5f574c')); p.set(i, 12, hex('#5f574c')); p.set(3, i, hex('#5f574c')); p.set(12, i, hex('#5f574c')); }
