@@ -220,6 +220,43 @@ and raised (hold use) stops a blow from the front completely, not from the
 side or behind, slows the player while raised, and wears out after 336
 blocks.
 
+## Roblox-style avatars
+
+The world stays voxel, but players can swap the classic pixel figure for a
+**3D avatar** in the style of Roblox: a big round head with a smooth face,
+a two-part torso, and arms and legs that bend at the elbows and knees. It
+walks with bent knees and swinging forearms, breathes when idle, throws its
+arms up when it jumps, and can **wave, dance and cheer** (emotes, G or the
+smiley button; moving ends them). Other players see the avatar and its
+emotes; the look travels as one short string ('av:' and a character per
+slot) in the player's state message.
+
+The avatar is unlocked with **150 soul crystals**, or for free with any
+achievement. The **wardrobe** (Shop > Avatar) shows the figure turning in
+3D (drag to turn it, try the emotes) beside a catalog in tabs: skin tone,
+face, hair (and its color), hats, tops (and their color), pants, glasses
+and things worn on the back. Tapping an item tries it on; free and owned
+items are worn at once, the others are bought with soul crystals (20 to 300)
+or come only from an **achievement**, never for real money:
+
+| Achievement | How | Unlocks |
+|---|---|---|
+| Malaga guide | 5 Malaga missions | straw hat |
+| Treasure hunter | the Treasure Quest's chest | explorer hat and shirt |
+| Frost monarch | Treasure Quest chapter 2 | frost crown, ice wings |
+| Survivor | day 30 in a survival world | angel wings |
+| Realm knight | all 5 bosses (any survival worlds) | knight's helmet and armor |
+| El Gran Golpe | robbing the bank's vault | robber's mask and shirt |
+| Mayor of Malaga | trading the Gran Diamante | mayor's crown and suit |
+
+The bosses beaten and the best day follow the player between worlds (in the
+profile); a new achievement is announced once. "Play as my avatar" switches
+between the avatar and the classic skin; equipping a classic skin in the
+shop switches the avatar off.
+
+**F5** (or the figure button) switches the camera: first person, behind the
+player, and in front looking back at them; the camera stops short of walls.
+
 ## Shaders and animations
 
 With **Settings > Shaders** on (the default): leaves, grass and crops sway
@@ -447,6 +484,8 @@ for real, in order, through the Soul Map.
 | Drop the held item | - | Q |
 | How to play, replay the tutorial | ? button | H, ? button, or the pause menu |
 | FPS counter | Settings | F3 |
+| Camera: first person, behind, in front | Figure button | F5 |
+| Emotes (wave, dance, cheer) | Smiley button | G |
 
 Control size, opacity, look sensitivity, auto-jump, vibration, the control
 type (Auto, Touch, Mouse) and whether scrolling changes the item are all in
@@ -607,6 +646,12 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/avatar.spec.js`: the avatar unlocked for crystals in the wardrobe,
+  free hair and a hair color worn at once, a hat tried on and bought, the
+  mayor's crown locked until the achievement, the achievements tab, being
+  mayor and robbing the bank unlocking their items, the classic skin and
+  back, the third-person views showing the player's own avatar, and an
+  emote from the picker.
 - `tests/armor.spec.js` (desktop): a piece put on from the hand and the
   rest in their slots (boots refused in the head slot), 15 points take
   about half a blow off, each piece wears, a fall goes through, a worn-out

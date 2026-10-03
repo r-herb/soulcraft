@@ -14,6 +14,7 @@ import { bank } from './bank.js';
 import { foodShop, restaurant } from './food.js';
 import { missions } from './missionsui.js';
 import { heistMap, mayor } from './heistui.js';
+import { wardrobe, emotes } from './wardrobe.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi, toAdminPanel } from '../save/account.js';
@@ -69,7 +70,7 @@ export class UI {
     this.root.innerHTML = '';
     const top = this.top;
     if (!top) return;
-    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor })[top.name] || null;
+    const fn = this['screen_' + top.name] || panels[top.name] || ({ worldMap, busStop, friends, chat, bank, foodShop, restaurant, missions, heistMap, mayor, wardrobe, emotes })[top.name] || null;
     if (!fn) return;
     const node = fn.call(this, top.args, this);
     if (node) { this.root.appendChild(node); applyI18n(node); }
@@ -684,8 +685,8 @@ export class UI {
     const touch = this.input.touchMode;
     const mac = /Mac/.test(navigator.platform || navigator.userAgent || '');
     const rows = touch
-      ? ['joy', 'look', 'jump', 'attack', 'use', 'slots', 'inv', 'pause']
-      : ['capture', 'wasd', 'mouse', 'arrows', 'jump', 'sprint', 'attack', mac ? 'useMac' : 'use', mac ? 'slotsMac' : 'slots', 'inv', 'drop', 'map', 'help', 'esc'];
+      ? ['joy', 'look', 'jump', 'attack', 'use', 'slots', 'inv', 'view', 'emote', 'pause']
+      : ['capture', 'wasd', 'mouse', 'arrows', 'jump', 'sprint', 'attack', mac ? 'useMac' : 'use', mac ? 'slotsMac' : 'slots', 'inv', 'drop', 'map', 'view', 'emote', 'help', 'esc'];
     const node = el(`<div class="screen scrim" data-screen="help">
       <div class="panel" style="width:min(560px,100%)">
         <div class="panel-head"><h2 class="panel-title" data-i18n="help.title"></h2>

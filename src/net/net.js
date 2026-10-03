@@ -14,8 +14,7 @@
 //              proj (a monster's arrow), time, kick
 //   room: hello (to me), join, leave, closed, error
 import * as THREE from 'three';
-import { humanoid, animateWalk, skinColors, box } from '../entities/models.js';
-import { ITEMS } from '../player/items.js';
+import { Figure, playerSkin } from '../entities/avatar.js';
 import { t } from '../i18n/index.js';
 
 export const MAX_PLAYERS = 4;
@@ -218,7 +217,7 @@ export class Net {
   sendState() {
     const g = this.game, p = g.player;
     const h = g.inventory.held;
-    const msg = { t: 'p', x: +p.pos.x.toFixed(2), y: +p.pos.y.toFixed(2), z: +p.pos.z.toFixed(2), yaw: +p.yaw.toFixed(2), pitch: +p.pitch.toFixed(2), skin: g.profile.skin || 'wanderer', held: h ? h.item : null, dead: p.dead ? 1 : 0, sw: g.held.swings || 0 };
+    const msg = { t: 'p', x: +p.pos.x.toFixed(2), y: +p.pos.y.toFixed(2), z: +p.pos.z.toFixed(2), yaw: +p.yaw.toFixed(2), pitch: +p.pitch.toFixed(2), skin: playerSkin(g.profile), em: g.emote ? g.emote.id : 0, held: h ? h.item : null, dead: p.dead ? 1 : 0, sw: g.held.swings || 0 };
     const key = JSON.stringify(msg);
     // standing still: resend only now and then
     if (key === this.lastState && (this.idleT = (this.idleT || 0) + 1) < 10) return;
@@ -444,29 +443,24 @@ class RemotePlayer {
       this.badge = godBadge(); this.badge.position.y = 2.0; this.object.add(this.badge);
       this.object.remove(this.tag); this.tag = nameTag(this.name, true); this.tag.position.y = 2.65; this.object.add(this.tag);
     } else { this.object.remove(this.badge); this.badge = null; }
+    this.placeTags();
   }
 
   build(skin) {
-    if (this.rig) this.object.remove(this.rig.group);
-    this.rig = humanoid(skinColors(skin));
-    this.object.add(this.rig.group);
+    if (!this.fig) { this.fig = new Figure(); this.object.add(this.fig.object); }
+    this.fig.build(skin);
+    this.rig = this.fig.rig;
     this.skin = skin;
-    this.heldItem = undefined;
+    this.placeTags();
   }
 
-  setHeld(item) {
-    if (item === this.heldItem) return;
-    this.heldItem = item;
-    if (this.heldMesh) { this.rig.armR.remove(this.heldMesh); this.heldMesh = null; }
-    const def = item && ITEMS[item];
-    if (!def) return;
-    const tool = def.tool || def.weapon || def.damage;
-    const m = tool ? box(0.08, 0.6, 0.08, def.weapon === 'bow' ? '#8a6238' : '#c9ccd2') : box(0.22, 0.22, 0.22, '#b08452');
-    m.position.set(0, -0.7, tool ? 0.2 : 0.12);
-    if (tool) m.rotation.x = Math.PI / 2.4;
-    this.rig.armR.add(m);
-    this.heldMesh = m;
+  // the name (and the badge) float higher over a 3D avatar and its hat
+  placeTags() {
+    const up = this.rig && this.rig.avatar ? 0.35 : 0;
+    if (this.badge) { this.badge.position.y = 2.0 + up; this.tag.position.y = 2.65 + up; } else this.tag.position.y = 2.25 + up;
   }
+
+  setHeld(item) { this.fig.setHeld(item); }
 
   setState(s) {
     if (this.skin !== s.skin) this.build(s.skin);
@@ -475,6 +469,7 @@ class RemotePlayer {
     if (!this.seen) { this.pos.copy(this.to); this.yaw = s.yaw; this.seen = true; this.object.visible = true; }
     this.dead = !!s.dead;
     this.setHeld(s.held);
+    this.fig.setEmote(s.em || null);
     if (s.sw !== this.sw) { this.sw = s.sw; this.swing = 0.25; }
   }
 
@@ -490,10 +485,10 @@ class RemotePlayer {
     while (dy < -Math.PI) dy += Math.PI * 2;
     this.yaw += dy * k;
     const speed = Math.hypot(this.pos.x - before.x, this.pos.z - before.z) / Math.max(dt, 1e-3);
-    this.phase += dt * 9 * Math.min(1, speed / 3);
-    animateWalk(this.rig, this.phase, Math.min(1, speed / 3));
-    this.rig.head.rotation.x = -this.pitch * 0.6;
-    if (this.swing > 0) { this.swing -= dt; this.rig.armR.rotation.x = -1.6 * Math.sin((this.swing / 0.25) * Math.PI); }
+    // the vertical speed, smoothed: a jump or a fall
+    this.vy = (this.vy || 0) * 0.8 + ((this.pos.y - before.y) / Math.max(dt, 1e-3)) * 0.2;
+    if (this.swing > 0) this.swing -= dt;
+    this.fig.animate(dt, { speed, vy: this.vy, pitch: this.pitch, swing: Math.max(0, this.swing) });
     this.object.position.copy(this.pos);
     // the player's yaw looks along -z; the model faces +z
     this.object.rotation.set(0, this.yaw + Math.PI, 0);
@@ -503,7 +498,7 @@ class RemotePlayer {
 
   dispose() {
     this.game.scene.remove(this.object);
-    this.object.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+    this.object.traverse((o) => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
     if (this.tag.material.map) this.tag.material.map.dispose();
   }
 }

@@ -89,6 +89,9 @@ test.describe('Play with friends', () => {
     // each sees the other
     await host.waitForFunction(() => { const n = window.__sc.game.net; return n && [...n.players.values()].some((p) => p.seen && p.object.visible); }, null, { timeout: 20_000 });
     await guest.waitForFunction(() => { const n = window.__sc.game.net; return n && [...n.players.values()].some((p) => p.seen); }, null, { timeout: 20_000 });
+    // the host puts on a 3D avatar and waves: the guest sees both
+    await host.evaluate(() => { const g = window.__sc.game, p = g.profile; p.avatar = { unlocked: true, on: true, cfg: { hat: 'cap', back: 'cape' } }; g.applySkin(); g.startEmote('wave'); });
+    await guest.waitForFunction(() => [...window.__sc.game.net.players.values()].some((p) => p.rig && p.rig.avatar && p.skin.startsWith('av:') && p.fig.emote === 'wave'), null, { timeout: 15_000 });
     if (process.env.SHOTS) {
       // stand the guest a few steps from the host, looking at them
       const hp = await host.evaluate(() => { const p = window.__sc.game.player.pos; return { x: p.x, y: p.y, z: p.z }; });

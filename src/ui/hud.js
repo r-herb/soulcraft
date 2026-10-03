@@ -47,6 +47,8 @@ export class Hud {
       <div class="hud-top-right">
         <span class="fps hidden"></span>
         <button class="hud-btn pe hidden" data-b="chat" data-i18n-aria="chat.title">${SVG.chat}<span class="dot hidden"></span></button>
+        <button class="hud-btn pe" data-b="emote" data-i18n-aria="av.emotes">${SVG.emote}</button>
+        <button class="hud-btn pe" data-b="view" data-i18n-aria="av.view">${SVG.view}</button>
         <button class="hud-btn pe" data-b="help" data-i18n-aria="help.title">${SVG.help}</button>
         <button class="hud-btn pe" data-b="map" data-i18n-aria="hud.map">${SVG.map}</button>
         <button class="hud-btn pe" data-b="fullscreen" data-i18n-aria="hud.fullscreen">${SVG.fullscreen}</button>
@@ -100,6 +102,8 @@ export class Hud {
         else if (k === 'chat') ui.open('chat');
         else if (k === 'map') ui.openMap();
         else if (k === 'fullscreen') ui.toggleFullscreen();
+        else if (k === 'view') ui.game.cycleView();
+        else if (k === 'emote') ui.open('emotes');
       });
       b.addEventListener('pointerdown', (e) => e.stopPropagation());
     });

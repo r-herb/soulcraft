@@ -1,7 +1,7 @@
 // First-person arm and held item, attached to the camera.
 import * as THREE from 'three';
 import { iconCanvas } from '../ui/icons.js';
-import { skinColors } from '../entities/models.js';
+import { armColors } from '../entities/avatar.js';
 
 export class HeldItem {
   constructor(game) {
@@ -34,8 +34,9 @@ export class HeldItem {
     this.lightMul = 1;
   }
 
+  // a classic skin id or an avatar's look ('av:...')
   setSkin(id) {
-    const c = skinColors(id);
+    const c = armColors(id);
     this.armMat.color.set(c.skin);
     this.sleeveMat.color.set(c.shirt);
   }
@@ -68,6 +69,6 @@ export class HeldItem {
     this.group.position.set(0.42 + sx - r * 0.3 + Math.sin(this.bobT) * 0.015, -0.42 + sy + r * 0.18 - Math.abs(Math.cos(this.bobT)) * 0.02, -0.62 + r * 0.12);
     this.group.rotation.x = rx;
     this.item.scale.setScalar(1 + r * 0.6);
-    this.group.visible = !p.dead;
+    this.group.visible = !p.dead && !this.game.thirdPerson;
   }
 }

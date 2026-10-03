@@ -10,6 +10,7 @@ import { SKINS, drawSkinPortrait } from '../entities/models.js';
 import { PETS, drawPetPortrait } from '../entities/pets.js';
 import { daily, taskLabel, rewardFor, ALL_BONUS, currentEvent, dayKey } from '../quest/daily.js';
 import { storeProfile } from '../save/account.js';
+import { avatarUnlocked } from '../entities/avatar.js';
 import { BOSS_ORDER } from '../bosses/bosses.js';
 import { ARENAS } from '../world/structures.js';
 import { FRIEND_XP } from '../entities/villager.js';
@@ -271,7 +272,7 @@ export function shop(args, ui) {
     <div class="panel" style="width:min(780px,100%);height:100%">
       ${head(esc(t('shop.title')))}
       <div class="row"><span class="stat-chip crystal-chip"><span class="crystal-ico"></span><span class="bal"></span></span>
-        <div class="seg shop-tabs"><button data-tab="skins" data-i18n="shop.tabSkins"></button><button data-tab="pets" data-i18n="shop.tabPets"></button></div>
+        <div class="seg shop-tabs"><button data-tab="skins" data-i18n="shop.tabSkins"></button><button data-tab="pets" data-i18n="shop.tabPets"></button><button data-tab="avatar" class="tab-new" data-i18n="av.tabShort"></button></div>
         <span class="faint shop-hint" style="flex:1;text-align:right"></span></div>
       <div class="shop-layout">
         <div class="col" style="align-items:center"><canvas class="skin-preview" width="200" height="220"></canvas><b class="pv-name"></b><button class="btn primary wide pv-act"></button></div>
@@ -280,6 +281,7 @@ export function shop(args, ui) {
     </div></div>`);
   let tab = args.tab || 'skins';
   let sel = profile.skin;
+  const avatarOn = () => !!(profile.avatar && profile.avatar.on && avatarUnlocked(profile));
   let selPet = profile.pet || PETS[0].id;
   profile.pets = profile.pets || [];
   const preview = node.querySelector('.skin-preview');
@@ -344,7 +346,7 @@ export function shop(args, ui) {
       const card = el(`<button class="skin-card ${s.id === sel ? 'sel' : ''}" data-skin="${s.id}"><canvas></canvas><span class="nm"></span><span class="pr"></span></button>`);
       drawSkinPortrait(card.querySelector('canvas'), s.id);
       card.querySelector('.nm').textContent = t('skin.' + s.id);
-      card.querySelector('.pr').innerHTML = profile.skin === s.id ? esc(t('shop.equipped')) : owned ? '&#10003;' : s.quest ? esc(t('shop.questOnly')) : s.price ? `<span class="crystal-ico"></span>${s.price}` : esc(t('shop.free'));
+      card.querySelector('.pr').innerHTML = profile.skin === s.id && !avatarOn() ? esc(t('shop.equipped')) : owned ? '&#10003;' : s.quest ? esc(t('shop.questOnly')) : s.price ? `<span class="crystal-ico"></span>${s.price}` : esc(t('shop.free'));
       card.addEventListener('click', () => { ui.click(); sel = s.id; draw(); });
       grid.appendChild(card);
     }
@@ -352,8 +354,8 @@ export function shop(args, ui) {
     const owned = profile.skins.includes(sel);
     node.querySelector('.pv-name').textContent = t('skin.' + sel);
     const b = node.querySelector('.pv-act');
-    b.disabled = profile.skin === sel || (s.quest && !owned);
-    b.innerHTML = profile.skin === sel ? esc(t('shop.equipped')) : owned ? esc(t('shop.equip')) : s.quest ? esc(t('shop.questOnly')) : `${esc(t('shop.buy'))} <span class="crystal-ico"></span>${s.price}`;
+    b.disabled = (profile.skin === sel && !avatarOn()) || (s.quest && !owned);
+    b.innerHTML = profile.skin === sel && !avatarOn() ? esc(t('shop.equipped')) : owned ? esc(t('shop.equip')) : s.quest ? esc(t('shop.questOnly')) : `${esc(t('shop.buy'))} <span class="crystal-ico"></span>${s.price}`;
     b.onclick = async () => {
       if (!owned) {
         if (s.quest) return;
@@ -364,13 +366,20 @@ export function shop(args, ui) {
         ui.audio.sfx('levelup');
       }
       profile.skin = s.id;
+      // a classic skin takes the place of the avatar
+      if (profile.avatar) profile.avatar.on = false;
       ui.click();
-      if (ui.game && ui.game.held) ui.game.held.setSkin(s.id);
+      if (ui.game && ui.game.held) ui.game.applySkin();
       await storeProfile(profile);
       draw();
     };
   };
-  node.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { ui.click(); tab = b.dataset.tab; draw(); }));
+  node.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+    ui.click();
+    // the avatar has its own screen: the wardrobe
+    if (b.dataset.tab === 'avatar') { ui.open('wardrobe'); return; }
+    tab = b.dataset.tab; draw();
+  }));
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); cancelAnimationFrame(raf); ui.back(); });
   draw();
   drawPreview();

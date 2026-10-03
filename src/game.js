@@ -16,6 +16,7 @@ import { Pet, PET } from './entities/pets.js';
 import { DailyTracker, currentEvent } from './quest/daily.js';
 import { BossManager, BOSS_ORDER } from './bosses/bosses.js';
 import { HeldItem } from './player/held.js';
+import { Figure, playerSkin, ACHIEVEMENTS } from './entities/avatar.js';
 import { settings } from './save/settings.js';
 import { saveWorld } from './save/db.js';
 import { slot, pushSave, storeProfile, newWorldId } from './save/account.js';
@@ -107,6 +108,12 @@ export class Game {
     this.sunLight.position.set(0.4, 1, 0.3);
     this.scene.add(this.ambient, this.sunLight);
     this.held = new HeldItem(this);
+    // the player's own figure, seen in the third-person views
+    this.selfFig = new Figure();
+    this.selfFig.object.visible = false;
+    this.scene.add(this.selfFig.object);
+    this.thirdPerson = 0; // 0 first person, 1 behind, 2 in front
+    this.emote = null;
     this.entities = new EntityManager(this);
     this.farm = new Farm(this);
     this.livestock = new Livestock(this);
@@ -520,6 +527,10 @@ export class Game {
     if (this.city && this.meta.dim === 'city') { this._tileT = (this._tileT || 0) - dt; if (this._tileT <= 0) { this._tileT = 1; this.city.ensure(pl.pos.x, pl.pos.z, 200); } }
     this.petTick(dt);
     if (pl.moving) this.daily.walked(Math.hypot(pl.vel.x, pl.vel.z) * dt);
+    this._progT = (this._progT || 0) - dt;
+    if (this._progT <= 0) { this._progT = 5; this.noteProgress(); }
+    // an emote ends when the player moves; a wave and a cheer after a few seconds
+    if (this.emote) { this.emote.t += dt; if (pl.moving || pl.dead || (this.emote.id !== 'dance' && this.emote.t > 3)) this.emote = null; }
     this.eventTick(dt);
     this.bosses.update(dt);
     if (this.net) this.net.update(dt);
@@ -543,6 +554,8 @@ export class Game {
     if (P.has('map')) { this.ui.openMap(); return; }
     if (P.has('help')) { this.ui.open('help'); return; }
     if (P.has('fps')) this.ui.toggleFps();
+    if (P.has('view')) this.cycleView();
+    if (P.has('emote')) { this.ui.open('emotes'); return; }
     for (let i = 0; i < 9; i++) if (P.has('slot' + i)) this.selectSlot(i);
     if (P.has('nextSlot')) this.selectSlot((this.inventory.selected + 1) % 9);
     if (P.has('prevSlot')) this.selectSlot((this.inventory.selected + 8) % 9);
@@ -550,6 +563,46 @@ export class Game {
       const h = this.inventory.held;
       if (h) { const k = h.item; this.inventory.consumeHeld(1); this.entities.dropItem(k, 1, this.player.eye.add(this.player.lookDir().multiplyScalar(1)), this.player.lookDir().multiplyScalar(5)); }
     }
+  }
+
+  // The achievements behind the avatar's best items: the bosses beaten and the
+  // longest survival follow the player between worlds (in the profile); a
+  // newly reached achievement is announced once.
+  noteProgress() {
+    const pr = this.profile, m = this.meta;
+    if (!pr || !m) return;
+    let changed = false;
+    if (!this.creative && !this.isQuest) {
+      const b = new Set(pr.bossesBeaten || []);
+      for (const id of BOSS_ORDER) if (m.bosses && m.bosses[id] && !b.has(id)) { b.add(id); changed = true; }
+      if (changed) pr.bossesBeaten = [...b];
+      if (!this.isGuest && (m.day || 0) > (pr.bestDay || 0)) { pr.bestDay = m.day; changed = true; }
+    }
+    const seen = new Set(pr.achSeen || []);
+    for (const a of ACHIEVEMENTS) {
+      if (seen.has(a.id) || !a.test(pr)) continue;
+      seen.add(a.id); changed = true;
+      this.ui.toast(t('av.achNew', { name: t('av.ach.' + a.id) }), 'soul');
+    }
+    if (changed) { pr.achSeen = [...seen]; storeProfile(pr); }
+  }
+
+  // the player's look: a classic skin or the avatar
+  applySkin() {
+    const skin = playerSkin(this.profile);
+    this.held.setSkin(skin);
+    this.selfFig.setSkin(skin);
+  }
+
+  // first person, behind the player, in front of them
+  cycleView() {
+    this.thirdPerson = (this.thirdPerson + 1) % 3;
+  }
+
+  // wave, dance, cheer: seen in the third-person view and by the other players
+  startEmote(id) {
+    this.emote = id ? { id, t: 0 } : null;
+    if (id && !this.thirdPerson) this.thirdPerson = 2;
   }
 
   selectSlot(i) {
@@ -1108,13 +1161,17 @@ export class Game {
     const p = this.player;
     const cam = this.camera;
     let bob = 0;
-    if (p.moving) bob = Math.sin(p.walkPhase * 2) * 0.05;
+    const third = this.thirdPerson && !p.dead && !(this.buses && this.buses.riding);
+    if (p.moving && !third) bob = Math.sin(p.walkPhase * 2) * 0.05;
     cam.position.set(p.pos.x, p.pos.y + EYE + bob + (p.dead ? -1.2 : 0), p.pos.z);
     cam.rotation.set(0, 0, 0);
     cam.rotation.order = 'YXZ';
     cam.rotation.y = p.yaw;
     cam.rotation.x = p.pitch;
     cam.rotation.z = p.dead ? 0.6 : (p.hurtTime > 0 ? Math.sin(p.hurtTime * 40) * 0.03 : 0);
+    if (third) this.thirdPersonCamera(cam, p);
+    this.selfFig.object.visible = !!third;
+    if (third) this.updateSelfFig(dt, p);
     const rd = this.viewDistance();
     cam.far = rd * 16 + 48;
     cam.updateProjectionMatrix();
@@ -1130,6 +1187,36 @@ export class Game {
     this.held.update(dt);
     this.entities.render(dt);
     this.renderer.render(this.scene, cam);
+  }
+
+  // The camera pulled back behind the player (or in front, looking back at
+  // them), stopped short of any wall in between.
+  thirdPersonCamera(cam, p) {
+    const front = this.thirdPerson === 2;
+    const dir = p.lookDir();
+    if (front) { dir.negate(); cam.rotation.y = p.yaw + Math.PI; cam.rotation.x = -p.pitch; }
+    const from = cam.position.clone();
+    let d = 0.3;
+    const want = 4;
+    for (; d < want; d += 0.1) {
+      const x = from.x - dir.x * d, y = from.y - dir.y * d, z = from.z - dir.z * d;
+      const id = this.world.getBlock(Math.floor(x), Math.floor(y), Math.floor(z));
+      if (id && BLOCKS[id] && BLOCKS[id].solid) break;
+    }
+    d = Math.max(0.3, d - 0.3);
+    cam.position.set(from.x - dir.x * d, from.y - dir.y * d, from.z - dir.z * d);
+  }
+
+  updateSelfFig(dt, p) {
+    const f = this.selfFig;
+    if (!f.rig) this.applySkin();
+    const h = this.inventory.held;
+    f.setHeld(h ? h.item : null);
+    f.setEmote(this.emote ? this.emote.id : null);
+    const sw = this.held.swingT > 0 ? this.held.swingT : 0;
+    f.animate(dt, { speed: p.moving ? Math.hypot(p.vel.x, p.vel.z) : 0, vy: p.onGround ? 0 : p.vel.y, pitch: p.pitch, swing: sw });
+    f.object.position.copy(p.pos);
+    f.object.rotation.set(0, p.yaw + Math.PI, 0);
   }
 
   realmStatus() {

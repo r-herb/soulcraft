@@ -101,7 +101,7 @@ async function boot() {
     async reloadAccount() {
       app.profile = await loadProfile(slot('profile'));
       app.game.profile = app.profile;
-      app.game.held.setSkin(app.profile.skin);
+      app.game.applySkin();
       await app.refreshInfo();
     },
     // where this player is, for friends (every minute, and when it changes)
@@ -189,7 +189,7 @@ async function boot() {
   await initAccount();
   app.profile = await loadProfile(slot('profile'));
   app.game.profile = app.profile;
-  app.game.held.setSkin(app.profile.skin);
+  app.game.applySkin();
   await app.refreshInfo();
   ui.setLoading(1, t('loading.ready'));
   if (!storageOk) ui.toast(t('error.save'), 'warn');

@@ -530,8 +530,9 @@ export class QuestManager {
       st.rewarded = true;
       if (!prof.skins.includes('treasure')) prof.skins.push('treasure');
       prof.skin = 'treasure';
+      if (prof.avatar) prof.avatar.on = false;
       prof.rewards = { ...(prof.rewards || {}), starfall: true };
-      g.held.setSkin('treasure');
+      g.applySkin();
       g.giveItem('starfall_blade', 1);
       g.addCrystals(250);
       await storeProfile(prof);
@@ -553,8 +554,9 @@ export class QuestManager {
       st.rewarded2 = true;
       if (!prof.skins.includes('frost_monarch')) prof.skins.push('frost_monarch');
       prof.skin = 'frost_monarch';
+      if (prof.avatar) prof.avatar.on = false;
       prof.rewards = { ...(prof.rewards || {}), frostbrand: true };
-      g.held.setSkin('frost_monarch');
+      g.applySkin();
       g.giveItem('frostbrand', 1);
       g.addCrystals(300);
       await storeProfile(prof);

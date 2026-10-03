@@ -329,6 +329,12 @@ Kristāli nāk izdzīvošanas režīmā, bet monētas pilsēta izmaksā vienreiz
   - drauga ziņa parādās spēles laikā.
 - **Zvani:** datorā ar video un skaņu, telefonā tikai ar skaņu. Zvanā var pievienot vairākus draugus. Zvana logs peld stūrī virs spēles.
 - **Admini** moderē čatu, bloķē pārkāpējus un uzrauga ekonomiku.
+- **Roblox stila tēli:** pasaule paliek kubiņos, bet spēlētājs var nomainīt pikseļu figūru pret **3D tēlu**: liela apaļa galva ar gludu seju, rokas un kājas, kas liecas elkoņos un ceļos.
+  - Tēlu atbloķē par 150 dvēseļu kristāliem vai bez maksas par jebkuru sasniegumu.
+  - **Garderobē** ("Mans tēls") tēls griežas 3D; var mainīt ādas toni, seju, matus un to krāsu, cepures, kreklus, bikses, brilles un lietas uz muguras (mugursoma, ģitāra, apmetnis, reaktīvā soma, spārni).
+  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi). Par īstu naudu nekas netiek pārdots.
+  - Emocijas: māt, dejot, priecāties; draugi tās redz.
+  - F5 vai tēla poga pārslēdz kameru: no acīm, no mugurpuses, no priekšpuses.
 
 ---
 

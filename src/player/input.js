@@ -85,6 +85,8 @@ export class Input {
         if (k === 'KeyV') this.pressed.add('flyspeed');
         if (k === 'KeyX') this.pressed.add('busstop');
         if (k === 'F3') { this.pressed.add('fps'); e.preventDefault(); }
+        if (k === 'F5') { this.pressed.add('view'); e.preventDefault(); }
+        if (k === 'KeyG') this.pressed.add('emote');
         if (/^Digit[1-9]$/.test(k)) this.pressed.add('slot' + (Number(k.slice(5)) - 1));
       }
       this.keys.add(k);
