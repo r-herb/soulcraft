@@ -315,7 +315,8 @@ export function bankLayout(depth) {
   const vault = Math.max(6, depth - Math.max(5, Math.min(10, Math.round(depth * 0.3))));
   const counter = Math.max(3, Math.min(vault - 3, Math.round(depth * 0.35)));
   const diamond = Math.round((vault + depth) / 2);
-  return { counter, vault, diamond };
+  // the sewer: a hatch in a corner of the hall, a tunnel under the counter, a hatch in the vault's floor
+  return { counter, vault, diamond, sewer: { a: 2, from: 2, to: vault + 1 } };
 }
 export const bankWidth = (P) => (P.side === 0 || P.side === 2 ? P.x1 - P.x0 : P.z1 - P.z0);
 
@@ -415,6 +416,13 @@ export function genCity(cx, cz, data, e) {
     for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
     for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
     data[idx(lx, base, lz)] = edge ? B.bank_stone : d >= plan.vault ? B.vault_floor : B.marble;
+    // the old sewer under the bank: two hatches and a low tunnel between them
+    const sw = plan.sewer;
+    if (a === sw.a && d >= sw.from && d <= sw.to && !edge) {
+      if (base - 3 > 0) data[idx(lx, base - 3, lz)] = (d - sw.from) % 5 === 2 ? B.bank_lamp : B.stone;
+      for (const y of [base - 2, base - 1]) if (y > 0) data[idx(lx, y, lz)] = B.air;
+      if (d === sw.from || d === sw.to) data[idx(lx, base, lz)] = B.sewer_grate;
+    }
     const HALL = 8;
     for (let y = base + 1; y < topY; y++) {
       const r = y - base;

@@ -263,6 +263,14 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - Katrai misijai ir **pamācība**: visi soļi pēc kārtas (izpildītie nosvītroti, pašreizējais izcelts), padomi un balva. Tā atveras, pirmo reizi sekojot misijai, un ar ? pogu.
 - Ja spēlētājs nomirst ar Gran Diamante, apsargi to aiznes atpakaļ uz seifu.
 
+### Citi veidi, kā tikt seifā
+- Kad plāns salikts, misijās parādās četri jauni informatori (ar zobrata zīmi), un katrs dod rīku:
+  - **apsarga uniforma** (drēbnieks Calle Larios): 45 sekundes apsargi tevi uzskata par savējo;
+  - **kanalizācijas atslēga** (strādnieks pie Paseo del Parque): lūka bankas zāles stūrī ved pa zemu tuneli ar lampām līdz lūkai seifa grīdā;
+  - **petardes** (pirotehniķis Muelle Uno): ārpus bankas visi apsargi uz 25 sekundēm skrien pie durvīm;
+  - **seifa durvju kods** (nakts sargs Mercado de Atarazanas, pēc kopīgas maltītes): durvis atveras uz 40 sekundēm; naktī dežūrē tikai viens apsargs.
+- **Ar draugiem:** viens bankas zālē dejo vai māj, un apsargi skatās šovu, kamēr pārējie iet iekšā; drauga petardes dzird visi.
+
 ### Dārgakmeņi un zelts
 
 - Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).

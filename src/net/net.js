@@ -153,6 +153,8 @@ export class Net {
       case 'proj': if (!this.isHost) this.spawnProj(msg); break;
       // missions played together (see src/quest/missions.js)
       case 'mev': case 'team': case 'mdone': case 'hplace': g.missions.onNet(msg, from); break;
+      // a teammate's firecrackers: the guards run to the bank's door in every game
+      case 'hdistract': if (g.heist) g.heist.distract(Math.min(30, Number(msg.s) || 0)); break;
       case 'save': if (this.isHost && from) { g.meta.guests = g.meta.guests || {}; g.meta.guests[from] = { player: msg.player, inventory: msg.inventory, name: this.names.get(from) }; } break;
       default: break;
     }

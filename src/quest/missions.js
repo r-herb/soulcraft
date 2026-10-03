@@ -36,7 +36,7 @@ export const MISSIONS = [
 ];
 export const missionById = (id) => MISSIONS.find((m) => m.id === id);
 // a mission's name: the city missions, the heist's tasks and its final
-export const missionName = (m) => (m.final ? t('heist.final') : m.heist ? t('heist.task.' + m.key) : t('mis.' + m.id));
+export const missionName = (m) => (m.final ? t('heist.final') : m.approach ? t('heist.ap.' + m.key) : m.heist ? t('heist.task.' + m.key) : t('mis.' + m.id));
 
 export class Missions {
   constructor(game) { this.game = game; this.t = 0; }
@@ -71,10 +71,10 @@ export class Missions {
   // every step of a mission, as text
   stepsOf(m) {
     if (m.tour) return m.tour.map((n, i) => t('mis.tour.step', { place: n, n: i, total: m.tour.length }));
-    return m.steps.map((st, i) => (m.heist || m.final ? heistStep(st) : t(`mis.${m.id}.s${i}`, { n: 0, total: st.n || 1 })));
+    return m.steps.map((st, i) => (m.heist || m.final || m.approach ? heistStep(st) : t(`mis.${m.id}.s${i}`, { n: 0, total: st.n || 1 })));
   }
   // the kind of tips a mission's guide gives
-  guideKey(m) { return m.final ? 'final' : m.heist ? 'task' : m.id; }
+  guideKey(m) { return m.final ? 'final' : m.approach ? 'ap_' + m.key : m.heist ? 'task' : m.id; }
   get tracked() { const s = this.state(), all = this.all(), id = this.guest ? this.localTrack || s.track : s.track; const m = all.find((x) => x.id === id); return m && !this.isDone(m.id) ? m : all.find((x) => !this.isDone(x.id)) || null; }
 
   // where a mission's current step wants the player to go (or null)
@@ -96,7 +96,7 @@ export class Missions {
     if (this.isDone(m.id)) return t('mis.done');
     if (m.tour) { const next = m.tour.find((n) => !pr.seen.includes(n)); return t('mis.tour.step', { place: next, n: pr.seen.length, total: m.tour.length }); }
     const st = m.steps[pr.step];
-    if (m.heist || m.final) return heistStep(st);
+    if (m.heist || m.final || m.approach) return heistStep(st);
     return t(`mis.${m.id}.s${pr.step}`, { n: pr.n, total: st.n || 1 });
   }
 
@@ -221,7 +221,7 @@ export class Missions {
     if (msg.t === 'mev' && this.host) this.event(msg.ev, msg.data || {}, { x: msg.x, z: msg.z });
     else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist };
     else if (msg.t === 'hplace' && this.host && g.heist) { if (g.heist.place(msg.key, msg.slot)) this.sendTeam(); }
-    else if (msg.t === 'mdone' && this.guest) this.rewardMine(this.byId(msg.id) || { id: msg.id, key: msg.key, heist: !!msg.key, reward: msg.reward, steps: [] }, true);
+    else if (msg.t === 'mdone' && this.guest) this.rewardMine(this.byId(msg.id) || { id: msg.id, key: msg.key, heist: !!msg.key && !msg.approach, approach: !!msg.approach, items: msg.items, reward: msg.reward, steps: [] }, true);
   }
 
   // a mission finished: the rewards for this player (and the others are told)
@@ -233,6 +233,8 @@ export class Missions {
     const gains = [!g.creative && t('mis.gainCrystals', { n: m.reward.crystals }), paid && m.reward.coins && t('mis.gainCoins', { n: m.reward.coins })].filter(Boolean);
     g.ui.toast(t('mis.complete', { name: missionName(m) }) + (gains.length ? ' ' + gains.join(', ') : ''), 'ok');
     if (paid && m.reward.coins) econ.mission(m.id).catch(() => { /* offline: the coins stay unpaid */ });
+    // the tools of the other ways in, for everyone in the team
+    if (m.items) for (const [k, n] of m.items) { g.giveItem(k, n); g.ui.toast(t('heist.gotTool', { item: itemName(k) }), 'soul'); }
     if (m.heist && g.heist && fromHost) g.ui.toast(t('heist.piece', { n: ((g.team && g.team.heist && g.team.heist.got.length) || 0) + 1, total: 12 }), 'soul');
     // the team's heist done: everyone becomes a mayor (each paid on their own account)
     if (m.final && g.heist && (fromHost || !g.heist.state().traded)) g.heist.teamMayor();
@@ -241,7 +243,7 @@ export class Missions {
   complete(m) {
     const g = this.game, s = this.state();
     s.done[m.id] = Date.now();
-    if (this.host) { this.game.net.send({ t: 'mdone', id: m.id, key: m.key || null, reward: m.reward }); this.dirty = true; }
+    if (this.host) { this.game.net.send({ t: 'mdone', id: m.id, key: m.key || null, reward: m.reward, items: m.items || null, approach: !!m.approach }); this.dirty = true; }
     this.rewardMine(m);
     if (m.heist && g.heist) g.heist.gotPiece(m.key);
     g.save(true);

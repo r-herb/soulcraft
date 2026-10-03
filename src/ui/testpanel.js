@@ -81,6 +81,7 @@ export function testPanel(args, ui) {
           <button class="btn small" data-t="bankBack" data-i18n="test.bankBack"></button>
           <button class="btn small" data-t="pieces" data-i18n="test.pieces"></button>
           <button class="btn small" data-t="puzzle" data-i18n="test.puzzle"></button>
+          <button class="btn small" data-t="tools" data-i18n="test.tools"></button>
           <button class="btn small ember" data-t="resetHeist" data-i18n="test.resetHeist"></button>
         </div></section>
         <section><h3 data-i18n="test.sMissions"></h3><div class="test-row">
@@ -127,6 +128,10 @@ export function testPanel(args, ui) {
       g.missions.guideCard(FINAL.id);
       ui.toast(t('heist.mapDone'), 'soul');
       g.save(true);
+    },
+    tools() {
+      for (const [k, n] of [['guard_uniform', 1], ['sewer_key', 1], ['firecracker', 3], ['vault_code', 1]]) g.giveItem(k, n);
+      ui.toast(t('test.toolsDone'), 'soul');
     },
     async resetHeist() {
       const H = g.heist, M = g.missions, st = M.state();

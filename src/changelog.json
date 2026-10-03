@@ -1,5 +1,48 @@
 [
   {
+    "id": "2026-10-03-heistways",
+    "title": {
+      "en": "Five more ways to rob the bank",
+      "lv": "Vēl pieci veidi, kā aplaupīt banku",
+      "ru": "Ещё пять способов ограбить банк",
+      "es": "Cinco formas más de robar el banco"
+    },
+    "items": {
+      "en": [
+        "Once the plan is whole, four new informants (marked with a gear in the missions) give the tools: a guard's uniform, the sewer key, firecrackers and the vault door's code.",
+        "The uniform: the guards take you for one of them for 45 seconds.",
+        "The old sewer: a hatch in the bank's hall, a tunnel under the counter, a hatch in the vault's floor.",
+        "Firecrackers outside: all the guards run to the door for 25 seconds (friends in your world hear them too).",
+        "The vault door opens with the code; at night only one guard is on duty.",
+        "With friends: one of you dances or waves in the hall (G) and the guards watch the show."
+      ],
+      "lv": [
+        "Kad plāns ir salikts, četri jauni informatori (misijās ar zobrata zīmi) dod rīkus: apsarga uniformu, kanalizācijas atslēgu, petardes un seifa durvju kodu.",
+        "Uniforma: apsargi tevi 45 sekundes uzskata par savējo.",
+        "Vecā kanalizācija: lūka bankas zālē, tunelis zem letes, lūka seifa grīdā.",
+        "Petardes ārā: visi apsargi uz 25 sekundēm skrien pie durvīm (draugi tavā pasaulē arī dzird).",
+        "Seifa durvis atveras ar kodu; naktī dežūrē tikai viens apsargs.",
+        "Ar draugiem: viens no jums zālē dejo vai māj (G), un apsargi skatās šovu."
+      ],
+      "ru": [
+        "Когда план собран, четыре новых информатора (в миссиях со значком шестерёнки) дают инструменты: форму охранника, ключ от канализации, петарды и код двери хранилища.",
+        "Форма: 45 секунд охрана принимает тебя за своего.",
+        "Старая канализация: люк в зале банка, тоннель под стойкой, люк в полу хранилища.",
+        "Петарды снаружи: вся охрана на 25 секунд бежит к дверям (друзья в твоём мире тоже слышат).",
+        "Дверь хранилища открывается кодом; ночью дежурит только один охранник.",
+        "С друзьями: один из вас танцует или машет в зале (G), и охрана смотрит шоу."
+      ],
+      "es": [
+        "Con el plano completo, cuatro informantes nuevos (con un engranaje en las misiones) dan las herramientas: un uniforme de guardia, la llave de la alcantarilla, petardos y el código de la puerta de la cámara.",
+        "El uniforme: los guardias te toman por uno de ellos durante 45 segundos.",
+        "La vieja alcantarilla: una trampilla en el vestíbulo, un túnel bajo el mostrador y otra trampilla en el suelo de la cámara.",
+        "Petardos fuera: todos los guardias corren a la puerta durante 25 segundos (tus amigos también los oyen).",
+        "La puerta de la cámara se abre con el código; de noche solo hay un guardia.",
+        "Con amigos: uno de vosotros baila o saluda en el vestíbulo (G) y los guardias miran el espectáculo."
+      ]
+    }
+  },
+  {
     "id": "2026-10-03-guides",
     "title": {
       "en": "Guides, tests and a fairer heist",

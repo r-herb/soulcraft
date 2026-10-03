@@ -50,6 +50,22 @@ export function drawPlan(pl) {
   // the diamond
   const [mx, my] = P(pl.diamond, pl.mid + 0.5);
   x.fillStyle = '#b6fbff'; x.beginPath(); x.moveTo(mx, my - 8); x.lineTo(mx + 7, my); x.lineTo(mx, my + 8); x.lineTo(mx - 7, my); x.closePath(); x.fill();
+  // the old sewer: a brown dotted line under the floor, a hatch at each end
+  if (pl.sewer) {
+    const sw = pl.sewer, [sx0, sy0] = P(sw.from, sw.a + 0.5), [sx1, sy1] = P(sw.to, sw.a + 0.5);
+    x.strokeStyle = '#c8955a'; x.lineWidth = 3; x.setLineDash([3, 4]);
+    x.beginPath(); x.moveTo(sx0, sy0); x.lineTo(sx1, sy1); x.stroke(); x.setLineDash([]);
+    x.fillStyle = '#c8955a';
+    for (const [hx, hy] of [[sx0, sy0], [sx1, sy1]]) x.fillRect(hx - 4, hy - 4, 8, 8);
+    x.textAlign = 'left'; x.font = 'bold 10px sans-serif';
+    x.fillText(t('heist.plan.sewer'), sx0 + 7, (sy0 + sy1) / 2);
+  }
+  // the vault door: opened with the night watchman's code
+  {
+    const [vx, vy] = P(pl.vault, pl.mid + 0.5);
+    x.fillStyle = '#ffd65c'; x.font = 'bold 10px sans-serif'; x.textAlign = 'center';
+    x.fillText(t('heist.plan.code'), vx, vy - 6);
+  }
   // the weak spot: a red cross on the back wall
   const [wx, wy] = P(pl.depth, pl.mid + 0.5);
   x.strokeStyle = '#ff3b30'; x.lineWidth = 4;

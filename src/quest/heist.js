@@ -14,6 +14,7 @@ import { t } from '../i18n/index.js';
 import { humanoid, box } from '../entities/models.js';
 import { account, econ } from '../save/account.js';
 import { bankCoords, bankLayout, bankPoint, bankWidth } from '../world/city.js';
+import { isNight } from '../engine/sky.js';
 import { B } from '../world/blocks.js';
 
 export const PIECES = 12;
@@ -41,11 +42,26 @@ export const HEIST_POOL = [
 export const heistId = (key) => 'h_' + key;
 export const FINAL = { id: 'heist', final: true, reward: { coins: 0, crystals: 100 }, steps: [{ ev: 'diamond', near: 'Banco de España', r: 90 }, { ev: 'escape' }, { ev: 'trade', near: 'Banco de España', r: 90 }] };
 
+// The other ways in, once the plan is whole: an informant for each gives the
+// tool. The uniform fools the guards for a while; the sewer key opens the
+// hatches of the old tunnel from the hall to the vault's floor; firecrackers
+// outside draw the guards to the door; the night watchman's code opens the
+// vault door (and at night only one guard is on duty). With friends, one of
+// them dancing or waving in the hall holds the guards' eyes.
+export const APPROACHES = [
+  { key: 'uniform', steps: [{ ev: 'reach', near: 'Calle Larios', r: 25 }], items: [['guard_uniform', 1]] },
+  { key: 'sewer', steps: [{ ev: 'reach', near: 'Paseo del Parque', r: 30 }], items: [['sewer_key', 1]] },
+  { key: 'fireworks', steps: [{ ev: 'reach', near: 'Muelle Uno', r: 30 }], items: [['firecracker', 3]] },
+  { key: 'code', steps: [{ ev: 'reach', near: 'Mercado de Atarazanas', r: 25 }, { ev: 'meal' }], items: [['vault_code', 1]] },
+];
+export const approachId = (key) => 'x_' + key;
+const UNIFORM_S = 45, DISTRACT_S = 25, DOOR_S = 40;
+
 const INFORMANT = { skin: '#c99872', hair: '#2b2b2b', shirt: '#3a3a44', shirt2: '#2b2b33', pants: '#22222a', accent: '#c9a227', eye: '#2a1a10' };
 const GUARD = { skin: '#d9a066', hair: '#1a1a1a', shirt: '#2f4f6f', shirt2: '#2f4f6f', pants: '#1f2f3f', accent: '#111111', eye: '#2a1a10' };
 
 export class Heist {
-  constructor(game) { this.game = game; this.npcs = new Map(); this.guards = []; this.t = 0; this.seenT = 0; this.shotT = 0; }
+  constructor(game) { this.game = game; this.npcs = new Map(); this.guards = []; this.t = 0; this.seenT = 0; this.shotT = 0; this.disguiseT = 0; this.distractT = 0; this.doorT = 0; }
 
   state() {
     const g = this.game;
@@ -68,7 +84,10 @@ export class Heist {
       const d = HEIST_POOL.find((x) => x.key === k);
       return d && { id: heistId(k), heist: true, key: k, reward: { coins: 25, crystals: 10 }, steps: d.steps };
     }).filter(Boolean);
-    if (s.map) list.push(FINAL);
+    if (s.map) {
+      for (const a of APPROACHES) list.push({ id: approachId(a.key), approach: true, key: a.key, reward: { coins: 0, crystals: 5 }, items: a.items, steps: a.steps });
+      list.push(FINAL);
+    }
     return list;
   }
 
@@ -159,8 +178,93 @@ export class Heist {
     return paid;
   }
 
+  // ---------- the other ways in ----------
+  // the guard's uniform: the guards take the player for one of them, unless very close
+  wearUniform() {
+    const g = this.game;
+    if (!g.missions || !g.missions.active) { g.ui.toast(t('heist.notHere'), 'warn'); return false; }
+    g.inventory.remove('guard_uniform', 1);
+    this.disguiseT = UNIFORM_S;
+    g.audio.sfx('place');
+    g.ui.toast(t('heist.uniformOn', { s: UNIFORM_S }), 'soul');
+    return true;
+  }
+
+  // firecrackers outside the bank: the guards run to the door for a while
+  firecracker() {
+    const g = this.game, pl = this.plan();
+    if (!pl) { g.ui.toast(t('heist.notHere'), 'warn'); return false; }
+    const P = pl.P, p = g.player.pos;
+    if (Math.hypot(p.x - (P.x0 + P.x1) / 2, p.z - (P.z0 + P.z1) / 2) > 80) { g.ui.toast(t('heist.tooFar'), 'warn'); return false; }
+    g.inventory.remove('firecracker', 1);
+    g.entities.particles.emit(p.x, p.y + 2, p.z, 1, 0.6, 0.2, 40, 6, 1.2);
+    this.distract(DISTRACT_S, true);
+    return true;
+  }
+
+  // the guards drawn to the door (a teammate's firecracker reaches everyone in the team)
+  distract(sec, send = false) {
+    const g = this.game;
+    this.distractT = Math.max(this.distractT, sec);
+    g.audio.sfx('shoot');
+    g.ui.toast(t('heist.distracted', { s: Math.round(sec) }), 'soul');
+    if (send && g.net) g.net.send({ t: 'hdistract', s: sec });
+  }
+
+  // the hatches of the old sewer: down from the hall, along the tunnel, up into the vault (and back)
+  useGrate(hit) {
+    const g = this.game, pl = this.plan();
+    if (!pl) return;
+    if (!g.inventory.count('sewer_key')) { g.ui.toast(t('heist.grateLocked'), 'warn'); return; }
+    const sw = pl.sewer, base = pl.P.base, { d } = bankCoords(pl.P, hit.x, hit.z);
+    const above = g.player.pos.y > base;
+    const to = (dd, a, y) => { const q = bankPoint(pl.P, dd, a); g.player.pos.set(q.x + 0.5, y, q.z + 0.5); g.player.vel.set(0, 0, 0); g.player.fallStart = null; };
+    if (d === sw.from) { if (above) to(sw.from + 1, sw.a, base - 2); else to(sw.from, sw.a + 1, base + 1); }
+    else if (d === sw.to) { if (above) to(sw.to - 1, sw.a, base - 2); else to(sw.to, sw.a + 1, base + 1); }
+    g.audio.sfx('step');
+    g.ui.toast(t(above ? 'heist.grateDown' : 'heist.grateUp'));
+  }
+
+  // the vault door: the night watchman's code opens it for a while
+  openVaultDoor(hit) {
+    const g = this.game, pl = this.plan();
+    if (!pl) return;
+    if (!g.inventory.count('vault_code')) { g.ui.toast(t('heist.doorLocked'), 'warn'); return; }
+    const q = bankPoint(pl.P, pl.vault, pl.mid);
+    for (const r of [1, 2]) g.world.setBlock(q.x, pl.P.base + r, q.z, B.air);
+    this.doorT = DOOR_S;
+    g.audio.sfx('levelup');
+    g.ui.toast(t('heist.doorOpen', { s: DOOR_S }), 'soul');
+    void hit;
+  }
+
+  closeVaultDoor() {
+    const pl = this.plan();
+    if (!pl) return;
+    const q = bankPoint(pl.P, pl.vault, pl.mid);
+    for (const r of [1, 2]) this.game.world.setBlockAnywhere(q.x, pl.P.base + r, q.z, B.vault_door);
+    this.game.ui.toast(t('heist.doorClosed'));
+  }
+
+  // a teammate in the bank's hall dancing, waving or cheering: the guards watch the show
+  dancer(pl) {
+    const n = this.game.net;
+    if (!n) return null;
+    for (const rp of n.players.values()) {
+      if (!rp.seen || !rp.fig || !rp.fig.emote) continue;
+      const P = pl.P, p = rp.pos;
+      if (p.x < P.x0 || p.x > P.x1 || p.z < P.z0 || p.z > P.z1) continue;
+      const { d } = bankCoords(P, Math.floor(p.x), Math.floor(p.z));
+      if (d >= 0 && d < pl.counter) return p;
+    }
+    return null;
+  }
+
   update(dt) {
     const g = this.game;
+    if (this.disguiseT > 0) { this.disguiseT -= dt; if (this.disguiseT <= 0) g.ui.toast(t('heist.uniformOff'), 'warn'); }
+    if (this.distractT > 0) { this.distractT -= dt; if (this.distractT <= 0) g.ui.toast(t('heist.guardsBack'), 'warn'); }
+    if (this.doorT > 0) { this.doorT -= dt; if (this.doorT <= 0) this.closeVaultDoor(); }
     if (!g.missions || !g.missions.active) { this.clear(); return; }
     this.t += dt;
     if (this.t >= 0.5) { this.t = 0; this.informants(); this.checkEscape(); }
@@ -179,7 +283,7 @@ export class Heist {
     const g = this.game, M = g.missions, p = g.player.pos;
     const want = new Set();
     for (const m of this.missions()) {
-      if (!m.heist || M.isDone(m.id)) continue;
+      if (!(m.heist || m.approach) || M.isDone(m.id)) continue;
       const st = m.steps[M.prog(m.id).step];
       if (!st || st.ev !== 'reach') continue;
       const tg = M.placeXZ(st.near);
@@ -228,26 +332,52 @@ export class Heist {
         const cap = box(0.56, 0.14, 0.56, '#1f2f3f'); cap.position.y = 0.3; rig.head.add(cap);
         const visor = box(0.5, 0.04, 0.18, '#111111'); visor.position.set(0, 0.25, 0.32); rig.head.add(visor);
         g.scene.add(rig.group);
-        this.guards.push({ rig, r, u: Math.random(), dir: 1, saw: false });
+        this.guards.push({ rig, r, u: Math.random(), dir: 1, saw: false, at: null });
       }
     }
+    // at night only the vault's guard is on duty, and sleepy
+    const night = isNight(g.meta.time);
+    // the firecrackers: everyone runs to the door; a teammate's show in the hall: everyone watches
+    const lured = this.distractT > 0, show = lured ? null : this.dancer(pl);
     const zone = this.restricted(pl, p);
     let seen = false;
-    for (const gd of this.guards) {
+    this.guards.forEach((gd, i) => {
+      const on = !night || i === 2;
+      gd.rig.group.visible = on;
+      if (!on) return;
       const { from, to, speed } = gd.r;
       const len = Math.max(1, Math.abs(to[1] - from[1]) + Math.abs(to[0] - from[0]));
-      gd.u += (gd.dir * speed * dt) / len;
-      if (gd.u > 1) { gd.u = 1; gd.dir = -1; } else if (gd.u < 0) { gd.u = 0; gd.dir = 1; }
-      const d = from[0] + (to[0] - from[0]) * gd.u, a = from[1] + (to[1] - from[1]) * gd.u;
-      const q = bankPoint(pl.P, d, a), q2 = bankPoint(pl.P, d + (to[0] - from[0]) * gd.dir, a + (to[1] - from[1]) * gd.dir);
-      gd.rig.group.position.set(q.x + 0.5, base, q.z + 0.5);
-      const fx = q2.x - q.x, fz = q2.z - q.z;
+      let goal;
+      if (lured) goal = bankPoint(pl.P, 2, pl.mid + (i - 1) * 2);
+      else {
+        gd.u += (gd.dir * speed * dt) / len;
+        if (gd.u > 1) { gd.u = 1; gd.dir = -1; } else if (gd.u < 0) { gd.u = 0; gd.dir = 1; }
+        goal = bankPoint(pl.P, from[0] + (to[0] - from[0]) * gd.u, from[1] + (to[1] - from[1]) * gd.u);
+      }
+      // walk to the goal (back to the round after the alarm), or keep to the round
+      const tx = goal.x + 0.5, tz = goal.z + 0.5;
+      if (!gd.at) gd.at = { x: tx, z: tz };
+      const dx = tx - gd.at.x, dz = tz - gd.at.z, dist = Math.hypot(dx, dz), step = Math.max(speed, 3.2) * dt;
+      let fx, fz;
+      if (dist > step) { gd.at.x += (dx / dist) * step; gd.at.z += (dz / dist) * step; fx = dx; fz = dz; gd.walking = true; }
+      else {
+        gd.at.x = tx; gd.at.z = tz; gd.walking = !lured;
+        const q2 = bankPoint(pl.P, from[0] + (to[0] - from[0]) * gd.u + (to[0] - from[0]) * gd.dir, from[1] + (to[1] - from[1]) * gd.u + (to[1] - from[1]) * gd.dir);
+        const q = bankPoint(pl.P, from[0] + (to[0] - from[0]) * gd.u, from[1] + (to[1] - from[1]) * gd.u);
+        fx = q2.x - q.x; fz = q2.z - q.z;
+        if (lured) { const out = bankPoint(pl.P, -3, pl.mid); fx = out.x + 0.5 - gd.at.x; fz = out.z + 0.5 - gd.at.z; }
+      }
+      if (show) { fx = show.x - gd.at.x; fz = show.z - gd.at.z; }
+      gd.rig.group.position.set(gd.at.x, base, gd.at.z);
       gd.yaw = Math.atan2(fx, fz);
       gd.rig.group.rotation.y = gd.yaw;
-      const ph = (g.meta.playTime || 0) * 6;
-      gd.rig.legL.rotation.x = Math.sin(ph) * 0.5; gd.rig.legR.rotation.x = -Math.sin(ph) * 0.5;
-      if (zone && this.sees(gd, p)) seen = true;
-    }
+      const ph = (g.meta.playTime || 0) * (lured ? 10 : 6);
+      const sw = gd.walking ? Math.sin(ph) * 0.5 : 0;
+      gd.rig.legL.rotation.x = sw; gd.rig.legR.rotation.x = -sw;
+      // how far a guard sees: less at night, through the uniform only up close, nothing while lured or watching the show
+      const range = lured ? 0 : this.disguiseT > 0 || show ? 2.2 : night ? 7 : 11;
+      if (zone && range > 0 && this.sees(gd, p, range)) seen = true;
+    });
     this.spotted(seen, dt, pl);
   }
 
@@ -260,10 +390,10 @@ export class Heist {
   }
 
   // in sight: near, in front (a wide cone) and nothing solid between
-  sees(gd, p) {
+  sees(gd, p, range = 11) {
     const g = this.game, o = gd.rig.group.position;
     const dx = p.x - o.x, dz = p.z - o.z, dist = Math.hypot(dx, dz);
-    if (dist > 11 || Math.abs(p.y - o.y) > 4) return false;
+    if (dist > range || Math.abs(p.y - o.y) > 4) return false;
     let ang = Math.atan2(dx, dz) - gd.yaw;
     ang = Math.atan2(Math.sin(ang), Math.cos(ang));
     if (Math.abs(ang) > 0.95 && dist > 1.5) return false;

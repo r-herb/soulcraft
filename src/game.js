@@ -774,6 +774,11 @@ export class Game {
     // the heist: the Gran Diamante in the vault, the bank's plan
     if (fresh && hit && hit.id === B.grand_diamond) { this.heist.takeDiamond(hit); this.useCooldown = 0.3; return; }
     if (def && def.special === 'heistMap' && fresh) { this.ui.open('heistMap'); this.useCooldown = 0.3; return; }
+    // the other ways into the vault: the sewer's hatches, the coded vault door, the uniform, firecrackers
+    if (fresh && hit && hit.id === B.sewer_grate) { this.heist.useGrate(hit); this.useCooldown = 0.4; return; }
+    if (fresh && hit && hit.id === B.vault_door) { this.heist.openVaultDoor(hit); this.useCooldown = 0.4; return; }
+    if (def && def.special === 'uniform' && fresh) { this.heist.wearUniform(); this.useCooldown = 0.4; return; }
+    if (def && def.special === 'firecracker' && fresh) { this.heist.firecracker(); this.useCooldown = 0.6; return; }
     if (fresh && hit && hit.id === B.gem_cache) { this.openCache(hit); this.useCooldown = 0.3; return; }
     if (def && def.special === 'pan' && fresh) { this.pan(); this.useCooldown = 1.2; return; }
     // farm 2: ripe oranges picked, eggs from a nest box, eggs into an incubator

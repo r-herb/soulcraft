@@ -315,6 +315,12 @@ const painters = {
     for (let x = 3; x < 13; x++) for (let y = 3; y < 13; y++) if (Math.abs(Math.hypot(x - 7.5, y - 7.5) - 3.6) < 0.8) p.set(x, y, hex('#d1d5db'));
     p.set(7, 7, hex('#374151')); p.set(8, 8, hex('#374151')); p.set(7, 8, hex('#374151')); p.set(8, 7, hex('#374151'));
   },
+  // a cast-iron manhole cover with slots (the sewer under the bank)
+  sewer_grate: (p) => {
+    p.noise(['#3b3f45', '#42464d', '#363a40']); p.border('#24272b');
+    for (let y = 3; y < 13; y += 2) for (let x = 3; x < 13; x++) if (Math.hypot(x - 7.5, y - 7.5) < 5.6) p.set(x, y, hex('#15171a'));
+    for (let x = 2; x < 14; x++) for (let y = 2; y < 14; y++) if (Math.abs(Math.hypot(x - 7.5, y - 7.5) - 5.8) < 0.5) p.set(x, y, hex('#5b6068'));
+  },
   quartz_ore: (p) => { painters.stone(p); p.blobs(['#f4f4f4', '#dcdcdc', '#ffffff'], 4); },
   amethyst_ore: (p) => { painters.stone(p); p.blobs(['#9b59d0', '#b57edc', '#6c3483'], 4, '#e3c6f5'); },
   topaz_ore: (p) => { painters.stone(p); p.blobs(['#f5b041', '#f8c471', '#b9770e'], 4); },

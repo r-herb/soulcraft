@@ -7,7 +7,7 @@ const NOT_ITEMS = new Set(['farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3
   'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on', 'lamp_off', 'lamp_on',
   'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
   'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent',
-  'bank_counter', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp', 'gem_cache', 'gem_cache_open', 'weak_wall', 'grand_diamond', 'vault_gold']);
+  'bank_counter', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp', 'gem_cache', 'gem_cache_open', 'weak_wall', 'grand_diamond', 'vault_gold', 'sewer_grate']);
 for (const b of BLOCKS) {
   if (!b || NOT_ITEMS.has(b.key)) continue;
   ITEMS[b.key] = { key: b.key, block: b.id, stack: 64, kind: 'block' };
@@ -29,6 +29,11 @@ item('gold_pan', { stack: 1, special: 'pan' });
 // the Gran Diamante from the vault of the Banco de España
 item('grand_diamond', { stack: 1 });
 item('heist_map', { stack: 1, special: 'heistMap' });
+// the other ways into the vault (from the big mission's informants)
+item('guard_uniform', { stack: 1, special: 'uniform' });
+item('firecracker', { stack: 8, special: 'firecracker' });
+item('sewer_key', { stack: 1 });
+item('vault_code', { stack: 1 });
 item('emberite_shard');
 item('emberite_ingot');
 item('soul_crystal', { currency: true });

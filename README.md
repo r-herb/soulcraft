@@ -351,7 +351,20 @@ biggest sum the game pays, **1,000,000 coins** (once per account; the server
 pays only after the twelve tasks were recorded, at least 15 minutes apart
 from the first), and the city elects the player its **mayor**: a ceremony
 with fireworks over the bank, and the mayors of Malaga listed in the bank's
-city tab.
+city tab. Dying with the diamond sends it back to the vault.
+
+**Other ways in.** Once the plan is whole, four more informants (a gear in
+the missions list) each give a tool:
+
+| Way | Informant | How it works |
+|---|---|---|
+| Guard's uniform | the tailor, Calle Larios | used near the bank: for 45 s the guards take the player for one of them; only a guard within about 2 blocks sees through it (one use) |
+| The old sewer | the sewer worker, Paseo del Parque | the key opens two iron hatches: one in a corner of the hall, one in the vault's floor; a low tunnel with lamps runs between them under the counter |
+| Firecrackers (3) | the pyrotechnician, Muelle Uno | set off outside within 80 blocks of the bank: for 25 s every guard runs to the front door and looks at the street; a teammate's firecrackers reach every game in the room |
+| The vault door's code | the night watchman, Mercado de Atarazanas (and a meal together) | the steel vault door opens for 40 s, then closes; at night only the vault's guard is on duty, and he sees 7 blocks instead of 11 |
+| With friends | - | a teammate dancing, waving or cheering (G) in the public part of the hall holds every guard's eyes: they turn to watch and see nobody else beyond about 2 blocks |
+
+The plan shows the sewer (brown dots) and the coded door too.
 
 ## Gems and gold
 
@@ -673,6 +686,15 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/heistways.spec.js` (desktop): with the plan whole, the four
+  informants' missions give the uniform, the sewer key, three firecrackers
+  and the code; the hatches are locked without the key and lead from the
+  hall down into the tunnel and up into the vault; the vault door stays
+  shut without the code, opens with it and closes again; the uniform keeps
+  a thief four blocks in front of a guard unseen, and without it the guard
+  catches him; firecrackers send every guard to the door and the vault is
+  open; a teammate's show in the hall holds the guards' eyes; at night only
+  the vault's guard is on duty.
 - `tests/guides.spec.js` (desktop): the Malaga card opens the city guide,
   its start button the tour's guide (the plaza ticked off), the ? of a
   mission and following one the first time open its guide (not the second
