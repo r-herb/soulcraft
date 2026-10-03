@@ -1035,5 +1035,15 @@
   "update.text": "Игра обновилась. Нажми «Обновить», чтобы получить новую версию (игра сначала сохранится).",
   "update.from": "Сейчас",
   "update.to": "Новая",
-  "update.updating": "Обновление с {from} до {to}..."
+  "update.updating": "Обновление с {from} до {to}...",
+  "econ.atm": "Банкомат",
+  "econ.atmInfo": "Сними монеты со своего банковского счёта или внеси их. За биржей, рынком и лотереей иди к стойке центрального банка (Banco de España, у Paseo del Parque).",
+  "econ.cashOut": "Снять {n}",
+  "econ.atmPaid": "Банкомат выдаёт {n} монет.",
+  "block.bank_counter": "Стойка банка",
+  "block.bank_stone": "Камень банка",
+  "block.bank_sign": "Вывеска банка",
+  "block.vault_door": "Дверь хранилища",
+  "block.vault_floor": "Пол хранилища",
+  "block.bank_lamp": "Лампа банка"
 }

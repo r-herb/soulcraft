@@ -199,7 +199,78 @@ export class CityData {
       bid[k] = b;
       if (b && !bl[b]) bl[b] = this.buildings.get(b);
     }
-    return { city: true, seaY: this.seaY, ground, surf, wall, bid, bl, mark };
+    const out = { city: true, seaY: this.seaY, ground, surf, wall, bid, bl, mark };
+    const bank = this.bankPlan();
+    if (bank && bank.old.x1 >= x0 && bank.old.x0 < x0 + W && bank.old.z1 >= z0 && bank.old.z0 < z0 + W) out.bank = bank;
+    return out;
+  }
+
+  // The central bank (the Banco de España building): its outline, the side
+  // that faces the street (the entrance), and so where its hall, counter and
+  // vault go. Null when the city has none; undefined until its tile is here.
+  bankPlan() {
+    if (this._bank !== undefined) return this._bank;
+    const pl = (CITY_PLACES[this.id] || []).find((p) => p.name === 'Banco de España');
+    if (!pl) return (this._bank = null);
+    const q = this.toXZ(pl.lat, pl.lon);
+    if (!this.cell(q.x, q.z)) return undefined;
+    // the biggest building by the place
+    const near = new Set();
+    for (let dz = -30; dz <= 30; dz++) for (let dx = -30; dx <= 30; dx++) { const b = this.bidAt(q.x + dx, q.z + dz); if (b) near.add(b); }
+    const STREETS = [SURF.road, SURF.pavement, SURF.marble, SURF.plaza, SURF.steps];
+    let best = null;
+    for (const gid of near) {
+      let sx = 0, sz = 0, found = false;
+      for (let dz = -30; dz <= 30 && !found; dz++) for (let dx = -30; dx <= 30; dx++) if (this.bidAt(q.x + dx, q.z + dz) === gid) { sx = q.x + dx; sz = q.z + dz; found = true; break; }
+      // its cells (flood fill), the outline, and the edge cells on a street, by side
+      const seen = new Set([`${sx},${sz}`]), todo = [[sx, sz]];
+      let x0 = sx, x1 = sx, z0 = sz, z1 = sz;
+      const street = [[], [], [], []]; // edge cells on a street along the -z, +x, +z, -x sides
+      while (todo.length && seen.size < 20000) {
+        const [x, z] = todo.pop();
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z);
+        [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dz], side) => {
+          const nx = x + dx, nz = z + dz, k = `${nx},${nz}`;
+          if (this.bidAt(nx, nz) === gid) { if (!seen.has(k)) { seen.add(k); todo.push([nx, nz]); } return; }
+          const a = this.at(nx, nz);
+          if (a && !a.b && STREETS.includes(a.s & 0x7f)) street[side].push([x, z]);
+        });
+      }
+      if (!best || seen.size > best.n) best = { gid, n: seen.size, x0, z0, x1, z1, street };
+    }
+    if (!best) return (this._bank = null);
+    // The bank stands free on a marble square where that building was: the
+    // biggest rectangle inside its outline (with what stands in its yards).
+    const { gid, x0, z0, x1, z1 } = best;
+    const OPEN = [SURF.ground, SURF.park, SURF.garden, SURF.forest, SURF.scrub];
+    const W = x1 - x0 + 1, D = z1 - z0 + 1, ok = new Uint8Array(W * D);
+    for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+      const a = this.at(x0 + x, z0 + z);
+      ok[z * W + x] = a && (a.b ? true : OPEN.includes(a.s & 0x7f)) ? 1 : 0;
+    }
+    // largest rectangle of ok cells (histograms, row by row), at least 12 across
+    const hgt = new Int32Array(W);
+    let rect = null, area = 0;
+    for (let z = 0; z < D; z++) {
+      for (let x = 0; x < W; x++) hgt[x] = ok[z * W + x] ? hgt[x] + 1 : 0;
+      for (let x = 0; x < W; x++) {
+        let h = 1e9;
+        for (let x2 = x; x2 < W && hgt[x2]; x2++) {
+          h = Math.min(h, hgt[x2]);
+          const w = x2 - x + 1, ar = w * Math.min(h, Math.round(w * 1.6));
+          if (w >= 12 && h >= 12 && ar > area) { area = ar; rect = { x0: x0 + x, x1: x0 + x2, z1: z0 + z, z0: z0 + z - Math.min(h, Math.round(w * 1.6)) + 1 }; }
+        }
+      }
+    }
+    if (!rect) return (this._bank = null);
+    // the entrance faces the nearest street
+    const reach = (x, z, dx, dz) => { for (let k = 1; k < 40; k++) { const a = this.at(x + dx * k, z + dz * k); if (a && !a.b && STREETS.includes(a.s & 0x7f)) return k; } return 99; };
+    const mx = Math.round((rect.x0 + rect.x1) / 2), mz = Math.round((rect.z0 + rect.z1) / 2);
+    const sides = [reach(mx, rect.z0, 0, -1), reach(rect.x1, mz, 1, 0), reach(mx, rect.z1, 0, 1), reach(rect.x0, mz, -1, 0)];
+    const side = sides.indexOf(Math.min(...sides));
+    const door = side === 0 ? { x: mx, z: rect.z0 } : side === 1 ? { x: rect.x1, z: mz } : side === 2 ? { x: mx, z: rect.z1 } : { x: rect.x0, z: mz };
+    const base = (this.buildings.get(gid) || [this.groundAt(mx, mz)])[0];
+    return (this._bank = { gid, ...rect, side, door, base, old: { x0, z0, x1, z1 } });
   }
 
   // An open cell (not a building, the sea or a wall) near (x, z), or null.
@@ -220,6 +291,31 @@ export class CityData {
   }
 }
 
+// A cell of the bank: d its depth from the entrance's wall (into the
+// building), a across, mid the entrance; depth how deep the building goes.
+export function bankCoords(P, x, z) {
+  const along = P.side === 0 || P.side === 2;
+  const d = P.side === 0 ? z - P.door.z : P.side === 2 ? P.door.z - z : P.side === 1 ? P.door.x - x : x - P.door.x;
+  const depth = P.side === 0 ? P.z1 - P.door.z : P.side === 2 ? P.door.z - P.z0 : P.side === 1 ? P.door.x - P.x0 : P.x1 - P.door.x;
+  const a = along ? x - P.x0 : z - P.z0, mid = along ? P.door.x - P.x0 : P.door.z - P.z0;
+  return { d, a, mid, depth };
+}
+// the inverse: the cell at depth d and across a
+export function bankPoint(P, d, a) {
+  const along = P.side === 0 || P.side === 2;
+  const x = along ? P.x0 + a : P.side === 1 ? P.door.x - d : P.door.x + d;
+  const z = along ? (P.side === 0 ? P.door.z + d : P.door.z - d) : P.z0 + a;
+  return { x, z };
+}
+
+// Where the bank's counter and vault wall stand, by the building's depth
+// (from the entrance).
+export function bankLayout(depth) {
+  const vault = Math.max(6, depth - Math.max(5, Math.min(10, Math.round(depth * 0.3))));
+  const counter = Math.max(3, Math.min(vault - 3, Math.round(depth * 0.35)));
+  return { counter, vault };
+}
+
 // ---------- worker: blocks for one chunk ----------
 export function genCity(cx, cz, data, e) {
   const W = S + 2 * M, seaY = e.seaY;
@@ -227,7 +323,12 @@ export function genCity(cx, cz, data, e) {
   const set = (x, y, z, id) => { if (x >= 0 && x < S && z >= 0 && z < S && y > 0 && y < HEIGHT) data[idx(x, y, z)] = id; };
   for (let lz = 0; lz < S; lz++) for (let lx = 0; lx < S; lx++) {
     const k = at(lx, lz), wx = cx * S + lx, wz = cz * S + lz;
-    const g = Math.min(HEIGHT - 2, e.ground[k]), s = e.surf[k] & 0x7f, b = e.bid[k];
+    const g = Math.min(HEIGHT - 2, e.ground[k]);
+    let s = e.surf[k] & 0x7f, b = e.bid[k];
+    // the central bank: a building of its own on a marble square
+    const bk = e.bank;
+    if (bk && wx >= bk.x0 && wx <= bk.x1 && wz >= bk.z0 && wz <= bk.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; bankBuilding(lx, lz, wx, wz, g); continue; }
+    if (bk && b === bk.gid) { b = 0; s = SURF.marble; }
     data[idx(lx, 0, lz)] = B.coreite;
     const natural = NATURAL.has(s) && !b;
     for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : B.stone;
@@ -298,12 +399,51 @@ export function genCity(cx, cz, data, e) {
     if (roof === 1 && edge && topY + 1 < HEIGHT) data[idx(lx, topY, lz)] = B.roof_tiles;
   }
 
+  // The central bank: stone walls nothing can break, a tall marble hall
+  // behind a wide door on the street, the counter across the hall, and the
+  // vault at the back behind a steel door.
+  function bankBuilding(lx, lz, wx, wz, g) {
+    const P = e.bank, base = P.base;
+    const topY = Math.min(HEIGHT - 2, base + 16);
+    // d: depth from the entrance, a: across the front
+    const { d, a, mid, depth } = bankCoords(P, wx, wz);
+    const plan = bankLayout(depth);
+    const edge = wx === P.x0 || wx === P.x1 || wz === P.z0 || wz === P.z1;
+    for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
+    for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
+    data[idx(lx, base, lz)] = edge ? B.bank_stone : d >= plan.vault ? B.vault_floor : B.marble;
+    const HALL = 8;
+    for (let y = base + 1; y < topY; y++) {
+      const r = y - base;
+      let id = B.air;
+      if (edge) {
+        const front = d === 0 && Math.abs(a - mid) <= 2;
+        const door = front && Math.abs(a - mid) <= 1 && r <= 3;
+        const sign = front && Math.abs(a - mid) <= 2 && r === 5;
+        const corner = (wx === P.x0 || wx === P.x1) && (wz === P.z0 || wz === P.z1);
+        const win = !corner && r % 4 >= 2 && r % 4 <= 3 && ((a % 3) + 3) % 3 === 1 && r > 1 && d < plan.vault;
+        id = door ? B.air : sign ? B.bank_sign : win ? B.window : B.bank_stone;
+      } else if (r < HALL) {
+        if (d === plan.counter && r === 1 && Math.abs(a - mid) > 1) id = B.bank_counter; // a gap in the middle to walk behind
+        else if (d === plan.counter && r === 2 && Math.abs(a - mid) > 1 && a % 2 === 0) id = B.window; // the tellers' glass
+        else if (d === plan.vault && r <= 4) id = Math.abs(a - mid) <= 0 && r <= 2 ? B.vault_door : B.bank_stone; // the vault's wall and door
+        else if (d > plan.vault && r === 5) id = ((a % 5) + 5) % 5 === 2 && d % 4 === 1 ? B.bank_lamp : B.bank_stone; // the vault's ceiling, with lamps
+        else if (d < plan.counter && a % 6 === 3 && d % 6 === 3 && d > 1) id = B.limestone; // pillars in the hall
+      } else if (r === HALL) id = d < plan.vault && ((a % 4) + 4) % 4 === 2 && ((d % 4) + 4) % 4 === 2 ? B.bank_lamp : B.planks; // lamps in the hall's ceiling
+      else id = r % 4 === 0 ? B.planks : B.air;
+      data[idx(lx, y, lz)] = id;
+    }
+    data[idx(lx, topY, lz)] = B.bank_stone;
+    if (edge && topY + 1 < HEIGHT) data[idx(lx, topY + 1, lz)] = B.bank_stone;
+  }
+
   // Trees (from OpenStreetMap, plus a scattering in parks): palms on the
   // streets and squares, round trees elsewhere. Neighbours' trees reach in.
   for (let z = 0; z < W; z++) for (let x = 0; x < W; x++) {
     const k = z * W + x;
     if (!(e.surf[k] & TREE_BIT) || e.bid[k]) continue;
     const lx = x - M, lz = z - M, wx = cx * S + lx, wz = cz * S + lz;
+    if (e.bank && wx >= e.bank.x0 - 3 && wx <= e.bank.x1 + 3 && wz >= e.bank.z0 - 3 && wz <= e.bank.z1 + 3) continue; // none on the bank
     const s = e.surf[k] & 0x7f, g = e.ground[k];
     const palm = [SURF.road, SURF.pavement, SURF.marble, SURF.plaza, SURF.sand, SURF.dock].includes(s) || hash3(wx, 9, wz, 3) < 0.25;
     const h = palm ? 6 + Math.floor(hash3(wx, 4, wz, 3) * 3) : 4 + Math.floor(hash3(wx, 4, wz, 3) * 2);

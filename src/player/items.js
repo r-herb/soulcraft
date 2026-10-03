@@ -6,7 +6,8 @@ export const ITEMS = {};
 const NOT_ITEMS = new Set(['farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_0', 'tomato_1', 'tomato_2', 'tomato_3', 'carrot_0', 'carrot_1', 'carrot_2', 'carrot_3', 'air', 'water', 'magma', 'coreite', 'chamber_brick', 'chamber_lamp', 'void_crystal', 'vault',
   'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on', 'lamp_off', 'lamp_on',
   'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
-  'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent']);
+  'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent',
+  'bank_counter', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp']);
 for (const b of BLOCKS) {
   if (!b || NOT_ITEMS.has(b.key)) continue;
   ITEMS[b.key] = { key: b.key, block: b.id, stack: 64, kind: 'block' };

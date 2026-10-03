@@ -18,7 +18,7 @@ import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
 import { B } from './world/blocks.js';
-import { CITY_PLACES } from './world/city.js';
+import { CITY_PLACES, bankCoords, bankPoint, bankLayout } from './world/city.js';
 import { Net, createRoom } from './net/net.js';
 import { watchUpdates, showUpdate, latestVersion } from './ui/update.js';
 
@@ -288,7 +288,7 @@ async function boot() {
   });
   onAccount(loadWallet);
   loadWallet();
-  window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, B, missionPlace: (n) => CITY_PLACES.malaga.find((p) => p.name === n), get game() { return app.game; } };
+  window.__sc = { app, ui, input, audio, setSetting, questLevels: QUEST_LEVELS, B, missionPlace: (n) => CITY_PLACES.malaga.find((p) => p.name === n), bank: { coords: bankCoords, point: bankPoint, layout: bankLayout }, get game() { return app.game; } };
 
   registerSW(app);
 }

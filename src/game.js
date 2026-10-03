@@ -692,7 +692,9 @@ export class Game {
     if (this.quest && hit && fresh && this.quest.interact(hit)) { this.useCooldown = 0.3; return; }
     // city buses: board one standing at a stop, read the timetable at a stop sign
     if (fresh && this.buses && this.buses.tryBoard()) { this.useCooldown = 0.3; return; }
-    if (fresh && hit && hit.id === B.atm) { this.ui.open('bank'); this.useCooldown = 0.3; return; }
+    // a cash machine; in the city the counter of the central bank does the rest
+    if (fresh && hit && hit.id === B.atm) { this.ui.open('bank', { atm: this.meta.dim === 'city' }); this.useCooldown = 0.3; return; }
+    if (fresh && hit && hit.id === B.bank_counter) { this.ui.open('bank'); this.missions.event('bank'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.market_stall) { this.ui.open('foodShop'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.restaurant) { this.ui.open('restaurant'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }

@@ -285,6 +285,27 @@ const painters = {
     for (let x = 4; x < 12; x += 2) for (let y = 9; y < 13; y += 2) p.set(x, y, hex('#d8e2dc'));
     for (let x = 5; x < 11; x++) p.set(x, 14, hex('#111111'));
   },
+  bank_stone: (p) => { p.bricks('#e3d8bf', '#bfb08e', 16, 8); p.speckle('#d2c5a5', 6); },
+  bank_counter: (p) => {
+    p.noise(['#6b3f22', '#633a1f']); p.border('#3f2412');
+    for (let x = 1; x < 15; x++) { p.set(x, 2, hex('#e8e2d0')); p.set(x, 13, hex('#e8e2d0')); }
+    for (let x = 3; x < 13; x += 4) for (let y = 5; y < 11; y++) p.set(x, y, hex('#4a2a15'));
+  },
+  bank_counter_top: (p) => { p.noise(['#ede8de', '#e4ded2', '#f3efe7']); p.speckle('#cfc6b4', 5); },
+  bank_sign: (p) => {
+    p.noise(['#1d3557', '#1a3050']); p.border('#c9a227');
+    const gold = hex('#f2c94c'), dark = hex('#1d3557');
+    for (let x = 4; x < 12; x++) for (let y = 4; y < 12; y++) if (Math.hypot(x - 7.5, y - 7.5) < 3.8) p.set(x, y, gold);
+    for (let y = 5; y < 11; y++) p.set(7, y, dark);
+    for (const x of [6, 7, 8]) { p.set(x, 6, dark); p.set(x, 9, dark); }
+  },
+  vault_door: (p) => {
+    p.noise(['#8d99a6', '#86929f', '#94a0ad']); p.border('#4b5563');
+    for (let x = 3; x < 13; x++) for (let y = 3; y < 13; y++) if (Math.abs(Math.hypot(x - 7.5, y - 7.5) - 3.6) < 0.8) p.set(x, y, hex('#d1d5db'));
+    p.set(7, 7, hex('#374151')); p.set(8, 8, hex('#374151')); p.set(7, 8, hex('#374151')); p.set(8, 7, hex('#374151'));
+  },
+  bank_lamp: (p) => { p.noise(['#fff3c4', '#ffeaa0', '#fff8dc']); p.border('#c9a227'); for (let i = 4; i < 12; i++) { p.set(i, 7, hex('#ffffff')); p.set(7, i, hex('#ffffff')); } },
+  vault_floor: (p) => { p.noise(['#5b6168', '#555b62']); for (let i = 0; i < 16; i += 4) for (let j = 0; j < 16; j++) { p.set(i, j, hex('#3f454c')); p.set(j, i, hex('#3f454c')); } },
   farmland: (p) => {
     p.noise(['#5a3a24', '#4e321f', '#654229']);
     for (let y = 1; y < 16; y += 4) for (let x = 0; x < 16; x++) p.set(x, y, hex('#3f2818'));

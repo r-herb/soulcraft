@@ -1,6 +1,8 @@
-// The cash machine: the exchange (sell goods from the backpack for coins,
-// buy them back), the bank account (deposit and withdraw coins) and the
-// central bank (the city's gold reserve and the coins in circulation).
+// The bank. A cash machine (an ATM on the street) only pays out and takes in
+// coins: the bank account. The counter in the central bank (the Banco de
+// España building) has everything: the exchange (sell goods from the
+// backpack for coins, buy them back), the players' market, the account, the
+// lottery and the city (the gold reserve and the coins in circulation).
 // Prices come from the server and move with what players sell and buy.
 import { t, getLang, applyI18n } from '../i18n/index.js';
 import { SVG, iconInto } from './icons.js';
@@ -18,7 +20,7 @@ export function bank(args, ui) {
   const g = ui.game;
   const node = el(`<div class="screen scrim" data-screen="bank">
     <div class="panel bank-panel">
-      <div class="panel-head"><h2 class="panel-title" data-i18n="econ.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-head"><h2 class="panel-title" data-i18n="${args.atm ? 'econ.atm' : 'econ.title'}"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
       <div class="bank-wallet row"></div>
       <div class="seg bank-tabs"><button data-tab="exchange" data-i18n="econ.tabExchange"></button><button data-tab="market" data-i18n="econ.tabMarket"></button><button data-tab="bank" data-i18n="econ.tabBank"></button><button data-tab="lottery" data-i18n="econ.tabLottery"></button><button data-tab="central" data-i18n="econ.tabCity"></button></div>
       <div class="panel-body bank-body"><p class="faint" data-i18n="common.loading"></p></div>
@@ -26,7 +28,8 @@ export function bank(args, ui) {
     </div></div>`);
   const body = node.querySelector('.bank-body'), errEl = node.querySelector('.form-error');
   const walletEl = node.querySelector('.bank-wallet');
-  let tab = args.tab || 'exchange', state = null, history = null, busy = false;
+  let tab = args.atm ? 'bank' : args.tab || 'exchange', state = null, history = null, busy = false;
+  if (args.atm) node.querySelector('.bank-tabs').classList.add('hidden');
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
   applyI18n(node);
 
@@ -93,7 +96,8 @@ export function bank(args, ui) {
   }
 
   function drawBank() {
-    body.innerHTML = `<p class="faint small" style="margin:0 0 var(--sp-2)">${esc(t('econ.bankInfo'))}</p>
+    body.innerHTML = `<p class="faint small" style="margin:0 0 var(--sp-2)">${esc(t(args.atm ? 'econ.atmInfo' : 'econ.bankInfo'))}</p>
+      ${args.atm ? `<div class="atm-quick" role="group" aria-label="${esc(t('econ.withdraw'))}">${[10, 20, 50, 100].map((n) => `<button class="btn" data-q="${n}" ${wallet.bank >= n ? '' : 'disabled'}>${esc(t('econ.cashOut', { n }))}</button>`).join('')}</div>` : ''}
       <div class="bank-move">
         <label class="setting-label" for="bank-amount">${esc(t('econ.amount'))}</label>
         <input id="bank-amount" class="input" type="number" min="1" step="1" inputmode="numeric" value="10">
@@ -103,6 +107,12 @@ export function bank(args, ui) {
       <h3 class="section-label">${esc(t('econ.history'))}</h3><div class="bank-history faint small">${esc(t('common.loading'))}</div>`;
     const inp = body.querySelector('input');
     inp.addEventListener('keydown', (e) => e.stopPropagation());
+    // the cash machine's quick amounts: the coins come out of the slot
+    body.querySelectorAll('[data-q]').forEach((b) => b.addEventListener('click', () => {
+      ui.click();
+      const amount = Number(b.dataset.q);
+      act(async () => { await econ.move('withdraw', amount); g.audio.sfx('pickup'); ui.toast(t('econ.atmPaid', { n: amount }), 'ok'); });
+    }));
     body.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => {
       ui.click();
       const a = b.dataset.a;

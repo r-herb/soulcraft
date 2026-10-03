@@ -1,5 +1,6 @@
 // Entities: item drops, particles, projectiles, hostile mobs and villagers.
 import { AmbientLife } from './ambient.js';
+import { BankStaff } from './bankstaff.js';
 import * as THREE from 'three';
 import { moveBody } from '../player/player.js';
 import { humanoid, box, faceTexture, animateWalk, lambert } from './models.js';
@@ -581,6 +582,7 @@ export class EntityManager {
     this.villagesSpawned = new Set();
     this.tileColors = null;
     this.life = new AmbientLife(game);
+    this.bankStaff = new BankStaff(game);
   }
   clear() {
     for (const e of this.list) e.remove();
@@ -588,6 +590,7 @@ export class EntityManager {
     this.villagesSpawned.clear();
     this.particles.clear();
     this.life.clear();
+    this.bankStaff.clear();
   }
   add(e) { this.list.push(e); return e; }
   onRealmLoaded() { this.spawnVillagers(true); }
@@ -714,6 +717,7 @@ export class EntityManager {
     const g = this.game;
     this.particles.update(dt);
     this.life.update(dt);
+    this.bankStaff.update(dt);
     this.spawnT -= dt;
     if (this.spawnT <= 0) { this.spawnT = 1.5; this.trySpawn(); this.spawnVillagers(); }
     for (const e of this.list) if (!e.dead) {

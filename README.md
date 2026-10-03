@@ -205,8 +205,14 @@ not connect; a TURN relay (for example Cloudflare's) would fix that.
 ## Money: the bank and the exchange
 
 Signed-in players have a wallet: 20 coins to start, coins in hand and
-coins in the bank. Use a **cash machine** (a grey terminal next to every
-village well, and by each real bank in Malaga) to open the bank:
+coins in the bank. In Malaga a **cash machine** (by each real bank and cash
+machine) only pays out and takes in coins (quick 10, 20, 50, 100 or any
+amount); everything else is at the **counter of the central bank**, the
+Banco de España: a stone building of its own on a marble square by the
+Paseo del Parque, with a wide door on the street, a hall with columns and
+lamps, tellers behind the counter and the vault at the back behind a steel
+door (its walls cannot be broken). In the overworld the cash machine by
+every village well opens the whole bank:
 
 - **Exchange**: sell what you gather (food, wood, stone, glass, ingots,
   diamonds) for coins, or buy it. Prices move with supply: every unit
@@ -477,6 +483,9 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/bank.spec.js` (desktop): the Banco de España building has its
+  door on the street, the counter with tellers and the vault door; the
+  counter opens the whole bank and a city cash machine only the account.
 - `tests/bus.spec.js` (desktop): with the clock fixed, a stop shows its next
   buses and sells tickets, the doors open at a stop, a bus is boarded, the
   ticket is validated (no ticket: the inspector puts the player out), the

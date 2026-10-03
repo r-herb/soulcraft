@@ -1035,5 +1035,15 @@
   "update.text": "The game has been updated. Press Update to get the new version (your game is saved first).",
   "update.from": "Now",
   "update.to": "New",
-  "update.updating": "Updating from {from} to {to}..."
+  "update.updating": "Updating from {from} to {to}...",
+  "econ.atm": "Cash Machine",
+  "econ.atmInfo": "Take coins out of your bank account, or pay them in. For the exchange, the market and the lottery go to the counter of the central bank (Banco de España, by the Paseo del Parque).",
+  "econ.cashOut": "Take {n}",
+  "econ.atmPaid": "The machine pays out {n} coins.",
+  "block.bank_counter": "Bank Counter",
+  "block.bank_stone": "Bank Stone",
+  "block.bank_sign": "Bank Sign",
+  "block.vault_door": "Vault Door",
+  "block.vault_floor": "Vault Floor",
+  "block.bank_lamp": "Bank Lamp"
 }

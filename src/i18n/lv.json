@@ -1035,5 +1035,15 @@
   "update.text": "Spēle ir atjaunināta. Spied \"Atjaunināt\", lai saņemtu jauno versiju (spēle vispirms tiek saglabāta).",
   "update.from": "Tagad",
   "update.to": "Jaunā",
-  "update.updating": "Atjaunina no {from} uz {to}..."
+  "update.updating": "Atjaunina no {from} uz {to}...",
+  "econ.atm": "Bankomāts",
+  "econ.atmInfo": "Izņem monētas no sava bankas konta vai iemaksā tās. Biržai, tirgum un loterijai ej pie centrālās bankas letes (Banco de España, pie Paseo del Parque).",
+  "econ.cashOut": "Izņemt {n}",
+  "econ.atmPaid": "Bankomāts izdod {n} monētas.",
+  "block.bank_counter": "Bankas lete",
+  "block.bank_stone": "Bankas akmens",
+  "block.bank_sign": "Bankas zīme",
+  "block.vault_door": "Seifa durvis",
+  "block.vault_floor": "Seifa grīda",
+  "block.bank_lamp": "Bankas lampa"
 }

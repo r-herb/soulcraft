@@ -1035,5 +1035,15 @@
   "update.text": "El juego se ha actualizado. Pulsa Actualizar para obtener la nueva versión (antes se guarda tu partida).",
   "update.from": "Ahora",
   "update.to": "Nueva",
-  "update.updating": "Actualizando de {from} a {to}..."
+  "update.updating": "Actualizando de {from} a {to}...",
+  "econ.atm": "Cajero automático",
+  "econ.atmInfo": "Saca monedas de tu cuenta del banco o ingrésalas. Para la bolsa, el mercado y la lotería ve al mostrador del banco central (Banco de España, junto al Paseo del Parque).",
+  "econ.cashOut": "Sacar {n}",
+  "econ.atmPaid": "El cajero entrega {n} monedas.",
+  "block.bank_counter": "Mostrador del banco",
+  "block.bank_stone": "Piedra del banco",
+  "block.bank_sign": "Rótulo del banco",
+  "block.vault_door": "Puerta de la cámara",
+  "block.vault_floor": "Suelo de la cámara",
+  "block.bank_lamp": "Lámpara del banco"
 }

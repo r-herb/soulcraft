@@ -236,6 +236,7 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
   - **Banka:** noguldi un izņem monētas, redzi pēdējās darbības.
   - **Loterija:** biļete 5 monētas, līdz 10 mēnesī. Mēneša beigās viena biļete laimē banku (pilsēta patur desmito daļu).
   - **Pilsēta:** Soulcraft kalendārs, alga un centrālā banka (zelta rezerves, zelta cena, monētas apgrozībā, zelta nodrošinājums).
+- Malagā bankomāti tikai **izsniedz un pieņem monētas** (ātri 10, 20, 50, 100 vai jebkura summa). Visu pārējo dara pie **centrālās bankas letes**: Banco de España ir atsevišķa akmens ēka uz marmora laukuma pie Paseo del Parque ar platām durvīm uz ielu, zāli ar kolonnām un lampām, kasieriem aiz letes un **seifu** aizmugurē aiz tērauda durvīm (sienas nevar salauzt). Ciematu bankomāti atver visu banku.
 - **Centrālā banka** glabā pilsētas bagātību zeltā. Zelta stieņi, ko pārdod biržā, papildina rezerves.
 - Lai neviens nevarētu pārpludināt pilsētu ar izdomātām mantām, katram spēlētājam dienā ir pārdošanas limits katrai precei (piemēram, 8 dimanti).
 
