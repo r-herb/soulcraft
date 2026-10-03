@@ -114,6 +114,18 @@ Pirmajā reizē apmācība parāda soli pa solim: iet, skatīties, lauzt, likt, 
 - **Inkubators** (stikls, ogles, dēļi): ieliec līdz 4 olām; pēc 3 minūtēm spēles katra izšķiļas par cāli, tā vistu bizness aug bez kastu pirkšanas.
 - Ražu, apelsīnus, olas, vilnu un gaļu var pārdot biržā, vai paturēt sēklas un olas un audzēt vairāk.
 
+### Bruņas un vairogi
+
+- Kā klasiskajā Minecraft: **ķivere, bruņu veste, bruņu bikses un zābaki** no ādas (no govīm), zelta, dzelzs, dimanta vai emberīta; tos uzvelk 4 bruņu ailēs inventārā (vai ar "izmantot", turot rokā).
+- Bruņu punkti (dzelzs 2, 6, 5, 2; dimants un emberīts 3, 8, 6, 3; ne vairāk kā 20) redzami kā vestīšu rinda virs sirsniņām; katrs punkts noņem 4% no monstru, apsargu vai kaktusu sitiena (līdz 80%); kritieni, lava un bads iet cauri.
+- Katrs sitiens bruņas nedaudz nolieto; nolietots gabals saplīst.
+- **Vairogs** (dēļi un dzelzs): turot "izmantot", tas paceļas un pilnībā aptur sitienu no priekšas (ne no sāniem vai aizmugures); ar paceltu vairogu iet lēnāk.
+
+### Šeideri un animācijas
+
+- Iestatījumos **Šeideri** (ieslēgti): lapas, zāle un labība šūpojas vējā, ūdens viļņojas un mirdz saulē, saullēktā un saulrietā gaisma kļūst zeltaina, naktī zilgana.
+- Monstri elpo, pagriež galvu pret tuvu spēlētāju, sitot nolaiž rokas, no trieciena atraujas un pēc nāves nokrīt un nogrimst zemē.
+
 ## 5. Ciemati, tirdzniecība un Dvēseļu veikals
 
 - **Ciemati:** mājas ar durvīm uz centru un aka vidū. Ciematnieki tirgojas: dod, piemēram, 6 baļķus pret 2 maizēm. Jo biežāk tirgojies, jo lielāka draudzība un jo labāki piedāvājumi.

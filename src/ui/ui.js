@@ -565,6 +565,7 @@ export class UI {
           <div class="setting"><span class="setting-label" data-i18n="settings.controlOpacity"></span>${range('controlOpacity', 0.2, 1, 0.05, pct)}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.sensitivity"></span>${range('sensitivity', 0.3, 2.5, 0.05, pct)}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.vibration"></span>${toggle('vibration')}</div>
+          <div class="setting"><span class="setting-label" data-i18n="settings.shaders"></span>${toggle('shaders')}</div>
           <div class="setting"><span class="setting-label" data-i18n="settings.autoJump"></span>${toggle('autoJump')}</div>
         </div></div>
       </div></div>`);

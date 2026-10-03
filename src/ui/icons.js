@@ -36,7 +36,15 @@ function outline(ctx) {
 const MAT = {
   wood: ['#b08452', '#7a5530'], stone: ['#9a9ca3', '#62646b'], iron: ['#e6e9ee', '#9aa0a8'],
   gold: ['#ffe08a', '#d8a22e'], emberite: ['#ff8a3d', '#b8401c'],
+  leather: ['#a0663a', '#6b4022'], diamond: ['#7ff3f0', '#2aa9b8'],
 };
+// armor pieces and the shield
+function helmet(c, m) { const [a, b] = MAT[m]; rect(c, 3, 4, 10, 4, a); rect(c, 3, 8, 3, 3, a); rect(c, 10, 8, 3, 3, a); rect(c, 4, 5, 8, 1, '#ffffff55'); rect(c, 3, 7, 10, 1, b); }
+function chestplate(c, m) { const [a, b] = MAT[m]; rect(c, 2, 3, 4, 4, a); rect(c, 10, 3, 4, 4, a); rect(c, 4, 5, 8, 9, a); rect(c, 6, 3, 4, 2, '#00000000'); rect(c, 7, 6, 2, 7, b); rect(c, 5, 6, 1, 1, '#ffffff66'); }
+function leggings(c, m) { const [a, b] = MAT[m]; rect(c, 4, 3, 8, 3, a); rect(c, 4, 6, 3, 8, a); rect(c, 9, 6, 3, 8, a); rect(c, 4, 5, 8, 1, b); }
+function boots(c, m) { const [a, b] = MAT[m]; rect(c, 3, 8, 3, 5, a); rect(c, 10, 8, 3, 5, a); rect(c, 2, 12, 4, 2, b); rect(c, 10, 12, 4, 2, b); }
+const ARMOR_DRAW = {};
+for (const m of ['leather', 'gold', 'iron', 'diamond', 'emberite']) Object.assign(ARMOR_DRAW, { [`${m}_helmet`]: (c) => helmet(c, m), [`${m}_chestplate`]: (c) => chestplate(c, m), [`${m}_leggings`]: (c) => leggings(c, m), [`${m}_boots`]: (c) => boots(c, m) });
 
 function sword(ctx, m) {
   const [a, b] = MAT[m];
@@ -88,6 +96,9 @@ const DRAW = {
   grand_diamond: (c) => { gem(c, '#b6fbff', '#2aa9b8'); rect(c, 2, 7, 2, 2, '#ffffff'); rect(c, 12, 4, 2, 2, '#ffffff'); px(c, 13, 12, '#ffffff'); },
   heist_map: (c) => { rect(c, 2, 3, 12, 10, '#1f4e9c'); rect(c, 3, 4, 10, 8, '#2a62bd'); line(c, 4, 6, 12, 6, '#d6e4ff'); line(c, 6, 4, 6, 11, '#d6e4ff'); line(c, 9, 8, 11, 10, '#ff5a6e', 2); line(c, 11, 8, 9, 10, '#ff5a6e', 2); },
   orange_seed: (c) => { for (const [x, y] of [[5, 7], [9, 6], [7, 10], [11, 10]]) { rect(c, x, y, 2, 3, '#f2e3b5'); px(c, x, y, '#fff6d8'); } },
+  ...ARMOR_DRAW,
+  leather: (c) => { rect(c, 3, 4, 10, 9, '#a0663a'); rect(c, 4, 5, 8, 7, '#b5784a'); px(c, 3, 4, '#00000000'); line(c, 5, 7, 10, 7, '#8a5530'); },
+  shield: (c) => { rect(c, 3, 2, 10, 9, '#b08452'); rect(c, 4, 11, 8, 2, '#b08452'); rect(c, 6, 13, 4, 1, '#b08452'); rect(c, 7, 2, 2, 12, '#9aa0a8'); rect(c, 3, 5, 10, 2, '#9aa0a8'); rect(c, 7, 5, 2, 2, '#e6e9ee'); },
   gold_nugget: (c) => { rect(c, 5, 7, 6, 5, '#e8b93a'); rect(c, 6, 6, 4, 1, '#ffd65c'); rect(c, 7, 8, 2, 2, '#fff1b0'); px(c, 4, 9, '#c48f2e'); px(c, 11, 10, '#c48f2e'); },
   gold_pan: (c) => { rect(c, 2, 8, 12, 3, '#9aa0a8'); rect(c, 3, 11, 10, 1, '#6b7078'); rect(c, 4, 7, 8, 1, '#c9ccd2'); px(c, 7, 9, '#ffd65c'); px(c, 9, 9, '#ffd65c'); line(c, 13, 8, 15, 6, '#7a5530', 2); },
   coin: (c) => { rect(c, 4, 3, 8, 10, '#e8b93a'); rect(c, 3, 4, 10, 8, '#e8b93a'); rect(c, 5, 5, 6, 6, '#ffd65c'); rect(c, 7, 6, 2, 4, '#c48f2e'); },

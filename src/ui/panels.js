@@ -5,6 +5,7 @@ import { SVG, iconInto } from './icons.js';
 import { slotEl, fillSlot, itemName } from './hud.js';
 import { RECIPES, matchRecipe, canAfford, recipeNeeds } from '../player/crafting.js';
 import { ITEMS, maxStack } from '../player/items.js';
+import { Inventory } from '../player/inventory.js';
 import { SKINS, drawSkinPortrait } from '../entities/models.js';
 import { PETS, drawPetPortrait } from '../entities/pets.js';
 import { daily, taskLabel, rewardFor, ALL_BONUS, currentEvent, dayKey } from '../quest/daily.js';
@@ -27,6 +28,8 @@ function describe(key) {
   const parts = [];
   if (d.food) parts.push(t('desc.food', { n: d.food }));
   if (d.damage && (d.weapon || d.tool)) parts.push(t('desc.damage', { n: d.damage / 2 }));
+  if (d.armor) parts.push(t('desc.armor', { n: d.points, d: d.dura }));
+  if (d.shield) parts.push(t('desc.shield', { d: d.dura }));
   const extra = t('desc.' + key);
   if (extra !== 'desc.' + key) parts.push(extra);
   return parts.join(' ');
@@ -48,6 +51,7 @@ export function inventory(args, ui) {
           <span class="arrow-right">&#9654;</span>
           <div class="col" style="align-items:center"><div class="slot result" data-result></div><span class="faint crystal-cost"></span></div>
           <button class="btn small ghost" data-act="clear" data-i18n="inv.clear"></button>
+          <div class="inv-armor" aria-label="${esc(t('inv.armor'))}"></div>
         </div>
         <div class="col inv-bag">
           <div class="inv-grid main"></div>
@@ -62,6 +66,7 @@ export function inventory(args, ui) {
       </div>
     </div></div>`);
   const gridEl = node.querySelector('.craft-grid');
+  const armorEl = node.querySelector('.inv-armor');
   const mainEl = node.querySelector('.inv-grid.main');
   const hotEl = node.querySelector('.inv-grid.hot');
   const resultEl = node.querySelector('[data-result]');
@@ -73,7 +78,7 @@ export function inventory(args, ui) {
     info.innerHTML = key ? `<b>${esc(itemName(key))}</b> <span>${esc(describe(key))}</span> ${extra}` : `<span class="faint">${esc(t('inv.hint'))}</span>`;
   };
 
-  const getArr = (from) => (from === 'grid' ? inv.grid : inv.slots);
+  const getArr = (from) => (from === 'grid' ? inv.grid : from === 'armor' ? inv.armor : inv.slots);
   const tapSlot = (from, i) => {
     ui.click();
     const arr = getArr(from);
@@ -83,6 +88,8 @@ export function inventory(args, ui) {
       const src = getArr(picked.from);
       const a = src[picked.i], b = arr[i];
       if (picked.from === from && picked.i === i) { picked = null; draw(); return; }
+      // an armor slot takes only its own kind of piece (and a piece taken off goes where it fits)
+      if ((from === 'armor' && Inventory.armorSlot(a.item) !== i) || (picked.from === 'armor' && b && Inventory.armorSlot(b.item) !== picked.i)) { ui.toast(t('inv.armorNo'), 'warn'); picked = null; draw(); return; }
       if (from === 'grid' && a && !b) {
         // place a single item into the crafting grid
         arr[i] = { item: a.item, count: 1 };
@@ -107,6 +114,9 @@ export function inventory(args, ui) {
     inv.grid.forEach((s, i) => { const e = slotEl(s); if (picked && picked.from === 'grid' && picked.i === i) e.classList.add('picked'); e.addEventListener('click', () => tapSlot('grid', i)); gridEl.appendChild(e); });
     for (let i = 9; i < 36; i++) { const e = slotEl(inv.slots[i]); if (picked && picked.from === 'slots' && picked.i === i) e.classList.add('picked'); e.addEventListener('click', () => tapSlot('slots', i)); mainEl.appendChild(e); }
     for (let i = 0; i < 9; i++) { const e = slotEl(inv.slots[i]); if (i === inv.selected) e.classList.add('selected'); if (picked && picked.from === 'slots' && picked.i === i) e.classList.add('picked'); e.addEventListener('click', () => tapSlot('slots', i)); hotEl.appendChild(e); }
+    armorEl.innerHTML = '';
+    inv.armor.forEach((s, i) => { const e = slotEl(s); if (!s) { e.classList.add('empty-armor'); e.title = t('inv.armor.' + ['head', 'chest', 'legs', 'feet'][i]); } if (picked && picked.from === 'armor' && picked.i === i) e.classList.add('picked'); e.dataset.armor = i; e.addEventListener('click', () => tapSlot('armor', i)); armorEl.appendChild(e); });
+    armorEl.insertAdjacentHTML('beforeend', `<span class="armor-pts">${esc(t('hud.armor', { n: inv.armorPoints }))}</span>`);
     const rec = matchRecipe(inv.grid);
     fillSlot(resultEl, rec ? { item: rec.out, count: rec.count } : null);
     costEl.innerHTML = rec && rec.crystals ? `<span class="crystal-ico"></span>${rec.crystals}` : '';

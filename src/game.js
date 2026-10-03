@@ -599,6 +599,10 @@ export class Game {
       if (inp.pressed.has('attack')) this.held.swing();
       this.resetBreaking();
     }
+    // a shield is raised while use is held down
+    const heldDef = this.inventory.held && ITEMS[this.inventory.held.item];
+    this.blocking = !!(heldDef && heldDef.shield && inp.use && !pl.dead);
+    if (this.blocking) return;
     if (inp.pressed.has('use') || (inp.use && this.useCooldown <= 0 && this.inventory.held && ITEMS[this.inventory.held.item]?.block !== undefined)) {
       if (this.useCooldown <= 0) this.use(hit, ent, dir, inp.pressed.has('use'));
     }
@@ -709,6 +713,8 @@ export class Game {
     if (fresh && hit && hit.id === B.restaurant) { this.ui.open('restaurant'); this.useCooldown = 0.3; return; }
     if (fresh && hit && hit.id === B.bus_stop && this.buses) { this.ui.open('busStop', { x: hit.x, z: hit.z }); this.useCooldown = 0.3; return; }
     if (def && def.special === 'treasureMap' && fresh) { this.ui.open('treasureMap'); this.useCooldown = 0.3; return; }
+    // armor in hand goes on (swapping what was worn)
+    if (def && def.armor && fresh) { if (this.inventory.equipHeld()) { this.audio.sfx('place'); this.ui.toast(t('toast.armorOn', { item: itemName(h ? h.item : '') })); } this.useCooldown = 0.3; return; }
     // gems: open a hidden cache, pan for gold in water
     // the heist: the Gran Diamante in the vault, the bank's plan
     if (fresh && hit && hit.id === B.grand_diamond) { this.heist.takeDiamond(hit); this.useCooldown = 0.3; return; }
@@ -881,6 +887,24 @@ export class Game {
     try { navigator.vibrate && navigator.vibrate(ms); } catch { /* unsupported */ }
   }
 
+  // the shield held and raised (use held down), facing where the blow comes from
+  shieldBlocks(source, knockDir) {
+    const p = this.player, h = this.inventory.held, def = h && ITEMS[h.item];
+    if (!def || !def.shield || !this.blocking) return false;
+    let from = null;
+    if (source && source.pos) from = { x: source.pos.x - p.pos.x, z: source.pos.z - p.pos.z };
+    else if (knockDir) from = { x: -knockDir.x, z: -knockDir.z };
+    if (from) {
+      const look = p.lookDir(), L = Math.hypot(from.x, from.z) || 1;
+      if ((look.x * from.x + look.z * from.z) / (Math.hypot(look.x, look.z) * L || 1) < 0.2) return false; // from behind or the side
+    }
+    h.dmg = (h.dmg || 0) + 1;
+    if (h.dmg >= def.dura) { this.inventory.slots[this.inventory.selected] = null; this.inventory.changed(); this.ui.toast(t('toast.armorBroke', { item: itemName(h.item) }), 'warn'); }
+    this.audio.sfx('deflect');
+    this.held.swing();
+    return true;
+  }
+
   damagePlayer(amount, cause = 'generic', source = null, knockDir = null) {
     const p = this.player;
     if (p.dead || amount <= 0) return false;
@@ -889,6 +913,18 @@ export class Game {
     if (p.invuln > 0 && cause !== 'magma' && cause !== 'void') return false;
     const diff = this.meta.difficulty;
     if (cause === 'mob' || cause === 'boss') amount = Math.ceil(amount * (diff === 'hard' ? 1.4 : diff === 'peaceful' ? 0.5 : 1));
+    const fight = cause === 'mob' || cause === 'boss' || cause === 'guard' || cause === 'cactus';
+    // a raised shield stops a blow from the front
+    if (fight && cause !== 'cactus' && this.shieldBlocks(source, knockDir)) return false;
+    // armor (as in the classic game): each point takes 4% off, less against big hits, up to 80%
+    if (fight) {
+      const inv = this.inventory, pts = inv.armorPoints;
+      if (pts > 0) {
+        const eff = Math.max(pts / 5, pts - (4 * amount) / (inv.toughness + 8));
+        amount = Math.max(amount > 0 ? 0.5 : 0, amount * (1 - Math.min(20, eff) / 25));
+        for (const k of inv.wearArmor()) { this.ui.toast(t('toast.armorBroke', { item: itemName(k) }), 'warn'); this.audio.sfx('break'); }
+      }
+    }
     p.health -= amount;
     p.invuln = 0.5;
     p.hurtTime = 0.3;
@@ -1083,6 +1119,11 @@ export class Game {
     cam.far = rd * 16 + 48;
     cam.updateProjectionMatrix();
     const daylight = this.sky.update(this.meta.time, cam, this.meta.dim, this.materials.uniforms, rd, this.scene);
+    // the shaders: time for the wind and the ripples, the warm light of dawn and dusk
+    const U = this.materials.uniforms;
+    U.uTime.value = (U.uTime.value + dt) % 3600;
+    U.uFx.value = settings().shaders === false ? 0 : 1;
+    U.uDusk.value = this.meta.dim === 'overworld' || this.meta.dim === 'city' ? Math.max(0, 1 - Math.abs(daylight - 0.45) / 0.3) : 0;
     this.ambient.intensity = 0.35 + daylight * 0.5;
     this.sunLight.intensity = 0.2 + daylight * 0.5;
     this.scene.fog = null;

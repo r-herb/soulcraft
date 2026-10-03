@@ -347,6 +347,13 @@ body.touch .desktop-only { display: none !important; }
 .quest-obj span { font-size: var(--fs-sm); text-shadow: var(--text-shadow); }
 .quest-obj .mis-arrow { display: inline-block; font-style: normal; color: var(--c-gold-400); margin-left: 6px; transition: transform 0.15s linear; }
 .mis-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.bar-row.armor { gap: 1px; }
+.bar-row.armor .ap { width: 14px; height: 14px; display: inline-block; background: linear-gradient(#d5dae1, #9aa0a8); clip-path: polygon(0 10%, 30% 0, 50% 12%, 70% 0, 100% 10%, 88% 45%, 88% 100%, 12% 100%, 12% 45%); filter: drop-shadow(0 1px 0 #000); }
+.bar-row.armor .ap.half { background: linear-gradient(90deg, #d5dae1 50%, #3a3d44 50%); }
+.bar-row.armor .ap.empty { background: #3a3d44; opacity: 0.6; }
+.inv-armor { display: grid; grid-template-columns: repeat(2, auto); gap: 4px; justify-content: center; align-items: center; }
+.inv-armor .slot.empty-armor { opacity: 0.55; }
+.inv-armor .armor-pts { grid-column: 1 / -1; text-align: center; font-size: 11px; white-space: nowrap; color: var(--c-text-dim); }
 .mis-card { padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); background: rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; gap: 4px; }
 .mis-card.done { opacity: 0.6; }
 .mis-card.heist { border-left: 3px solid #ff5a6e; }

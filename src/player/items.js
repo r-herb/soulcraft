@@ -87,6 +87,21 @@ tool('gold_sword', { weapon: 'sword', damage: 6, emberBonus: 6 });
 tool('emberite_sword', { weapon: 'sword', damage: 8, emberBonus: 8 });
 tool('bow', { weapon: 'bow', damage: 5 });
 tool('spear', { weapon: 'spear', damage: 7, throwable: 'spear' });
+// armor (as in the classic game): armor points per piece, durability in hits
+// taken; leather from cows, then iron, gold, diamond and emberite
+export const ARMOR_SLOTS = ['head', 'chest', 'legs', 'feet'];
+const ARMOR = {
+  leather: { points: [1, 3, 2, 1], dura: [55, 80, 75, 65] },
+  gold: { points: [2, 5, 3, 1], dura: [77, 112, 105, 91] },
+  iron: { points: [2, 6, 5, 2], dura: [165, 240, 225, 195] },
+  diamond: { points: [3, 8, 6, 3], dura: [363, 528, 495, 429] },
+  emberite: { points: [3, 8, 6, 3], dura: [407, 592, 555, 481], tough: 3 },
+};
+const PIECES = ['helmet', 'chestplate', 'leggings', 'boots'];
+item('leather');
+for (const [m, a] of Object.entries(ARMOR)) PIECES.forEach((p, i) => tool(`${m}_${p}`, { armor: ARMOR_SLOTS[i], points: a.points[i], dura: a.dura[i], tough: a.tough || 0, material: m }));
+// a shield: held and raised (hold use) it stops blows from the front
+tool('shield', { shield: true, dura: 336 });
 // Treasure Quest
 item('treasure_map', { stack: 1, special: 'treasureMap' });
 item('golden_key', { stack: 3, questKey: true });

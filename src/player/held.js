@@ -62,8 +62,12 @@ export class HeldItem {
       const k = Math.sin((1 - Math.max(0, this.swingT) / 0.25) * Math.PI);
       sx = -k * 0.12; sy = k * 0.08; rx = -k * 0.9;
     }
-    this.group.position.set(0.42 + sx + Math.sin(this.bobT) * 0.015, -0.42 + sy - Math.abs(Math.cos(this.bobT)) * 0.02, -0.62);
+    // a raised shield comes up to the middle, in front of the eyes
+    this.raise = (this.raise || 0) + ((this.game.blocking ? 1 : 0) - (this.raise || 0)) * Math.min(1, dt * 14);
+    const r = this.raise;
+    this.group.position.set(0.42 + sx - r * 0.3 + Math.sin(this.bobT) * 0.015, -0.42 + sy + r * 0.18 - Math.abs(Math.cos(this.bobT)) * 0.02, -0.62 + r * 0.12);
     this.group.rotation.x = rx;
+    this.item.scale.setScalar(1 + r * 0.6);
     this.group.visible = !p.dead;
   }
 }

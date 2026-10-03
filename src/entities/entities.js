@@ -301,7 +301,7 @@ const MOB_DEFS = {
   // livestock: never attack; follow the food they like, flee when hit
   chicken: { hp: 4, speed: 1.6, name: 'mob.chicken', passive: true, food: 'wheat_seeds', drops: [['raw_chicken', 1]], w: 0.5, h: 0.7 },
   sheep: { hp: 8, speed: 1.5, name: 'mob.sheep', passive: true, food: 'wheat', drops: [['wool', 1], ['wool', 0.5], ['raw_mutton', 1]], w: 0.9, h: 1.2 },
-  cow: { hp: 10, speed: 1.4, name: 'mob.cow', passive: true, food: 'wheat', drops: [['raw_beef', 1], ['raw_beef', 0.5]], w: 0.9, h: 1.4 },
+  cow: { hp: 10, speed: 1.4, name: 'mob.cow', passive: true, food: 'wheat', drops: [['raw_beef', 1], ['raw_beef', 0.5], ['leather', 0.8]], w: 0.9, h: 1.4 },
 };
 
 export class Mob extends Entity {
@@ -502,7 +502,7 @@ export class Mob extends Entity {
         else if (p.remote) g.net.hurt(p, d.dmg, this.nameKey, tmp2);
         else if (d.hazard) { p.knock.set(tmp2.x * 9, 10, tmp2.z * 9); g.damagePlayer(d.dmg, 'mob', this.name); }
         else g.damagePlayer(d.dmg, 'mob', this.name, tmp2);
-        if (this.rig) this.rig.armR.rotation.x = -2;
+        this.swingT = 0.35;
       }
     }
     this.animate(dt);
@@ -512,13 +512,33 @@ export class Mob extends Entity {
   animate(dt) {
     const g = this.game;
     const moving = Math.hypot(this.vel.x, this.vel.z);
-    if (this.rig) { animateWalk(this.rig, this.phase, Math.min(1, moving / 3)); if (this.type === 'hollow') { this.rig.armL.rotation.x = -1.3 + Math.sin(this.phase) * 0.1; this.rig.armR.rotation.x += (-1.3 - this.rig.armR.rotation.x) * 0.2; } }
+    this.animT = (this.animT || 0) + dt;
+    if (this.rig) {
+      animateWalk(this.rig, this.phase, Math.min(1, moving / 3));
+      if (this.type === 'hollow') { this.rig.armL.rotation.x = -1.3 + Math.sin(this.phase) * 0.1; this.rig.armR.rotation.x = -1.3 + Math.cos(this.phase) * 0.1; }
+      // a blow: both arms swing down hard
+      if (this.swingT > 0) { this.swingT -= dt; const k = Math.sin((1 - Math.max(0, this.swingT) / 0.35) * Math.PI); this.rig.armR.rotation.x = -1.3 - k * 1.2; this.rig.armL.rotation.x = -1.0 - k * 0.6; }
+      // breathing, and the head turned to the player nearby
+      this.rig.body.scale.y = 1 + Math.sin(this.animT * 2.2) * 0.015;
+      const p = g.player.pos, dx = p.x - this.pos.x, dz = p.z - this.pos.z;
+      let look = 0;
+      if (dx * dx + dz * dz < 144) { look = Math.atan2(dx, dz) - this.yaw; look = Math.atan2(Math.sin(look), Math.cos(look)); look = Math.max(-0.9, Math.min(0.9, look)); }
+      this.rig.head.rotation.y += (look - this.rig.head.rotation.y) * Math.min(1, dt * 6);
+    }
+    // a hit makes it flinch back
+    this.object.rotation.x = this.hurtT > 0 ? -this.hurtT * 0.9 : 0;
     if (this.legs) this.legs.forEach((l, i) => { l.rotation.y = Math.sin(this.phase * 2 + i) * 0.4 * Math.min(1, moving); });
     if (this.quadLegs) this.quadLegs.forEach((l, i) => { l.rotation.x = Math.sin(this.phase * 1.6 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * 0.6 * Math.min(1, moving); });
     if (this.bodyMesh) this.bodyMesh.position.y = 0.35 + Math.sin(this.phase) * 0.1;
     if (this.rings) this.rings.forEach((r, i) => { r.rotation.z += dt * (4 + i); r.position.x = Math.sin(this.phase + i) * 0.1; });
     if (this.type === 'fireSpirit' && Math.random() < dt * 8) g.entities.particles.emit(this.pos.x, this.pos.y + 0.4, this.pos.z, 1, 0.55, 0.15, 1, 1, 0.5, false);
     if (this.type === 'whirlwind' && Math.random() < dt * 20) g.entities.particles.emit(this.pos.x, this.pos.y + Math.random() * 3, this.pos.z, 0.8, 0.97, 0.93, 1, 3, 0.4, false);
+  }
+  // a monster that died falls over and sinks away (the manager runs it)
+  remove() {
+    if (!this.corpse) { super.remove(); return; }
+    this.corpse = false;
+    this.game.entities.corpses.push({ obj: this.object, t: 0, side: Math.random() < 0.5 ? 1 : -1, done: () => super.remove() });
   }
   // A guest's copy of a host monster glides to the positions the host sends.
   follow(dt) {
@@ -554,6 +574,7 @@ export class Mob extends Entity {
   die() {
     super.die();
     const g = this.game;
+    this.corpse = !this.def.hazard; // it falls over before it goes
     g.audio.sfx('mobdie');
     this.poof();
     if (g.net && g.net.isHost) g.net.mobDied(this, this.killedBy);
@@ -585,6 +606,7 @@ export class EntityManager {
     this.spawnT = 0;
     this.villagesSpawned = new Set();
     this.tileColors = null;
+    this.corpses = [];
     this.life = new AmbientLife(game);
     this.bankStaff = new BankStaff(game);
   }
@@ -595,6 +617,8 @@ export class EntityManager {
     this.particles.clear();
     this.life.clear();
     this.bankStaff.clear();
+    for (const c of this.corpses) c.done();
+    this.corpses = [];
   }
   add(e) { this.list.push(e); return e; }
   onRealmLoaded() { this.spawnVillagers(true); }
@@ -721,6 +745,14 @@ export class EntityManager {
     const g = this.game;
     this.particles.update(dt);
     this.life.update(dt);
+    // the fallen: tip over, lie still a moment, sink into the ground
+    for (let i = this.corpses.length - 1; i >= 0; i--) {
+      const c = this.corpses[i];
+      c.t += dt;
+      c.obj.rotation.z = c.side * Math.min(1, c.t / 0.3) * (Math.PI / 2);
+      if (c.t > 0.7) c.obj.position.y -= dt * 1.2;
+      if (c.t > 1.4) { c.done(); this.corpses.splice(i, 1); }
+    }
     this.bankStaff.update(dt);
     this.spawnT -= dt;
     if (this.spawnT <= 0) { this.spawnT = 1.5; this.trySpawn(); this.spawnVillagers(); }

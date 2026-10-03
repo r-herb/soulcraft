@@ -39,6 +39,7 @@ export class Hud {
       <div class="underwater hidden"></div>
       <div class="inmagma hidden"></div>
       <div class="hud-top-left">
+        <div class="bar-row armor hidden"></div>
         <div class="bar-row hearts"></div>
         <div class="bar-row foods"></div>
         <div class="row"><span class="stat-chip crystal-chip" data-i18n-title="hud.crystals"><span class="crystal-ico"></span><span class="crystals">0</span></span><span class="stat-chip day-chip"></span><span class="stat-chip room-chip hidden" data-i18n-title="mp.roomChip"></span><span class="stat-chip coin-chip hidden" data-i18n-title="econ.cash"><span class="coin-ico"></span><span class="coins"></span></span><span class="stat-chip lives-chip hidden" data-i18n-title="wmap.lives"><i class="life on"></i><span class="lives-n"></span></span></div>
@@ -71,7 +72,7 @@ export class Hud {
       <div class="tut-slot"></div>
       <div class="card-slot"></div>`;
     const q = (s) => this.el.querySelector(s);
-    this.hearts = q('.hearts'); this.foods = q('.foods');
+    this.hearts = q('.hearts'); this.foods = q('.foods'); this.armorBar = q('.armor');
     this.crystalsEl = q('.crystals'); this.dayEl = q('.day-chip');
     this.hotbar = q('.hotbar'); this.heldName = q('.held-name');
     this.fpsEl = q('.fps'); this.bossBar = q('.boss-bar');
@@ -214,6 +215,16 @@ export class Hud {
         html += `<img class="heart" alt="" src="${statSprite('heart', st === 'empty' ? 'empty' : soul + st)}">`;
       }
       this.hearts.innerHTML = html;
+    }
+    // armor: ten chestplates, each two points, shown while armor is worn
+    const ap = g.inventory.armorPoints;
+    if (L.ap !== ap) {
+      L.ap = ap;
+      this.armorBar.classList.toggle('hidden', !ap);
+      let html = '';
+      for (let i = 0; i < 10; i++) { const v = ap - i * 2; html += `<i class="ap ${v >= 2 ? 'full' : v === 1 ? 'half' : 'empty'}"></i>`; }
+      this.armorBar.innerHTML = html;
+      this.armorBar.title = t('hud.armor', { n: ap });
     }
     const fd = Math.ceil(p.food);
     if (L.fd !== fd) {

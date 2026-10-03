@@ -180,6 +180,30 @@ between accepted friends. On some strict networks (some mobile operators
 or school networks) a direct connection is not possible and the call does
 not connect; a TURN relay (for example Cloudflare's) would fix that.
 
+## Armor and shields
+
+As in the classic game: a **helmet, chestplate, leggings and boots** of
+leather (cows drop it), gold, iron, diamond or emberite, crafted in the
+usual shapes, worn in the four armor slots of the inventory screen (or put
+on with "use" while held). Each piece gives armor points (iron: 2, 6, 5, 2;
+diamond and emberite: 3, 8, 6, 3; 20 at most), shown as a row of chestplates
+over the hearts. Every point takes 4% off a blow from a monster, a guard or
+a cactus (less against very big hits, up to 80%); falls, lava and hunger go
+through. Each blow wears every piece a little and a worn-out piece breaks
+(leather lasts 55 to 80 hits, diamond 363 to 528; emberite a little longer
+and tougher against big hits). A **shield** (planks and an iron ingot) held
+and raised (hold use) stops a blow from the front completely, not from the
+side or behind, slows the player while raised, and wears out after 336
+blocks.
+
+## Shaders and animations
+
+With **Settings > Shaders** on (the default): leaves, grass and crops sway
+in the wind, water ripples and glints in the sun, and the light turns golden
+at sunrise and sunset and cool blue at night. Monsters breathe, turn their
+heads to a player nearby, swing their arms down when they strike, flinch
+back when hit, and fall over and sink away when they die.
+
 ## Farm: crops and livestock
 
 - **Crops**: wheat and tomato seeds (and carrots) from a market stall. Use
@@ -537,6 +561,11 @@ What the tests cover:
 - `tests/worldmap.spec.js`: a trip costs a life and sets the respawn point,
   no lives means no trip, a new day gives a life back, creative trips are
   free, and in Malaga the map takes the player up to Gibralfaro.
+- `tests/armor.spec.js` (desktop): a piece put on from the hand and the
+  rest in their slots (boots refused in the head slot), 15 points take
+  about half a blow off, each piece wears, a fall goes through, a worn-out
+  piece breaks; a raised shield stops a blow from the front but not one
+  from behind.
 - `tests/farm2.spec.js` (desktop): an orange pip grows into a bush whose
   fruit is picked and grows again; a hen lays into a nest box; an incubator
   hatches two eggs into chicks.

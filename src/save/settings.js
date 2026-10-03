@@ -15,6 +15,7 @@ export const DEFAULTS = {
   controlSize: 1,
   controlOpacity: 0.7,
   vibration: true,
+  shaders: true, // waving leaves and grass, rippling water, warm dawn and dusk light
   fps: false,
   sensitivity: 1,
   autoJump: true,

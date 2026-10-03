@@ -89,6 +89,7 @@ export class Player {
     const sprint = inp.sprint && inp.move.z > 0.5;
     let speed = this.fly ? (sprint ? 12 : 8.5) * FLY_GEARS[this.flyGear || 0] : sprint ? 5.9 : 4.4;
     if (this.inWater) speed *= 0.55;
+    if (game && game.blocking) speed *= 0.4; // behind a raised shield
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
     const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
     const wx = (fx * inp.move.z + rx * inp.move.x) * speed;

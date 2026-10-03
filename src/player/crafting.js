@@ -6,7 +6,7 @@ const K = {
   E: 'emberite_ingot', e: 'emberite_shard', F: 'fiber', D: 'sand', A: 'ashstone', W: 'glowbell', g: 'glass',
   s: 'spiritstone', V: 'void_scale', T: 'stone', w: 'wool',
   t: 'tomato', r: 'rice', f: 'sardine', O: 'olive_oil', u: 'flour',
-  k: 'wheat', c: 'raw_chicken', b: 'raw_beef', m: 'raw_mutton', n: 'gold_nugget',
+  k: 'wheat', c: 'raw_chicken', b: 'raw_beef', m: 'raw_mutton', n: 'gold_nugget', x: 'leather', d: 'diamond',
 };
 
 function r(id, pattern, out, count = 1, extra = {}) {
@@ -35,6 +35,14 @@ export const RECIPES = [
   r('spear', ['  I', ' S ', 'S  '], 'spear'),
   r('emberite_ingot', ['ee', 'eG'], 'emberite_ingot'),
   r('gold_pan', ['I I', ' I '], 'gold_pan'),
+  // armor and the shield
+  ...[['leather', 'x'], ['gold', 'G'], ['iron', 'I'], ['diamond', 'd'], ['emberite', 'E']].flatMap(([m, c]) => [
+    r(`${m}_helmet`, [c.repeat(3), `${c} ${c}`], `${m}_helmet`),
+    r(`${m}_chestplate`, [`${c} ${c}`, c.repeat(3), c.repeat(3)], `${m}_chestplate`),
+    r(`${m}_leggings`, [c.repeat(3), `${c} ${c}`, `${c} ${c}`], `${m}_leggings`),
+    r(`${m}_boots`, [`${c} ${c}`, `${c} ${c}`], `${m}_boots`),
+  ]),
+  r('shield', ['PIP', 'PPP', ' P '], 'shield'),
   r('nest_box', ['P P', 'PkP'], 'nest_box'),
   r('incubator', ['ggg', 'gCg', 'PPP'], 'incubator'),
   r('gold_from_nuggets', ['nnn', 'nnn', 'nnn'], 'gold_ingot'),
