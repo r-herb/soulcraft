@@ -281,11 +281,12 @@ const painters = {
       p.set(x, y, shade(hex(edge ? '#8a3f24' : '#c1603c'), (0.85 + wave * 0.12) * (0.95 + p.r() * 0.1)));
     }
   },
+  // a window: a white frame and a cross, and clear panes with a glint (the room behind shows)
   window: (p) => {
-    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex(y < 7 ? '#5f86a8' : '#3f5f80'), 0.92 + p.r() * 0.1));
+    p.clear();
     const f = hex('#f0efe8');
     for (let i = 0; i < T; i++) { p.set(i, 0, f); p.set(i, T - 1, f); p.set(0, i, f); p.set(T - 1, i, f); p.set(i, 7, f); p.set(7, i, f); }
-    p.set(3, 3, hex('#b8d4ea')); p.set(4, 2, hex('#b8d4ea')); p.set(11, 3, hex('#b8d4ea'));
+    for (const [x, y] of [[3, 3], [4, 2], [2, 4], [11, 3], [12, 2], [10, 11], [11, 10]]) p.set(x, y, hex('#d8ecf8'));
   },
   limestone: (p) => { p.bricks('#d9ccb0', '#b8a987', 16, 8); p.speckle('#c8b996', 8); },
   concrete: (p) => { p.noise(['#b4b5b8', '#adaeb1', '#bbbcbf']); p.speckle('#9c9da0', 5); },
@@ -350,6 +351,18 @@ const painters = {
   cell_bars: (p) => { for (let x = 1; x < 16; x += 4) for (let y = 0; y < 16; y++) { p.set(x, y, hex('#5c5f66')); p.set(x + 1, y, hex('#3a3d45')); } for (const y of [1, 14]) for (let x = 0; x < 16; x++) p.set(x, y, hex('#4b4e55')); },
   cell_door: (p) => { for (let x = 1; x < 16; x += 4) for (let y = 0; y < 16; y++) { p.set(x, y, hex('#6b6f78')); p.set(x + 1, y, hex('#44474e')); } for (const y of [1, 7, 14]) for (let x = 0; x < 16; x++) p.set(x, y, hex('#55585f')); p.set(12, 8, hex('#c9a227')); p.set(12, 9, hex('#c9a227')); },
   puerto_sign: (p) => { p.noise(['#1f3a5a', '#22405f']); p.border('#d9d2b8'); for (const [x, y] of [[3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [4, 5], [5, 5], [5, 6], [4, 7], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [9, 9], [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [12, 5], [13, 5], [14, 5], [13, 6], [13, 7], [13, 8], [13, 9]]) p.set(x, y, hex('#f0ead8')); },
+  // street lamps: dark iron, and a lantern of warm glass in an iron frame
+  lamp_post: (p) => { p.noise(['#2b3330', '#323b37', '#262d2a']); for (let y = 0; y < T; y += 5) for (let x = 0; x < T; x++) p.set(x, y, hex('#3e4a45')); },
+  street_lamp: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const d = Math.hypot(x - 7.5, y - 8); p.set(x, y, mix(hex('#fff6c8'), hex('#ffc35a'), Math.min(1, d / 8))); }
+    const f = hex('#262d2a');
+    for (let i = 0; i < T; i++) { p.set(i, 0, f); p.set(i, 1, f); p.set(i, T - 1, f); p.set(0, i, f); p.set(T - 1, i, f); p.set(7, i, f); p.set(8, i, f); }
+  },
+  street_lamp_top: (p) => { p.noise(['#2b3330', '#323b37']); p.border('#1d2321'); },
+  ceiling_lamp: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const d = Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)); p.set(x, y, mix(hex('#fffbe6'), hex('#ffe1a0'), Math.min(1, d / 8))); }
+    p.border('#c9b48a');
+  },
   crate: (p) => { p.noise(['#a87a48', '#9a6e40', '#b08452']); p.border('#6b4a2f'); for (let i = 1; i < 15; i++) { p.set(i, i, hex('#7a5530')); p.set(15 - i, i, hex('#7a5530')); } },
   crate_top: (p) => { p.noise(['#b08452', '#a87a48']); p.border('#6b4a2f'); for (let x = 1; x < 15; x++) p.set(x, 8, hex('#7a5530')); },
   // a cast-iron manhole cover with slots (the sewer under the bank)

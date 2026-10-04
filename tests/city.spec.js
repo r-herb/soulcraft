@@ -39,6 +39,38 @@ test.describe('Malaga', () => {
     expect(check.block).toBeGreaterThan(0);
     await page.evaluate(() => { const g = window.__sc.game; g.player.pitch = -0.2; });
     await shot(page, 'city-street');
+    // street lamps: an iron post three blocks high with a lantern on top, along the
+    // streets and on the squares; they can be walked through, and the lantern gives light
+    const lamps = await page.evaluate(() => {
+      const g = window.__sc.game, B = window.__sc.B, c = g.city, p = g.player.pos, out = [];
+      for (let z = Math.floor(p.z) - 30; z <= p.z + 30; z++) for (let x = Math.floor(p.x) - 30; x <= p.x + 30; x++) {
+        const y = c.groundAt(x, z);
+        if (g.world.getBlock(x, y + 4, z) === B.street_lamp) out.push([1, 2, 3].every((d) => g.world.getBlock(x, y + d, z) === B.lamp_post) && !c.bidAt(x, z));
+      }
+      const L = window.__sc.BLOCKS[B.street_lamp], P = window.__sc.BLOCKS[B.lamp_post];
+      return { n: out.length, posts: out.every(Boolean), light: L.light, solid: L.solid || P.solid };
+    });
+    expect(lamps.n).toBeGreaterThan(5);
+    expect(lamps).toMatchObject({ posts: true, light: 15, solid: false });
+    // the windows are see-through (and still solid), and the rooms behind them have lights in the ceilings
+    const rooms = await page.evaluate(() => {
+      const g = window.__sc.game, B = window.__sc.B, BL = window.__sc.BLOCKS, p = g.player.pos;
+      const lit = new Set([B.ceiling_lamp, B.ceiling_lamp_paving, B.ceiling_lamp_tiles, B.ceiling_lamp_lime]);
+      let lights = 0, windows = 0;
+      for (let z = Math.floor(p.z) - 30; z <= p.z + 30; z++) for (let x = Math.floor(p.x) - 30; x <= p.x + 30; x++) for (let y = 0; y < 128; y++) {
+        const id = g.world.getBlock(x, y, z);
+        if (lit.has(id)) lights++; else if (id === B.window) windows++;
+      }
+      return { lights, windows, window: { opaque: BL[B.window].opaque, solid: BL[B.window].solid }, glow: BL[B.ceiling_lamp].light };
+    });
+    expect(rooms.windows).toBeGreaterThan(50);
+    expect(rooms.lights).toBeGreaterThan(20);
+    expect(rooms).toMatchObject({ window: { opaque: false, solid: true }, glow: 12 });
+    // at night the city is lit: never as dark as the open country
+    await page.evaluate(() => { const g = window.__sc.game; g.meta.time = 0.75; g.player.pitch = -0.1; });
+    await page.waitForFunction(() => window.__sc.game.materials.uniforms.uMinLight.value > 0.1, null, { timeout: 10_000 });
+    await shot(page, 'city-night');
+    await page.evaluate(() => { window.__sc.game.meta.time = 0.25; });
     // street names are painted on the roads and houses carry their numbers
     const marks = await page.evaluate(async () => {
       const c = window.__sc.game.city, [sx, sz] = c.header.spawn;

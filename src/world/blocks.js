@@ -38,6 +38,8 @@ export const TILES = [
   'gold_shelf', 'gold_shelf_top', 'gold_furnace', 'gold_furnace_top', 'gold_furnace_on', 'water_pump', 'water_pump_top', 'water_pump_off', 'generator', 'generator_top', 'generator_off', 'drill_wall', 'oro_sign',
   // La Fábrica, season 3
   'laser', 'safe', 'safe_top', 'fuse_box', 'cell_bars', 'cell_door', 'puerto_sign', 'crate', 'crate_top',
+  // street lamps
+  'lamp_post', 'street_lamp', 'street_lamp_top', 'ceiling_lamp',
   // farm 2
   'orange_0', 'orange_1', 'orange_2', 'orange_3', 'nest_box', 'nest_box_top', 'incubator', 'incubator_top',
 ];
@@ -156,7 +158,7 @@ const LIST = [
   def(81, 'plaster_ochre', { tex: 'plaster_ochre', hardness: 1, tool: 'pick' }),
   def(82, 'plaster_terra', { tex: 'plaster_terra', hardness: 1, tool: 'pick' }),
   def(83, 'roof_tiles', { tex: { top: 'roof_tiles', side: 'roof_tiles', bottom: 'plaster_white' }, hardness: 0.8, tool: 'pick' }),
-  def(84, 'window', { tex: 'window', hardness: 0.3 }),
+  def(84, 'window', { tex: 'window', layer: 1, opaque: false, hardness: 0.3 }),
   def(85, 'limestone', { tex: 'limestone', hardness: 1.5, tool: 'pick' }),
   def(86, 'concrete', { tex: 'concrete', hardness: 1.5, tool: 'pick' }),
   // street names painted on the road, house-number plaques (blue on white tiles, as in Malaga)
@@ -225,6 +227,14 @@ const LIST = [
   def(163, 'cell_door', { tex: 'cell_door', layer: 1, opaque: false, hardness: -1 }),
   def(164, 'puerto_sign', { tex: 'puerto_sign', hardness: -1 }),
   def(165, 'crate', { tex: { top: 'crate_top', side: 'crate', bottom: 'crate_top' }, hardness: -1 }),
+  // a street lamp: a thin iron post with a lantern on top (both can be walked through)
+  def(166, 'lamp_post', { tex: 'lamp_post', shape: 'pole', layer: 1, solid: false, opaque: false, hardness: -1 }),
+  // a light set in the ceiling of a room; from above it is the floor of the room over it (or the roof)
+  def(168, 'ceiling_lamp', { tex: { top: 'planks', side: 'planks', bottom: 'ceiling_lamp' }, hardness: 1, tool: 'axe', drop: 'planks', light: 12 }),
+  def(169, 'ceiling_lamp_paving', { tex: { top: 'paving', side: 'paving', bottom: 'ceiling_lamp' }, hardness: 1.5, tool: 'pick', drop: 'paving', light: 12 }),
+  def(170, 'ceiling_lamp_tiles', { tex: { top: 'roof_tiles', side: 'roof_tiles', bottom: 'ceiling_lamp' }, hardness: 1.5, tool: 'pick', drop: 'roof_tiles', light: 12 }),
+  def(171, 'ceiling_lamp_lime', { tex: { top: 'limestone', side: 'limestone', bottom: 'ceiling_lamp' }, hardness: 1.5, tool: 'pick', drop: 'limestone', light: 12 }),
+  def(167, 'street_lamp', { tex: { top: 'street_lamp_top', side: 'street_lamp', bottom: 'street_lamp_top' }, layer: 1, solid: false, opaque: false, light: 15, hardness: -1 }),
   def(134, 'orange_0', { tex: 'orange_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 0 }),
   def(135, 'orange_1', { tex: 'orange_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 1 }),
   def(136, 'orange_2', { tex: 'orange_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 2 }),
@@ -246,11 +256,11 @@ export const IS_SOLID = new Uint8Array(256);
 export const IS_OPAQUE = new Uint8Array(256);
 export const LIGHT_EMIT = new Uint8Array(256);
 export const LAYER = new Uint8Array(256);
-export const SHAPE = new Uint8Array(256); // 0 none,1 cube,2 cross,3 torch,4 liquid
+export const SHAPE = new Uint8Array(256); // 0 none,1 cube,2 cross,3 torch,4 liquid,5 pole
 export const TEX_TOP = new Uint8Array(256);
 export const TEX_SIDE = new Uint8Array(256);
 export const TEX_BOTTOM = new Uint8Array(256);
-const SHAPES = { cube: 1, cross: 2, torch: 3, liquid: 4 };
+const SHAPES = { cube: 1, cross: 2, torch: 3, liquid: 4, pole: 5 };
 for (const b of LIST) {
   IS_SOLID[b.id] = b.solid ? 1 : 0;
   IS_OPAQUE[b.id] = b.opaque ? 1 : 0;

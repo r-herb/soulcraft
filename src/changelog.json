@@ -1,5 +1,40 @@
 [
   {
+    "id": "2026-10-04-nightlights",
+    "title": {
+      "en": "Malaga at night: street lamps and lit windows",
+      "lv": "Malaga naktī: ielu laternas un gaiši logi",
+      "ru": "Малага ночью: фонари и светлые окна",
+      "es": "Málaga de noche: farolas y ventanas iluminadas"
+    },
+    "items": {
+      "en": [
+        "Street lamps stand along the pavements and on the squares: an iron post with a glowing lantern that lights the street at night.",
+        "A city night is never pitch dark any more: it is easy to find your way.",
+        "The windows of the buildings are see-through glass: you can look into the rooms.",
+        "The rooms have lights in their ceilings, so at night the windows glow warm."
+      ],
+      "lv": [
+        "Gar ietvēm un laukumos stāv ielu laternas: dzelzs stabs ar spīdošu laternu, kas naktī apgaismo ielu.",
+        "Pilsētas nakts vairs nav pilnīgi tumša: ir viegli atrast ceļu.",
+        "Ēku logi ir no caurspīdīga stikla: var ieskatīties telpās.",
+        "Telpām griestos ir gaismas, tāpēc naktī logi silti spīd."
+      ],
+      "ru": [
+        "Вдоль тротуаров и на площадях стоят фонари: железный столб со светящимся фонарём освещает улицу ночью.",
+        "Ночь в городе больше не бывает кромешной: легко найти дорогу.",
+        "Окна домов из прозрачного стекла: можно заглянуть в комнаты.",
+        "В комнатах есть потолочные светильники, поэтому ночью окна светятся тёплым светом."
+      ],
+      "es": [
+        "Hay farolas a lo largo de las aceras y en las plazas: un poste de hierro con un farol que ilumina la calle de noche.",
+        "La noche en la ciudad ya no es oscura del todo: es fácil orientarse.",
+        "Las ventanas de los edificios son de cristal transparente: se puede ver el interior de las habitaciones.",
+        "Las habitaciones tienen luces en el techo, así que de noche las ventanas brillan con luz cálida."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-buses2",
     "title": {
       "en": "Buses: faster, arrival boards, walking inside",

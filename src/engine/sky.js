@@ -72,7 +72,8 @@ export class Sky {
       if (s > 0.25) this.color.copy(DAY);
       else if (s > -0.2) { const k = (s + 0.2) / 0.45; this.color.copy(NIGHT).lerp(DUSK, Math.min(1, k * 1.6)).lerp(DAY, Math.max(0, k * 1.6 - 0.6)); }
       else this.color.copy(NIGHT);
-      uniforms.uMinLight.value = 0.07;
+      // a city night is never pitch dark: the lamps, the shop windows, the glow of the town
+      uniforms.uMinLight.value = realm === 'city' ? 0.14 : 0.07;
       this.stars.material.opacity = Math.max(0, -s * 1.4);
     }
     uniforms.uDaylight.value = daylight;

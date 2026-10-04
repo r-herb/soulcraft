@@ -199,12 +199,12 @@ export function meshChunk(vol) {
       }
     }
   }
-  // Special shapes: cross plants and torches
+  // Special shapes: cross plants, torches and lamp posts
   for (let y = 0; y < H; y++) for (let z = x0; z < x1; z++) for (let x = x0; x < x1; x++) {
     const i = x + z * SZ + y * SY;
     const id = vol[i];
     const shape = SHAPE[id];
-    if (shape !== 2 && shape !== 3) continue;
+    if (shape !== 2 && shape !== 3 && shape !== 5) continue;
     const ls = sky[i] / 15, lb = Math.max(blk[i], LIGHT_EMIT[id]) / 15;
     const px = x - PAD, pz = z - PAD;
     const tile = TEX_SIDE[id];
@@ -213,6 +213,8 @@ export function meshChunk(vol) {
       const a = 0.15, b = 0.85;
       crossQuad(solid, [px + a, y, pz + a, px + b, y, pz + b, px + b, y + 1, pz + b, px + a, y + 1, pz + a], tile, L);
       crossQuad(solid, [px + a, y, pz + b, px + b, y, pz + a, px + b, y + 1, pz + a, px + a, y + 1, pz + b], tile, L);
+    } else if (shape === 5) {
+      poleBox(solid, px, y, pz, tile, ls, lb);
     } else {
       torchBox(solid, px, y, pz, tile, ls, lb);
     }
@@ -276,6 +278,19 @@ function crossQuad(buf, p, tile, L) {
   // back side
   const q = [p[3], p[4], p[5], p[0], p[1], p[2], p[9], p[10], p[11], p[6], p[7], p[8]];
   buf.quad(q, [1, 0, 0, 0, 0, 1, 1, 1], tile, L, false);
+}
+
+// a thin post the full height of the block
+function poleBox(buf, x, y, z, tile, ls, lb) {
+  const a = 6 / 16, b = 10 / 16;
+  const L = (s) => [ls, lb, s, ls, lb, s, ls, lb, s, ls, lb, s];
+  const faces = [
+    [[x + b, y, z + a, x + b, y, z + b, x + b, y + 1, z + b, x + b, y + 1, z + a], 0.9],
+    [[x + a, y, z + b, x + a, y, z + a, x + a, y + 1, z + a, x + a, y + 1, z + b], 0.9],
+    [[x + a, y, z + b, x + b, y, z + b, x + b, y + 1, z + b, x + a, y + 1, z + b], 0.75],
+    [[x + b, y, z + a, x + a, y, z + a, x + a, y + 1, z + a, x + b, y + 1, z + a], 0.75],
+  ];
+  for (const [p, s] of faces) buf.quad(p, [a, 0, b, 0, b, 1, a, 1], tile, L(s), false);
 }
 
 function torchBox(buf, x, y, z, tile, ls, lb) {

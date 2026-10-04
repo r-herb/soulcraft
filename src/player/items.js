@@ -3,7 +3,7 @@ import { BLOCKS, B } from '../world/blocks.js';
 
 export const ITEMS = {};
 
-const NOT_ITEMS = new Set(['farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_0', 'tomato_1', 'tomato_2', 'tomato_3', 'carrot_0', 'carrot_1', 'carrot_2', 'carrot_3', 'orange_0', 'orange_1', 'orange_2', 'orange_3', 'air', 'water', 'magma', 'coreite', 'chamber_brick', 'chamber_lamp', 'void_crystal', 'vault',
+const NOT_ITEMS = new Set(['lamp_post', 'street_lamp', 'ceiling_lamp', 'ceiling_lamp_paving', 'ceiling_lamp_tiles', 'ceiling_lamp_lime', 'farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_0', 'tomato_1', 'tomato_2', 'tomato_3', 'carrot_0', 'carrot_1', 'carrot_2', 'carrot_3', 'orange_0', 'orange_1', 'orange_2', 'orange_3', 'air', 'water', 'magma', 'coreite', 'chamber_brick', 'chamber_lamp', 'void_crystal', 'vault',
   'quest_gate', 'checkpoint', 'jump_pad', 'crumble', 'lever_off', 'lever_on', 'lamp_off', 'lamp_on',
   'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
   'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent',

@@ -129,6 +129,15 @@ friends like any other world.
 - Street names (from OpenStreetMap, with the Spanish abbreviations C/,
   AV., PZA.) are painted on the roads in big block letters that read from
   above, and houses with an address carry blue number plaques over a door.
+- Night in the city: street lamps (an iron post with a glowing lantern,
+  `lamp_post` and `street_lamp`) stand along the pavements beside the roads
+  and on the squares, one in each 8 x 8 square of the map, never in front of
+  a door, on a stop or into a tree; they can be walked through. The windows
+  are see-through glass, and the rooms behind them have lights set in the
+  ceilings (`ceiling_lamp`, and in the roof over a top floor), so the
+  windows glow at night. Block light fades more gently than daylight, the
+  lanterns and ceiling lights shine by themselves (the shader's glow
+  tiles), and a city night is never darker than 0.14.
 - The city lives: fish in the sea, the port and ponds, swimmers in the
   pools, sunbathers with parasols on the beach and people walking in the
   pedestrian streets (by day). They are scenery only.
@@ -944,7 +953,10 @@ What the tests cover:
   same way in one lane are closer than a bus length; the rider walks
   forward and back inside the bus.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
-  Constitucion and its buildings stand where the city file says.
+  Constitucion and its buildings stand where the city file says; street
+  lamps stand around it (post and lantern, walk-through, light 15), the
+  windows are see-through, the rooms have ceiling lights, and the night
+  there is never darker than 0.14.
 - `tests/friends.spec.js`: a friend request by username, accepting it, the
   friend shown online in a world, and joining that world from the list.
 - `tests/chat.spec.js`: friends chat live with unread counts, the Lobby is

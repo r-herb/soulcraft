@@ -9,6 +9,9 @@ import { ATLAS_COLS, ATLAS_ROWS, TILE } from '../world/blocks.js';
 const WAVE_TILES = ['leaves', 'pine_leaves', 'spirit_leaves', 'tallgrass', 'dry_bush', 'glowbell', 'wheat_1', 'wheat_2', 'wheat_3', 'tomato_2', 'tomato_3', 'orange_2', 'orange_3']
   .map((k) => TILE[k]).filter((v) => v !== undefined);
 while (WAVE_TILES.length < 16) WAVE_TILES.push(-1);
+// atlas tiles that shine by themselves (a street lamp's glass), however dark the night
+const GLOW_TILES = ['street_lamp', 'ceiling_lamp'].map((k) => TILE[k]).filter((v) => v !== undefined);
+while (GLOW_TILES.length < 4) GLOW_TILES.push(-1);
 
 const vertexShader = /* glsl */`
 attribute vec3 aUV;
@@ -47,8 +50,8 @@ void main() {
   vUV = aUV;
   float sky = aLight.x * uDaylight;
   float blk = aLight.y;
-  float l = max(sky, blk);
-  float b = pow(0.8, (1.0 - l) * 15.0);
+  // block light (lamps, torches) fades more gently than daylight, so a lamp lights a wider circle
+  float b = max(pow(0.8, (1.0 - sky) * 15.0), pow(0.87, (1.0 - blk) * 15.0));
   vBright = max(b, uMinLight) * aLight.z;
   vWarm = clamp((blk - sky) * 1.4, 0.0, 1.0);
   vFog = smoothstep(uFogNear, uFogFar, length(mv.xyz));
@@ -65,6 +68,7 @@ uniform float uFx;
 uniform float uWater;
 uniform float uDaylight;
 uniform float uDusk;
+uniform float uGlow[4];
 varying vec3 vUV;
 varying float vBright;
 varying float vWarm;
@@ -81,7 +85,10 @@ void main() {
   vec3 tint = mix(vec3(1.0), vec3(1.12, 0.92, 0.7), vWarm * 0.6);
   vec3 rgb = c.rgb * vBright * tint;
   float a = c.a * uOpacity;
-  if (uFx > 0.5) {
+  bool glow = false;
+  for (int i = 0; i < 4; i++) if (abs(uGlow[i] - tile) < 0.5) glow = true;
+  if (glow) rgb = c.rgb;
+  else if (uFx > 0.5) {
     // golden light at sunrise and sunset, a cool blue at night
     rgb *= mix(vec3(1.0), vec3(1.12, 0.94, 0.78), uDusk * 0.7);
     rgb = mix(rgb, rgb * vec3(0.82, 0.9, 1.15), (1.0 - uDaylight) * 0.5);
@@ -119,6 +126,7 @@ export function createChunkMaterials(texture) {
     uFx: { value: 1 },
     uDusk: { value: 0 },
     uWave: { value: WAVE_TILES },
+    uGlow: { value: GLOW_TILES },
   };
   const solid = new THREE.ShaderMaterial({
     uniforms: { ...shared, uAlphaTest: { value: 0.5 }, uOpacity: { value: 1 }, uWater: { value: 0 } },

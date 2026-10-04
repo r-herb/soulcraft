@@ -24,6 +24,7 @@ const SURFACE_BLOCK = [
 const NATURAL = new Set([SURF.ground, SURF.park, SURF.forest, SURF.scrub, SURF.garden, SURF.pitch, SURF.sand]);
 const WALLS = [B.plaster_white, B.plaster_cream, B.plaster_ochre, B.plaster_terra, B.limestone, B.brick, B.window, B.concrete, B.sandstone];
 const ROOFS = [B.paving, B.roof_tiles, B.limestone];
+const ROOF_LAMPS = [B.ceiling_lamp_paving, B.ceiling_lamp_tiles, B.ceiling_lamp_lime]; // the same roofs with a light in the ceiling under them
 
 // Well-known places shown on the world map (latitude, longitude).
 export const CITY_PLACES = {
@@ -503,6 +504,8 @@ export function genCity(cx, cz, data, e) {
     for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
     data[idx(lx, base, lz)] = edge ? wallId : B.planks;
     const door = street && (hash3(wx, 5, wz, b) < 0.12 || (e.mark && e.mark[k] >= 10)); // a door under each house number
+    // lights in the ceilings of the rooms (in every fourth cell each way), seen through the windows at night
+    const light = !edge && ((wx % 4) + 4) % 4 === 2 && ((wz % 4) + 4) % 4 === 2;
     for (let y = base + 1; y < topY; y++) {
       const r = y - base;
       if (edge) {
@@ -511,9 +514,9 @@ export function genCity(cx, cz, data, e) {
           : r % 4 >= 2 && r % 4 <= 3 && (wx + wz) % 3 !== 0 && r > 1);
         const plaque = r === 3 && e.mark && e.mark[k] >= 10 && e.mark[k] <= 19;
         data[idx(lx, y, lz)] = plaque ? B.num_0 + e.mark[k] - 10 : door && r <= 2 ? B.air : win ? B.window : wallId;
-      } else data[idx(lx, y, lz)] = r % 4 === 0 ? B.planks : B.air;
+      } else data[idx(lx, y, lz)] = r % 4 === 0 ? (light ? B.ceiling_lamp : B.planks) : B.air;
     }
-    data[idx(lx, topY, lz)] = edge && roof !== 1 ? wallId : ROOFS[roof] ?? B.paving;
+    data[idx(lx, topY, lz)] = edge && roof !== 1 ? wallId : light ? ROOF_LAMPS[roof] ?? B.ceiling_lamp_paving : ROOFS[roof] ?? B.paving;
     // a low parapet around flat terraces
     if (edge && roof === 0 && topY + 1 < HEIGHT) data[idx(lx, topY + 1, lz)] = wallId;
     if (roof === 1 && edge && topY + 1 < HEIGHT) data[idx(lx, topY, lz)] = B.roof_tiles;
@@ -714,5 +717,37 @@ export function genCity(cx, cz, data, e) {
         if (X >= 0 && X < S && Z >= 0 && Z < S && Y > 0 && Y < HEIGHT && data[idx(X, Y, Z)] === B.air) data[idx(X, Y, Z)] = B.leaves;
       }
     }
+  }
+
+  // Street lamps: in each 8x8 square of the map, one on a pavement beside a
+  // road (or on a square or a promenade): a thin iron post three blocks high
+  // with a lantern on top that lights the street at night. Not in front of a
+  // door, not on a stop sign or a stall, and not into a tree.
+  const surf = (k) => e.surf[k] & 0x7f;
+  const nearBy = (lx, lz, r, f) => { for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (f(at(lx + dx, lz + dz))) return true; return false; };
+  const onSquare = (wx, wz) => [e.bank, e.fab, e.oro, e.puerto].some((q) => q && ((wx >= q.x0 - 3 && wx <= q.x1 + 3 && wz >= q.z0 - 3 && wz <= q.z1 + 3) || (q.old && wx >= q.old.x0 - 3 && wx <= q.old.x1 + 3 && wz >= q.old.z0 - 3 && wz <= q.old.z1 + 3)));
+  const doorNext = (lx, lz) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => {
+    const n = at(lx + dx, lz + dz), b = e.bid[n];
+    return b && (hash3(cx * S + lx + dx, 5, cz * S + lz + dz, b) < 0.12 || e.mark[n] >= 10);
+  });
+  const lamp = (q) => { for (let y = q.g + 1; y <= q.g + 3; y++) data[idx(q.lx, y, q.lz)] = B.lamp_post; data[idx(q.lx, q.g + 4, q.lz)] = B.street_lamp; };
+  for (let gz = 0; gz < S; gz += 8) for (let gx = 0; gx < S; gx += 8) {
+    const found = [];
+    for (let lz = gz; lz < gz + 8; lz++) for (let lx = gx; lx < gx + 8; lx++) {
+      const k = at(lx, lz), s = surf(k), wx = cx * S + lx, wz = cz * S + lz;
+      if (e.bid[k] || e.mark[k] || e.wall[k] || (e.surf[k] & TREE_BIT)) continue;
+      if (s !== SURF.pavement && s !== SURF.plaza && s !== SURF.marble && s !== SURF.dock) continue;
+      if (s === SURF.pavement && !nearBy(lx, lz, 3, (n) => surf(n) === SURF.road && !e.bid[n])) continue;
+      if (doorNext(lx, lz) || nearBy(lx, lz, 1, (n) => e.mark[n] >= 3 && e.mark[n] <= 6) || onSquare(wx, wz)) continue;
+      const g = Math.min(HEIGHT - 2, e.ground[k]);
+      if (g <= seaY || g + 4 >= HEIGHT) continue;
+      let free = true;
+      for (let y = g + 1; y <= g + 4; y++) if (data[idx(lx, y, lz)] !== B.air) free = false;
+      if (!free) continue;
+      found.push({ lx, lz, g, sc: hash3(wx, 11, wz, 5) });
+    }
+    if (!found.length) continue;
+    found.sort((a, b) => a.sc - b.sc);
+    lamp(found[0]);
   }
 }
