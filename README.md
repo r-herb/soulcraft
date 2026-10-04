@@ -208,6 +208,31 @@ between accepted friends. On some strict networks (some mobile operators
 or school networks) a direct connection is not possible and the call does
 not connect; a TURN relay (for example Cloudflare's) would fix that.
 
+## Weapons
+
+Besides the swords (wood, stone, iron, gold, emberite, and the two legendary
+ones), the bow and the spear:
+
+| Weapon | Recipe | How it fights |
+|---|---|---|
+| Diamond sword | 2 diamonds, a stick | 7 damage, between iron and emberite |
+| Dagger | an iron ingot, a stick | 3 damage, but a blow every 0.22 s (a sword: 0.45 s) |
+| Battle axe | 3 iron, 2 sticks | 9 damage, a blow every 0.8 s, throws back 1.6 times as far |
+| War hammer | 5 iron, 2 sticks | 10 damage every second, and 6 to every monster within 2.8 blocks of the one struck |
+| Crossbow | iron, sticks, fiber | an arrow at 46 m/s for 9 damage (a bow: 34 m/s, 5), reloads in 1.1 s |
+| Throwing knives (4) | 2 iron, a stick | thrown for 5 damage; a knife lies where it lands, to be picked up again |
+| Soul staff | a glowbell, a spiritstone, a stick | a bolt of soul light for 8 damage, no ammunition, every 1.2 s |
+
+Villagers also trade a crossbow (4 iron), eight throwing knives (2 iron) and
+a battle axe (6 iron).
+
+## Name tags
+
+Every player's name floats over the head, as in Roblox: big white letters
+with a dark outline, facing the camera, seen through walls up to 90 blocks
+away (golden for admins, over the godmode badge). The player's own name
+shows in the third-person views (F5).
+
 ## Armor and shields
 
 As in the classic game: a **helmet, chestplate, leggings and boots** of
@@ -803,6 +828,11 @@ What the tests cover:
   answer adds patience; no patience left means the police storm in; twelve
   bars open the pipe, which leads out with twelve sacks; the beach ends the
   season.
+- `tests/weapons.spec.js` (desktop): a blow with the iron sword, the
+  diamond sword, the dagger and the battle axe (damage and the time to the
+  next blow; the axe throws back further and hits only its target); the war
+  hammer's blow also hits the monsters beside the one struck; the crossbow
+  uses an arrow, the soul staff none; a thrown knife can be picked up again.
 - `tests/guides.spec.js` (desktop): the Malaga card opens the city guide,
   its start button the tour's guide (the plaza ticked off), the ? of a
   mission and following one the first time open its guide (not the second

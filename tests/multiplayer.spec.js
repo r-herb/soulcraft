@@ -89,6 +89,11 @@ test.describe('Play with friends', () => {
     // each sees the other
     await host.waitForFunction(() => { const n = window.__sc.game.net; return n && [...n.players.values()].some((p) => p.seen && p.object.visible); }, null, { timeout: 20_000 });
     await guest.waitForFunction(() => { const n = window.__sc.game.net; return n && [...n.players.values()].some((p) => p.seen); }, null, { timeout: 20_000 });
+    // each one's name floats over the head (Roblox style), seen through walls
+    await host.waitForFunction(() => [...window.__sc.game.net.players.values()].some((p) => p.seen && p.tag.userData.name === 'Guesto'), null, { timeout: 10_000 });
+    expect(await host.evaluate(() => [...window.__sc.game.net.players.values()].filter((p) => p.seen).map((p) => ({ name: p.tag.userData.name, through: p.tag.material.depthTest === false, shown: p.tag.visible })))).toEqual([{ name: 'Guesto', through: true, shown: true }]);
+    // and the player's own name in the third-person view
+    expect(await host.evaluate(() => { const g = window.__sc.game; g.thirdPerson = 1; return new Promise((r) => setTimeout(() => { const n = g.selfTag && g.selfTag.userData.name; g.thirdPerson = 0; r(n); }, 300)); })).toBe('Hostie');
     // the host puts on a 3D avatar and waves: the guest sees both
     await host.evaluate(() => { const g = window.__sc.game, p = g.profile; p.avatar = { unlocked: true, on: true, cfg: { hat: 'cap', back: 'cape' } }; g.applySkin(); g.startEmote('wave'); });
     await guest.waitForFunction(() => [...window.__sc.game.net.players.values()].some((p) => p.rig && p.rig.avatar && p.skin.startsWith('av:') && p.fig.emote === 'wave'), null, { timeout: 15_000 });

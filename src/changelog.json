@@ -1,5 +1,36 @@
 [
   {
+    "id": "2026-10-04-weapons",
+    "title": {
+      "en": "New weapons and name tags",
+      "lv": "Jauni ieroči un vārdi virs galvas",
+      "ru": "Новое оружие и имена над головой",
+      "es": "Armas nuevas y nombres sobre la cabeza"
+    },
+    "items": {
+      "en": [
+        "Seven new weapons at the workbench: a diamond sword, a fast dagger, a heavy battle axe, a war hammer that hits every monster around, a crossbow, throwing knives you can pick up again and a soul staff that needs no ammunition.",
+        "Villagers trade crossbows, throwing knives and battle axes.",
+        "Every player's name floats over the head, as in Roblox: big and clear, seen through walls; your own in the third-person view (F5)."
+      ],
+      "lv": [
+        "Septiņi jauni ieroči darbgaldā: dimanta zobens, ātrs duncis, smags kaujas cirvis, kaujas āmurs, kas trāpa visiem briesmoņiem apkārt, arbalets, metamie naži, kurus var pacelt atkal, un dvēseļu zizlis bez munīcijas.",
+        "Ciema iedzīvotāji piedāvā arbaletus, metamos nažus un kaujas cirvjus.",
+        "Virs katra spēlētāja galvas ir viņa vārds kā Roblox: liels un skaidrs, redzams caur sienām; savējais trešās personas skatā (F5)."
+      ],
+      "ru": [
+        "Семь новых видов оружия на верстаке: алмазный меч, быстрый кинжал, тяжёлый боевой топор, боевой молот, который бьёт всех монстров вокруг, арбалет, метательные ножи, которые можно подобрать снова, и посох душ без боеприпасов.",
+        "Жители деревни продают арбалеты, метательные ножи и боевые топоры.",
+        "Над головой каждого игрока его имя, как в Roblox: крупное и чёткое, видно сквозь стены; своё - в виде от третьего лица (F5)."
+      ],
+      "es": [
+        "Siete armas nuevas en el banco de trabajo: espada de diamante, daga rápida, hacha de guerra pesada, martillo de guerra que golpea a todos los monstruos de alrededor, ballesta, cuchillos arrojadizos que se pueden recoger y bastón de almas sin munición.",
+        "Los aldeanos venden ballestas, cuchillos arrojadizos y hachas de guerra.",
+        "El nombre de cada jugador flota sobre su cabeza, como en Roblox: grande y claro, visible a través de las paredes; el tuyo, en la vista en tercera persona (F5)."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-fabrica2",
     "title": {
       "en": "La Fábrica: season 2, the gold",

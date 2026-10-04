@@ -19,7 +19,8 @@ import { HeldItem } from './player/held.js';
 import { Figure, playerSkin, ACHIEVEMENTS } from './entities/avatar.js';
 import { settings } from './save/settings.js';
 import { saveWorld } from './save/db.js';
-import { slot, pushSave, storeProfile, newWorldId } from './save/account.js';
+import { slot, pushSave, storeProfile, newWorldId, account } from './save/account.js';
+import { nameTag } from './entities/nametag.js';
 import { t } from './i18n/index.js';
 import { setIconAtlas } from './ui/icons.js';
 import { itemName } from './ui/hud.js';
@@ -649,9 +650,16 @@ export class Game {
     // attacking entities takes priority over mining
     if (ent && (inp.pressed.has('attack') || (inp.attack && this.attackCooldown <= 0))) {
       if (this.attackCooldown <= 0) {
-        this.attackCooldown = 0.45;
+        const wd = this.inventory.held && ITEMS[this.inventory.held.item];
+        this.attackCooldown = (wd && wd.cd) || 0.45;
         this.held.swing();
-        this.entities.playerHit(ent, this.meleeDamage(ent), dir);
+        const push = wd && wd.knock ? dir.clone().multiplyScalar(wd.knock) : dir;
+        this.entities.playerHit(ent, this.meleeDamage(ent), push);
+        // a war hammer's blow hits everyone around the one struck
+        if (wd && wd.sweep) for (const e of this.entities.list) {
+          if (e === ent || e.dead || !e.def || e.def.hazard || e.passive || e.isBoss || e.villager || !e.pos || e.pos.distanceTo(ent.pos) > wd.sweep) continue;
+          this.entities.playerHit(e, Math.ceil(this.meleeDamage(e) * 0.6), push);
+        }
       }
       this.resetBreaking();
     } else if (inp.attack && hit && (!this.quest || this.quest.canBreak(hit))) {
@@ -846,13 +854,22 @@ export class Game {
       return;
     }
     if (def && def.special === 'map' && fresh) { this.ui.open(this.isQuest ? 'treasureMap' : 'map'); this.useCooldown = 0.3; return; }
-    if (def && def.weapon === 'bow' && fresh) {
+    if (def && (def.weapon === 'bow' || def.weapon === 'crossbow') && fresh) {
       const free = this.player.god || this.creative;
       if (this.inventory.count('arrow') <= 0 && !free) { this.ui.toast(t('desc.bow'), 'warn'); return; }
       if (!free) this.inventory.remove('arrow', 1);
-      this.entities.shoot('arrow', this.player.eye, dir, 34, def.damage, 'player');
+      // the crossbow: a faster, harder bolt, slower to load
+      const xb = def.weapon === 'crossbow';
+      this.entities.shoot('arrow', this.player.eye, dir, xb ? 46 : 34, def.damage, 'player');
       this.audio.sfx('shoot'); this.held.swing();
-      this.useCooldown = 0.7;
+      this.useCooldown = xb ? 1.1 : 0.7;
+      return;
+    }
+    // the soul staff: a bolt of soul light, no ammunition, a slow recharge
+    if (def && def.weapon === 'staff' && fresh) {
+      this.entities.shoot('soul_bolt', this.player.eye, dir, 30, def.damage, 'player');
+      this.audio.sfx('shoot'); this.held.swing();
+      this.useCooldown = 1.2;
       return;
     }
     if (def && def.throwable && fresh) {
@@ -870,7 +887,7 @@ export class Game {
       if (cell) hit = { x: cell.x, y: cell.y - 1, z: cell.z, nx: 0, ny: 1, nz: 0, id: 0, assist: true };
     }
     // "use" on a block with nothing placeable in hand: say how to place
-    if (fresh && hit && !(def && def.block !== undefined) && !(def && (def.food || def.heart || def.special || def.weapon === 'bow' || def.throwable))) {
+    if (fresh && hit && !(def && def.block !== undefined) && !(def && (def.food || def.heart || def.special || def.weapon === 'bow' || def.weapon === 'crossbow' || def.weapon === 'staff' || def.throwable))) {
       const now = performance.now();
       if (now - (this._placeHintAt || 0) > 8000) { this._placeHintAt = now; this.ui.toast(t(this.input.touchMode ? 'toast.pickBlock' : 'toast.pickBlockDesktop')); }
       return;
@@ -1235,6 +1252,15 @@ export class Game {
     f.animate(dt, { speed: p.moving ? Math.hypot(p.vel.x, p.vel.z) : 0, vy: p.onGround ? 0 : p.vel.y, pitch: p.pitch, swing: sw });
     f.object.position.copy(p.pos);
     f.object.rotation.set(0, p.yaw + Math.PI, 0);
+    // the player's own name over the head, seen in the third-person views
+    const u = account.user, nm = (u && (u.name || u.username)) || null;
+    if (nm !== this.selfTagName) {
+      if (this.selfTag) { f.object.remove(this.selfTag); this.selfTag.material.map.dispose(); }
+      this.selfTag = nm ? nameTag(nm) : null;
+      if (this.selfTag) f.object.add(this.selfTag);
+      this.selfTagName = nm;
+    }
+    if (this.selfTag) this.selfTag.position.y = 2.3 + (f.rig && f.rig.avatar ? 0.35 : 0);
   }
 
   realmStatus() {

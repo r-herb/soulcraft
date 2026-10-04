@@ -33,6 +33,13 @@ export const RECIPES = [
   r('bow', [' SF', 'S F', ' SF'], 'bow'),
   r('arrow', ['R', 'S', 'F'], 'arrow', 4),
   r('spear', ['  I', ' S ', 'S  '], 'spear'),
+  r('diamond_sword', ['d', 'd', 'S'], 'diamond_sword'),
+  r('dagger', ['I', 'S'], 'dagger'),
+  r('battle_axe', ['II', 'IS', ' S'], 'battle_axe'),
+  r('war_hammer', ['III', 'ISI', ' S '], 'war_hammer'),
+  r('crossbow', ['ISI', 'FSF', ' S '], 'crossbow'),
+  r('throwing_knife', ['I I', ' S '], 'throwing_knife', 4),
+  r('soul_staff', [' W ', ' s ', ' S '], 'soul_staff'),
   r('emberite_ingot', ['ee', 'eG'], 'emberite_ingot'),
   r('gold_pan', ['I I', ' I '], 'gold_pan'),
   // armor and the shield

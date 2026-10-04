@@ -114,6 +114,10 @@ Pirmajā reizē apmācība parāda soli pa solim: iet, skatīties, lauzt, likt, 
 - **Inkubators** (stikls, ogles, dēļi): ieliec līdz 4 olām; pēc 3 minūtēm spēles katra izšķiļas par cāli, tā vistu bizness aug bez kastu pirkšanas.
 - Ražu, apelsīnus, olas, vilnu un gaļu var pārdot biržā, vai paturēt sēklas un olas un audzēt vairāk.
 
+### Ieroči un vārdi virs galvas
+- Jauni ieroči darbgaldā: **dimanta zobens**, **duncis** (vājš, bet ļoti ātrs), **kaujas cirvis** (lēns, stiprs, atsit tālu), **kaujas āmurs** (trāpa arī visiem briesmoņiem apkārt), **arbalets** (bultas tālāk un stiprāk nekā loks), **metamie naži** (pēc metiena var pacelt) un **dvēseļu zizlis** (gaismas lodes bez munīcijas). Arbaletu, nažus un cirvi piedāvā arī ciema iedzīvotāji.
+- Virs katra spēlētāja galvas ir viņa **vārds** kā Roblox: lieli balti burti ar tumšu kontūru, redzami arī caur sienām līdz 90 blokiem; adminiem zelta krāsā. Savu vārdu redzi trešās personas skatā (F5).
+
 ### Bruņas un vairogi
 
 - Kā klasiskajā Minecraft: **ķivere, bruņu veste, bruņu bikses un zābaki** no ādas (no govīm), zelta, dzelzs, dimanta vai emberīta; tos uzvelk 4 bruņu ailēs inventārā (vai ar "izmantot", turot rokā).

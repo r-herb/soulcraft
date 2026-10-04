@@ -33,12 +33,15 @@ const POOL = [
   [
     { give: ['iron_ingot', 3], get: ['bow', 1] },
     { give: ['iron_ingot', 2], get: ['arrow', 16] },
+    { give: ['iron_ingot', 4], get: ['crossbow', 1] },
     { give: ['bone_dust', 8], get: ['gold_ingot', 1] },
     { give: ['wool', 4], get: ['iron_ingot', 2] },
   ],
   [
     { give: ['gold_ingot', 3], get: ['spear', 1] },
     { give: ['iron_ingot', 5], get: ['iron_sword', 1] },
+    { give: ['iron_ingot', 2], get: ['throwing_knife', 8] },
+    { give: ['iron_ingot', 6], get: ['battle_axe', 1] },
     { give: ['gold_ingot', 2], get: ['glass', 16] },
     { give: ['emberite_shard', 2], get: ['gold_ingot', 3] },
   ],

@@ -15,6 +15,7 @@
 //   room: hello (to me), join, leave, closed, error
 import * as THREE from 'three';
 import { Figure, playerSkin } from '../entities/avatar.js';
+import { nameTag, TAG_FAR } from '../entities/nametag.js';
 import { t } from '../i18n/index.js';
 
 export const MAX_PLAYERS = 4;
@@ -125,6 +126,8 @@ export class Net {
     switch (msg.t) {
       case 'join':
         this.names.set(String(msg.id), msg.name);
+        // (their moves may have come before their name)
+        if (this.players.has(String(msg.id))) this.players.get(String(msg.id)).setName(msg.name);
         g.ui.toast(t('mp.joined', { name: msg.name }), 'ok');
         if (this.isHost) { this.welcome(String(msg.id)); g.missions.sendTeam(String(msg.id)); }
         g.ui.hud.refreshRoom && g.ui.hud.refreshRoom(this);
@@ -437,8 +440,19 @@ class RemotePlayer {
     this.object.visible = false;
     game.scene.add(this.object);
     this.tag = nameTag(name);
-    this.tag.position.y = 2.25;
+    this.tag.position.y = 2.3;
     this.object.add(this.tag);
+  }
+
+  // the name over the head (a new tag when it changes)
+  setName(name) {
+    if (!name || name === this.name) return;
+    this.name = name;
+    this.object.remove(this.tag);
+    if (this.tag.material.map) this.tag.material.map.dispose();
+    this.tag = nameTag(name, !!this.badge);
+    this.object.add(this.tag);
+    this.placeTags();
   }
 
   // an admin: the godmode badge and a golden name
@@ -462,7 +476,7 @@ class RemotePlayer {
   // the name (and the badge) float higher over a 3D avatar and its hat
   placeTags() {
     const up = this.rig && this.rig.avatar ? 0.35 : 0;
-    if (this.badge) { this.badge.position.y = 2.0 + up; this.tag.position.y = 2.65 + up; } else this.tag.position.y = 2.25 + up;
+    if (this.badge) { this.badge.position.y = 2.0 + up; this.tag.position.y = 2.7 + up; } else this.tag.position.y = 2.3 + up;
   }
 
   setHeld(item) { this.fig.setHeld(item); }
@@ -499,6 +513,8 @@ class RemotePlayer {
     this.object.rotation.set(0, this.yaw + Math.PI, 0);
     this.object.rotation.z = this.dead ? Math.PI / 2 : 0;
     this.object.visible = true;
+    // the name: seen through walls, but not from across the map
+    this.tag.visible = this.pos.distanceTo(this.game.player.pos) < TAG_FAR;
   }
 
   dispose() {
@@ -537,23 +553,3 @@ function godBadge() {
   return g;
 }
 
-function nameTag(name, gold = false) {
-  const c = document.createElement('canvas');
-  const x = c.getContext('2d');
-  const font = '28px "Pixelify Sans", "Tiny5", monospace';
-  x.font = font;
-  const w = Math.ceil(x.measureText(name).width) + 24;
-  c.width = w; c.height = 44;
-  x.font = font;
-  x.fillStyle = gold ? 'rgba(60,40,0,0.7)' : 'rgba(5,4,15,0.6)';
-  x.fillRect(0, 0, w, 44);
-  if (gold) { x.strokeStyle = '#ffd65c'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, w - 3, 41); }
-  x.fillStyle = gold ? '#ffd65c' : '#ffffff';
-  x.textBaseline = 'middle';
-  x.fillText(name, 12, 23);
-  const tex = new THREE.CanvasTexture(c);
-  tex.minFilter = THREE.LinearFilter;
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true }));
-  s.scale.set((w / 44) * 0.32, 0.32, 1);
-  return s;
-}

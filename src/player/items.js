@@ -102,6 +102,15 @@ tool('gold_sword', { weapon: 'sword', damage: 6, emberBonus: 6 });
 tool('emberite_sword', { weapon: 'sword', damage: 8, emberBonus: 8 });
 tool('bow', { weapon: 'bow', damage: 5 });
 tool('spear', { weapon: 'spear', damage: 7, throwable: 'spear' });
+// more weapons: cd is the time between blows (0.45 s otherwise), knock how far a
+// blow throws back, sweep the reach of a blow that hits everyone around
+tool('diamond_sword', { weapon: 'sword', damage: 7 });
+tool('dagger', { weapon: 'dagger', damage: 3, cd: 0.22 });
+tool('battle_axe', { weapon: 'axe', damage: 9, cd: 0.8, knock: 1.6 });
+tool('war_hammer', { weapon: 'hammer', damage: 10, cd: 1.0, knock: 2, sweep: 2.8 });
+tool('crossbow', { weapon: 'crossbow', damage: 9 });
+item('throwing_knife', { stack: 16, weapon: 'knife', damage: 5, throwable: 'knife' });
+tool('soul_staff', { weapon: 'staff', damage: 8 });
 // armor (as in the classic game): armor points per piece, durability in hits
 // taken; leather from cows, then iron, gold, diamond and emberite
 export const ARMOR_SLOTS = ['head', 'chest', 'legs', 'feet'];

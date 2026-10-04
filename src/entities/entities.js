@@ -157,6 +157,8 @@ class Particles {
 const PROJ_STYLE = {
   arrow: { color: 0xc9ccd2, size: [0.08, 0.08, 0.6], gravity: 14 },
   spear: { color: 0xdfe3e8, size: [0.1, 0.1, 1.1], gravity: 12 },
+  knife: { color: 0xc9ccd2, size: [0.06, 0.06, 0.4], gravity: 10 },
+  soul_bolt: { color: 0xb98bff, size: [0.3, 0.3, 0.7], gravity: 0, emissive: 0x7a4ae0 },
   wind: { color: 0xbff7ec, size: [0.35, 0.35, 0.35], gravity: 3, emissive: 0x2a8a7a },
   shell_dark: { color: 0x231d36, size: [0.6, 0.6, 0.6], gravity: 0, emissive: 0x1a0f33 },
   shell_glow: { color: 0x7ff3ff, size: [0.6, 0.6, 0.6], gravity: 0, emissive: 0x44d6e8 },
@@ -266,8 +268,8 @@ class Projectile extends Entity {
     this.dead = true;
     const g = this.game;
     if (this.onImpact) this.onImpact(this, target);
-    if (this.kind === 'spear' && this.owner === 'player') {
-      g.entities.dropItem('spear', 1, this.pos.clone().setY(this.pos.y + 0.3), new THREE.Vector3(0, 2, 0));
+    if ((this.kind === 'spear' || this.kind === 'knife') && this.owner === 'player') {
+      g.entities.dropItem(this.kind === 'knife' ? 'throwing_knife' : 'spear', 1, this.pos.clone().setY(this.pos.y + 0.3), new THREE.Vector3(0, 2, 0));
     }
     if (this.kind === 'wind') {
       g.audio.sfx('wind');
