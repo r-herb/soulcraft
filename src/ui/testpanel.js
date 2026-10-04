@@ -15,6 +15,7 @@ import { PIECES, FINAL, heistId } from '../quest/heist.js';
 import { MISSIONS } from '../quest/missions.js';
 import { bankPoint } from '../world/city.js';
 import { TARGET, fabId } from '../quest/fabrica.js';
+import { ORO_TARGET, oroId } from '../quest/oro.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -92,6 +93,12 @@ export function testPanel(args, ui) {
           <button class="btn small" data-t="fabPrint" data-i18n="test.fabPrint"></button>
           <button class="btn small ember" data-t="fabReset" data-i18n="test.fabReset"></button>
         </div></section>
+        <section><h3 data-i18n="test.sOro"></h3><div class="test-row">
+          <button class="btn small" data-t="toTermica" data-i18n="test.toTermica"></button>
+          ${['class', 'rescue', 'entry', 'siege', 'pipe', 'sea'].map((k) => `<button class="btn small" data-oro="${k}">${esc(t('test.oroAct.' + k))}</button>`).join('')}
+          <button class="btn small" data-t="oroMelt" data-i18n="test.oroMelt"></button>
+          <button class="btn small ember" data-t="oroReset" data-i18n="test.oroReset"></button>
+        </div></section>
         <section><h3 data-i18n="test.sMissions"></h3><div class="test-row">
           <button class="btn small" data-t="missionsDone" data-i18n="test.missionsDone"></button>
           <button class="btn small ember" data-t="missionsReset" data-i18n="test.missionsReset"></button>
@@ -156,6 +163,9 @@ export function testPanel(args, ui) {
     async toFab() { const q = g.missions.placeXZ('La Tabacalera'); if (!q) return; await g.city.ensure(q.x, q.z, 64); const pl = g.fabrica.plan(); const f = pl ? bankPoint(pl.P, -4, pl.mid) : q; await teleport(g, f.x, f.z, 4); },
     fabPrint() { const s = g.fabrica.state(); if (s.act !== 4) { ui.toast(t('test.fabNotSiege'), 'warn'); return; } const pl = g.fabrica.plan(); while (s.printed < TARGET - 1) { s.printed++; if (pl) g.fabrica.placePallet(pl, s.printed); g.missions.event('fab_print'); } ui.toast(t('test.done'), 'soul'); },
     fabReset() { const M = g.missions, st = M.state(); for (const k of Object.keys(st.done)) if (k.startsWith('f_')) delete st.done[k]; for (const k of Object.keys(st.prog)) if (k.startsWith('f_')) delete st.prog[k]; profile.fabrica = null; g.fabrica.state(); g.inventory.remove('money_bag', g.inventory.count('money_bag')); g.save(true); ui.toast(t('test.done'), 'soul'); },
+    async toTermica() { const q = g.missions.placeXZ('La Térmica'); if (!q) return; await g.city.ensure(q.x, q.z, 64); const pl = g.oro.plan(); const f = pl ? bankPoint(pl.P, -4, pl.mid) : q; await teleport(g, f.x, f.z, 4); },
+    oroMelt() { const s = g.oro.state(); if (s.act !== 6) { ui.toast(t('test.fabNotSiege'), 'warn'); return; } while (s.melted < ORO_TARGET - 1) { s.melted++; g.missions.event('oro_melt'); } ui.toast(t('test.done'), 'soul'); },
+    oroReset() { const M = g.missions, st = M.state(); for (const k of Object.keys(st.done)) if (k.startsWith('f2_')) delete st.done[k]; for (const k of Object.keys(st.prog)) if (k.startsWith('f2_')) delete st.prog[k]; profile.oro = null; g.oro.state(); for (const k of ['gold_sack', 'gold_bar', 'fake_order', 'police_uniform']) g.inventory.remove(k, g.inventory.count(k)); g.save(true); ui.toast(t('test.done'), 'soul'); },
     missionsDone() { const st = g.missions.state(); for (const m of MISSIONS) st.done[m.id] = true; g.save(true); ui.toast(t('test.done'), 'soul'); },
     missionsReset() { const st = g.missions.state(); for (const m of MISSIONS) { delete st.done[m.id]; delete st.prog[m.id]; } st.track = 'tour'; g.save(true); ui.toast(t('test.done'), 'soul'); },
     god() { g.player.god = !g.player.god; label(); },
@@ -187,6 +197,27 @@ export function testPanel(args, ui) {
     ui.toast(t('test.done'), 'soul');
   }));
   const act_ = act;
+  // season 2: straight to an act (season 1 and the earlier acts counted as done)
+  const OACTS = { class: 1, rescue: 3, entry: 5, siege: 6, pipe: 7, sea: 8 };
+  const OKEYS = ['llamada', 'clase2', 'orden', 'uniforme', 'lancha', 'rescate', 'buzos', 'fundidor', 'turnos', 'entrada2', 'oro', 'desague'];
+  const OBEFORE = { 1: 1, 3: 5, 5: 9, 6: 10, 7: 11, 8: 12 };
+  node.querySelectorAll('[data-oro]').forEach((b) => b.addEventListener('click', async () => {
+    ui.click();
+    const f = g.fabrica.state();
+    if (!f.done) { f.done = true; f.act = 7; if (!f.alias) f.alias = 'biznaga'; }
+    const n = OACTS[b.dataset.oro], s = g.oro.state(), st = g.missions.state();
+    for (const k of OKEYS.slice(0, OBEFORE[n])) st.done[oroId(k)] = Date.now();
+    s.act = n;
+    if (n === 3) { st.prog[oroId('rescate')] = { step: 0, n: 0, seen: [] }; for (const k of ['fake_order', 'police_uniform']) if (!g.inventory.count(k)) g.giveItem(k, 1); }
+    if (n === 5) st.prog[oroId('entrada2')] = { step: 0, n: 0, seen: [] };
+    if (n === 6) { await act_.toTermica(); await g.oro.enterTest(); }
+    if (n === 7) { s.melted = ORO_TARGET; await act_.toTermica(); const pl = g.oro.plan(); if (pl) g.oro.toLobby(pl); }
+    if (n === 8) { s.melted = ORO_TARGET; g.giveItem('gold_sack', ORO_TARGET); }
+    const next = g.missions.all().find((m) => m.season === 2 && !g.missions.isDone(m.id));
+    if (next) g.missions.track(next.id, false);
+    g.save(true);
+    ui.toast(t('test.done'), 'soul');
+  }));
   node.querySelectorAll('[data-tp]').forEach((b) => b.addEventListener('click', async () => {
     ui.click();
     const q = g.missions.placeXZ(PLACES[Number(b.dataset.tp)]);

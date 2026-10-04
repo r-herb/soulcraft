@@ -30,7 +30,7 @@
 // The superadmin is not stored in the database: SUPERADMIN_LOGIN and
 // SUPERADMIN_PASSWORD come from Pages secrets (set from GitHub secrets).
 import { monthIndex, monthStart, scDate, PAY, SALARY_CAP, QUEST_MAX, TICKET, MAX_TICKETS } from '../../server/calendar.js';
-import { HEIST_PAY, HEIST_NEEDS, HEIST_MIN_MS, TEST_CASH, FAB_PER_BAG, FAB_MAX_BAGS, MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
+import { HEIST_PAY, HEIST_NEEDS, HEIST_MIN_MS, TEST_CASH, FAB_PER_BAG, FAB_MAX_BAGS, ORO_PER_SACK, ORO_MAX_SACKS, MISSION_PAY, capFor, GOODS, SHOP, MENU, START_CASH, BUS_FARE, TICKETS, buyPrice, sellPrice, tradeTotal } from '../../server/goods.js';
 import {
   json, err, hashPassword, verifyPassword, safeEqual, sha256, normEmail, normPhone, normName, normUsername, checkPassword, checkAvatar,
   publicUser, createSession, currentSession, sessionCookie, clearCookie, tooManyAttempts, noteFailure, clearFailures, randomToken,
@@ -460,6 +460,16 @@ async function route(parts, method, request, env, secure) {
       if (!r.meta.changes) return json({ ok: true, paid: 0, wallet: await wallet() });
       const pay = bags * FAB_PER_BAG;
       await db.batch([db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(pay, now, uid), entry('fabrica', 'money_bag', bags, pay)]);
+      return json({ ok: true, paid: pay, wallet: await wallet() });
+    }
+    // La Fábrica, season 2: the sacks of gold, paid once per account
+    if (b === 'oro') {
+      const sacks = Math.max(0, Math.min(ORO_MAX_SACKS, Math.floor(Number(inp.sacks) || 0)));
+      if (!sacks) return err(400, 'bad_qty');
+      const r = await db.prepare('INSERT OR IGNORE INTO missions_done (user_id, mission, at) VALUES (?, ?, ?)').bind(uid, 'oro', now).run();
+      if (!r.meta.changes) return json({ ok: true, paid: 0, wallet: await wallet() });
+      const pay = sacks * ORO_PER_SACK;
+      await db.batch([db.prepare('UPDATE wallets SET cash = cash + ?, updated_at = ? WHERE user_id = ?').bind(pay, now, uid), entry('oro', 'gold_sack', sacks, pay)]);
       return json({ ok: true, paid: pay, wallet: await wallet() });
     }
     // test money for the superadmin's own player account (to try the shops, buses and bank)

@@ -282,6 +282,15 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Bēgšana:** maisi jānogādā El Maestro fermā: sezonas beigas, 25 000 monētu par maisu (vienreiz kontam), kristāli, **sarkanais kombinezons** un **smaidošā maska** tēlam.
 - Ar draugiem: aplenkumu vada saimnieka spēle; viesu darbības aiziet saimniekam.
 
+### La Fábrica: 2. sezona, zelts
+- Atveras pēc 1. sezonas beigām. Siroco pēc fabrikas tika notverts; El Maestro aicina komandu atpakaļ uz otro stundu (5 nodarbības, viktorīna).
+- **Atbrīvošanas rīki:** viltots pārvešanas rīkojums (Mercado de Atarazanas), policijas forma (Calle Larios), gatava laiva (La Malagueta).
+- **Siroco atbrīvošana:** Muelle Uno dežurants uzdod trīs jautājumus (kas parakstīja rīkojumu, tā numurs, kurp ved ieslodzīto); atbildes ir stundā. Ar divām pareizām Siroco ir brīvs.
+- **Zelta rīki:** niršanas tērpi (Pedregalejo), kausētājs (El Palo), sargu maiņas (Gibralfaro).
+- **La Térmica:** vecā ēka pie jūras netālu no La Misericordia: vestibils ar sarkano telefonu un ģeneratoru, zāle ar 4 kausēšanas krāsnīm, 2 sūkņi pie seifa sienas, seifs ar zelta stieņu plauktiem un noteces resti grīdā.
+- **Aplenkums:** jāizkausē 12 stieņi. Stieņus nes no plauktiem (pa diviem) uz krāsnīm; tās kausē, kamēr ir strāva. Seifā sūcas ūdens: sūkņiem jāstrādā, citādi seifs applūst un 30 sekundes stieņus ņemt nevar. Policija atslēdz strāvu (iedarbini ģeneratoru), urbj sienu (nostiprini to) un zvana pa sarkano telefonu (inspektore Vega). Neviens netiek ievainots: sargi gaida vestibilā.
+- **Caurule un jūra:** ar 12 stieņiem atveras noteces reste; pa cauruli tiec ārā aiz ēkas ar 12 zelta maisiem un aiznes tos uz El Maestro laivu La Misericordia pludmalē: 30 000 monētu par maisu (vienreiz kontam), kristāli, **niršanas tērps** un **zelta maska**.
+
 ### Dārgakmeņi un zelts
 
 - Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).
@@ -356,7 +365,7 @@ Kristāli nāk izdzīvošanas režīmā, bet monētas pilsēta izmaksā vienreiz
 - **Roblox stila tēli:** pasaule paliek kubiņos, bet spēlētājs var nomainīt pikseļu figūru pret **3D tēlu**: liela apaļa galva ar gludu seju, rokas un kājas, kas liecas elkoņos un ceļos.
   - Tēlu atbloķē par 150 dvēseļu kristāliem vai bez maksas par jebkuru sasniegumu.
   - **Garderobē** ("Mans tēls") tēls griežas 3D; var mainīt ādas toni, seju, matus un to krāsu, cepures, kreklus, bikses, brilles un lietas uz muguras (mugursoma, ģitāra, apmetnis, reaktīvā soma, spārni).
-  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi), sarkanais kombinezons un smaidošā maska (La Fábrica). Par īstu naudu nekas netiek pārdots.
+  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi), sarkanais kombinezons un smaidošā maska (La Fábrica), niršanas tērps un zelta maska (La Fábrica 2). Par īstu naudu nekas netiek pārdots.
   - Emocijas: māt, dejot, priecāties; draugi tās redz.
   - F5 vai tēla poga pārslēdz kameru: no acīm, no mugurpuses, no priekšpuses.
 

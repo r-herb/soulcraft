@@ -330,6 +330,19 @@ const painters = {
   red_phone_top: (p) => { p.noise(['#8a5a2a', '#7a5030']); for (let x = 2; x < 14; x++) for (let y = 4; y < 12; y++) p.set(x, y, hex('#c81e1e')); for (let x = 3; x < 13; x++) { p.set(x, 5, hex('#e84a4a')); p.set(x, 10, hex('#e84a4a')); } },
   cash_pallet: (p) => { p.noise(['#4f8a4f', '#5a965a', '#468046']); for (let y = 2; y < 14; y += 3) for (let x = 0; x < 16; x++) p.set(x, y, hex('#e8f5e9')); for (let x = 0; x < 16; x++) p.set(x, 15, hex('#8a6238')); },
   cash_pallet_top: (p) => { p.noise(['#5a965a', '#4f8a4f']); for (let x = 2; x < 14; x++) p.set(x, 8, hex('#e8f5e9')); for (let y = 2; y < 14; y++) p.set(8, y, hex('#e8f5e9')); },
+  gold_shelf: (p) => { p.noise(['#5a4a3a', '#524233']); for (const y of [4, 9, 14]) for (let x = 0; x < 16; x++) p.set(x, y, hex('#3a2e22')); for (const y0 of [1, 6, 11]) for (let x = 1; x < 15; x += 5) for (let dx = 0; dx < 4; dx++) for (let dy = 0; dy < 3; dy++) p.set(x + dx, y0 + dy, hex(dy === 0 ? '#ffe680' : '#e8b830')); },
+  gold_shelf_top: (p) => { p.noise(['#e8b830', '#f2c640', '#d9a820']); for (let x = 0; x < 16; x += 5) for (let y = 0; y < 16; y++) p.set(x, y, hex('#a87a10')); },
+  gold_furnace: (p) => { p.noise(['#3d3f45', '#45474e', '#383a40']); p.border('#222429'); for (let x = 4; x < 12; x++) for (let y = 6; y < 12; y++) p.set(x, y, hex('#1a1a1e')); for (let x = 2; x < 14; x++) p.set(x, 3, hex('#5c5f66')); },
+  gold_furnace_top: (p) => { p.noise(['#45474e', '#3d3f45']); p.border('#222429'); for (let x = 5; x < 11; x++) for (let y = 5; y < 11; y++) p.set(x, y, hex('#2a2a2e')); },
+  gold_furnace_on: (p) => { p.noise(['#3d3f45', '#45474e', '#383a40']); p.border('#222429'); for (let x = 4; x < 12; x++) for (let y = 6; y < 12; y++) p.set(x, y, hex((x + y) % 3 ? '#ffb020' : '#ff6a10')); for (let x = 5; x < 11; x++) p.set(x, 11, hex('#ffe680')); for (let x = 2; x < 14; x++) p.set(x, 3, hex('#5c5f66')); },
+  water_pump: (p) => { p.noise(['#2f6aa0', '#2a6194', '#3474ab']); p.border('#1a3e60'); for (let y = 2; y < 14; y++) p.set(8, y, hex('#9fd3ff')); p.set(12, 3, hex('#7dff8a')); },
+  water_pump_top: (p) => { p.noise(['#3474ab', '#2f6aa0']); p.border('#1a3e60'); for (let x = 6; x < 10; x++) for (let y = 6; y < 10; y++) p.set(x, y, hex('#9aa0a8')); },
+  water_pump_off: (p) => { p.noise(['#2f6aa0', '#2a6194', '#3474ab']); p.border('#1a3e60'); for (let y = 2; y < 14; y++) p.set(8, y, hex('#1a3e60')); p.set(12, 3, hex('#ff5a3a')); },
+  generator: (p) => { p.noise(['#c9a227', '#bf9a22', '#d1aa30']); p.border('#5c4a10'); for (let y = 4; y < 12; y += 2) for (let x = 3; x < 13; x++) p.set(x, y, hex('#4a3c0c')); p.set(13, 2, hex('#7dff8a')); },
+  generator_top: (p) => { p.noise(['#c9a227', '#bf9a22']); p.border('#5c4a10'); for (let x = 4; x < 12; x++) p.set(x, 8, hex('#4a3c0c')); },
+  generator_off: (p) => { p.noise(['#8a7020', '#7f681c', '#947826']); p.border('#3c300a'); for (let y = 4; y < 12; y += 2) for (let x = 3; x < 13; x++) p.set(x, y, hex('#2e2606')); p.set(13, 2, hex('#ff5a3a')); },
+  drill_wall: (p) => { p.noise(['#e8e4da', '#dcd7cb', '#f0ece2']); for (const [x, y] of [[8, 8], [7, 7], [9, 9], [6, 6], [10, 10], [5, 5], [11, 7], [12, 6], [7, 10], [6, 11], [9, 5], [10, 4]]) p.set(x, y, hex('#3a3a3a')); for (let x = 7; x < 10; x++) for (let y = 7; y < 10; y++) p.set(x, y, hex('#ff8a20')); },
+  oro_sign: (p) => { p.noise(['#14243a', '#18293f']); p.border('#e8b830'); for (const [x, y] of [[3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [4, 5], [5, 5], [6, 5], [6, 6], [6, 7], [6, 8], [6, 9], [4, 9], [5, 9], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [9, 5], [10, 6], [9, 7], [10, 8], [10, 9], [12, 5], [12, 6], [12, 7], [12, 8], [12, 9], [13, 5], [14, 5], [13, 9], [14, 9], [14, 6], [14, 7], [14, 8]]) p.set(x, y, hex('#ffd65c')); },
   // a cast-iron manhole cover with slots (the sewer under the bank)
   sewer_grate: (p) => {
     p.noise(['#3b3f45', '#42464d', '#363a40']); p.border('#24272b');

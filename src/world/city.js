@@ -49,9 +49,10 @@ export const CITY_PLACES = {
     { name: 'Pedregalejo', lat: 36.71900, lon: -4.38300 },
     { name: 'El Palo', lat: 36.71940, lon: -4.36140 },
     { name: 'Ciudad Jardín', lat: 36.74400, lon: -4.42500 },
-    // La Fábrica (season 1): the old tobacco factory, and El Maestro's farmhouse up the hill
+    // La Fábrica: the old tobacco factory (season 1), El Maestro's farmhouse up the hill, the old Térmica building by the sea (season 2)
     { name: 'La Tabacalera', lat: 36.70910, lon: -4.44240 },
     { name: 'Finca El Maestro', lat: 36.74650, lon: -4.42080 },
+    { name: 'La Térmica', lat: 36.68930, lon: -4.44570 },
   ],
 };
 
@@ -208,6 +209,8 @@ export class CityData {
     if (bank && bank.old.x1 >= x0 && bank.old.x0 < x0 + W && bank.old.z1 >= z0 && bank.old.z0 < z0 + W) out.bank = bank;
     const fab = this.fabricaPlan();
     if (fab && fab.old.x1 >= x0 && fab.old.x0 < x0 + W && fab.old.z1 >= z0 && fab.old.z0 < z0 + W) out.fab = fab;
+    const oro = this.oroPlan();
+    if (oro && oro.old.x1 >= x0 && oro.old.x0 < x0 + W && oro.old.z1 >= z0 && oro.old.z0 < z0 + W) out.oro = oro;
     return out;
   }
 
@@ -226,6 +229,13 @@ export class CityData {
     const r = this.standalonePlan('La Tabacalera', 16);
     if (r !== undefined) this._fab = r;
     return r;
+  }
+  // La Fábrica, season 2: the gold vault in La Térmica (no deeper than 42, no wider than 34)
+  oroPlan() {
+    if (this._oro !== undefined) return this._oro;
+    const r = this.standalonePlan('La Térmica', 18);
+    if (r !== undefined) this._oro = r && clampPlan(r, 42, 34);
+    return this._oro;
   }
 
   // A building of its own where a named place's biggest building stood: the
@@ -356,6 +366,34 @@ export function fabLayout(depth, width) {
   return { lobby: 4, back, half, presses: presses.slice(0, 8), pallets, phone: [2, 2], paper: [6, 1], ink: [11, 1], backDoor: [depth, width - 3], tunnel: { a: width - 3, from: back + 2, to: 3 } };
 }
 
+// A standalone plan cut down to at most maxD deep (from the entrance) and
+// maxW across (around the entrance), so a big block does not make a huge hall.
+export function clampPlan(P, maxD, maxW) {
+  const R = { ...P }, along = P.side === 0 || P.side === 2;
+  if (P.side === 0) R.z1 = Math.min(P.z1, P.z0 + maxD);
+  else if (P.side === 2) R.z0 = Math.max(P.z0, P.z1 - maxD);
+  else if (P.side === 1) R.x0 = Math.max(P.x0, P.x1 - maxD);
+  else R.x1 = Math.min(P.x1, P.x0 + maxD);
+  const cut = (lo, hi, c) => { if (hi - lo <= maxW) return [lo, hi]; let a = Math.max(lo, c - Math.floor(maxW / 2)); if (a + maxW > hi) a = hi - maxW; return [a, a + maxW]; };
+  if (along) { [R.x0, R.x1] = cut(P.x0, P.x1, P.door.x); R.door = { x: Math.round((R.x0 + R.x1) / 2), z: P.door.z }; }
+  else { [R.z0, R.z1] = cut(P.z0, P.z1, P.door.z); R.door = { x: P.door.x, z: Math.round((R.z0 + R.z1) / 2) }; }
+  return R;
+}
+
+// La Térmica inside (season 2), by depth from the entrance and width across:
+// the lobby with the red phone and the generator, the melting hall with its
+// furnaces, the pumps by the vault's wall, then the vault with gold bars on
+// its shelves and the outflow grate (the way out to the sea) in its floor.
+export function oroLayout(depth, width) {
+  const vault = Math.max(14, depth - 12), mid = Math.floor(width / 2);
+  const furnaces = [];
+  for (let d = 8; d <= vault - 4 && furnaces.length < 4; d += 6) for (const a of [mid - 6, mid + 6]) if (a >= 3 && a <= width - 3 && furnaces.length < 4) furnaces.push([d, a]);
+  const shelves = [];
+  for (let d = vault + 2; d <= depth - 2; d += 2) for (const a of [1, width - 1]) shelves.push([d, a]);
+  for (let d = vault + 3; d <= depth - 3; d += 3) for (const a of [mid - 4, mid + 4]) shelves.push([d, a]);
+  return { vault, mid, furnaces, shelves, phone: [2, 2], generator: [2, width - 2], pumps: [[vault - 2, 2], [vault - 2, width - 2]], outflow: [depth - 2, mid], hall: [5, vault - 2] };
+}
+
 // ---------- worker: blocks for one chunk ----------
 export function genCity(cx, cz, data, e) {
   const W = S + 2 * M, seaY = e.seaY;
@@ -373,6 +411,10 @@ export function genCity(cx, cz, data, e) {
     const fb = e.fab;
     if (fb && wx >= fb.x0 && wx <= fb.x1 && wz >= fb.z0 && wz <= fb.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; fabricaBuilding(lx, lz, wx, wz, g); continue; }
     if (fb && b === fb.gid) { b = 0; s = SURF.paving; }
+    // La Térmica (season 2): the gold vault, on a square of its own
+    const ob = e.oro;
+    if (ob && wx >= ob.x0 && wx <= ob.x1 && wz >= ob.z0 && wz <= ob.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; oroBuilding(lx, lz, wx, wz, g); continue; }
+    if (ob && b === ob.gid) { b = 0; s = SURF.paving; }
     data[idx(lx, 0, lz)] = B.coreite;
     const natural = NATURAL.has(s) && !b;
     for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : (y < g - 3 && cityGemAt(wx, y, wz)) || B.stone;
@@ -534,13 +576,48 @@ export function genCity(cx, cz, data, e) {
     }
     data[idx(lx, topY, lz)] = B.concrete;
   }
+  // La Térmica (season 2): white walls, the melting hall, the vault with its gold
+  function oroBuilding(lx, lz, wx, wz, g) {
+    const P = e.oro, base = P.base;
+    const topY = Math.min(HEIGHT - 2, base + 9);
+    const { d, a, mid, depth } = bankCoords(P, wx, wz);
+    const width = bankWidth(P), L = oroLayout(depth, width);
+    const edge = wx === P.x0 || wx === P.x1 || wz === P.z0 || wz === P.z1;
+    for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
+    for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
+    const inVault = d > L.vault && !edge;
+    data[idx(lx, base, lz)] = edge ? B.plaster_white : d === L.outflow[0] && a === L.outflow[1] ? B.sewer_grate : inVault ? B.vault_floor : B.concrete;
+    // under the outflow grate: the pipe's mouth
+    if (d === L.outflow[0] && a === L.outflow[1]) for (const y of [base - 2, base - 1]) if (y > 0) data[idx(lx, y, lz)] = B.air;
+    for (let y = base + 1; y < topY; y++) {
+      const r = y - base;
+      let id = B.air;
+      if (edge) {
+        const front = d === 0 && Math.abs(a - mid) <= 1 && r <= 3;
+        const sign = d === 0 && Math.abs(a - mid) <= 3 && r === 5;
+        const win = r >= 3 && r <= 5 && ((a % 4) + 4) % 4 === 2 && !(d === 0 && Math.abs(a - mid) <= 3) && d < L.vault;
+        id = front ? B.factory_door : sign ? B.oro_sign : win ? B.window : B.plaster_white;
+      } else if (r === 7) id = ((a % 5) + 5) % 5 === 2 && ((d % 5) + 5) % 5 === 2 ? B.bank_lamp : B.concrete; // the ceiling, with lamps
+      else if (r < 7) {
+        if (d === L.vault) id = Math.abs(a - L.mid) <= 1 && r <= 3 ? B.air : Math.abs(a - L.mid) === 2 && r <= 4 ? B.vault_door : B.bank_stone; // the vault's wall, its doorway open
+        else if (r <= 2 && L.shelves.some(([sd, sa]) => sd === d && sa === a)) id = B.gold_shelf;
+        else if (r === 1 && L.furnaces.some(([fd, fa]) => fd === d && fa === a)) id = B.gold_furnace;
+        else if (r === 1 && L.pumps.some(([pd, pa]) => pd === d && pa === a)) id = B.water_pump;
+        else if (r === 1 && d === L.generator[0] && a === L.generator[1]) id = B.generator;
+        else if (r === 1 && d === L.phone[0] && a === L.phone[1]) id = B.red_phone;
+      }
+      data[idx(lx, y, lz)] = id;
+    }
+    data[idx(lx, topY, lz)] = B.concrete;
+  }
+
 
   // A hidden gem cache in about one chunk in eight: a stone lid flush with
   // the ground of a park, a garden, a beach or a square.
   if (hash3(cx, 5, cz, 31) < 0.12) {
     const lx = Math.floor(hash3(cx, 6, cz, 31) * S), lz = Math.floor(hash3(cx, 7, cz, 31) * S), k = at(lx, lz);
     const s = e.surf[k] & 0x7f, g = Math.min(HEIGHT - 2, e.ground[k]), wx = cx * S + lx, wz = cz * S + lz;
-    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1);
+    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1) || (e.oro && wx >= e.oro.old.x0 && wx <= e.oro.old.x1 && wz >= e.oro.old.z0 && wz <= e.oro.old.z1);
     if (!e.bid[k] && !e.mark[k] && !e.wall[k] && !inBank && [SURF.park, SURF.garden, SURF.sand, SURF.plaza, SURF.ground, SURF.scrub, SURF.forest].includes(s) && g > seaY) data[idx(lx, g, lz)] = B.gem_cache;
   }
 
@@ -552,6 +629,7 @@ export function genCity(cx, cz, data, e) {
     const lx = x - M, lz = z - M, wx = cx * S + lx, wz = cz * S + lz;
     if (e.bank && wx >= e.bank.x0 - 3 && wx <= e.bank.x1 + 3 && wz >= e.bank.z0 - 3 && wz <= e.bank.z1 + 3) continue; // none on the bank
     if (e.fab && wx >= e.fab.x0 - 3 && wx <= e.fab.x1 + 3 && wz >= e.fab.z0 - 3 && wz <= e.fab.z1 + 3) continue; // nor on the factory
+    if (e.oro && wx >= e.oro.x0 - 3 && wx <= e.oro.x1 + 3 && wz >= e.oro.z0 - 3 && wz <= e.oro.z1 + 3) continue; // nor on La Térmica
     const s = e.surf[k] & 0x7f, g = e.ground[k];
     const palm = [SURF.road, SURF.pavement, SURF.marble, SURF.plaza, SURF.sand, SURF.dock].includes(s) || hash3(wx, 9, wz, 3) < 0.25;
     const h = palm ? 6 + Math.floor(hash3(wx, 4, wz, 3) * 3) : 4 + Math.floor(hash3(wx, 4, wz, 3) * 2);

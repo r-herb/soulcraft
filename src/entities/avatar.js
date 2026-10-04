@@ -26,9 +26,9 @@ export const SLOTS = {
   hair: [I('none'), I('short'), I('spiky'), I('long'), I('ponytail', 20), I('bun', 20), I('afro', 40), I('mohawk', 40)],
   hat: [I('none'), I('cap'), I('beanie', 20), I('party', 30), I('headphones', 50), I('tophat', 60), I('sunhat', 0, 'malaga'), I('explorer', 0, 'treasure'),
     I('crown', 0, 'mayor'), I('knight', 0, 'bosses'), I('frost', 0, 'treasure2')],
-  top: [I('tee'), I('long'), I('tank'), I('striped', 20), I('star', 30), I('hoodie', 40), I('suit', 0, 'mayor'), I('robber', 0, 'heist'), I('knight', 0, 'bosses'), I('explorer', 0, 'treasure'), I('redsuit', 0, 'fabrica')],
+  top: [I('tee'), I('long'), I('tank'), I('striped', 20), I('star', 30), I('hoodie', 40), I('suit', 0, 'mayor'), I('robber', 0, 'heist'), I('knight', 0, 'bosses'), I('explorer', 0, 'treasure'), I('redsuit', 0, 'fabrica'), I('diver', 0, 'fabrica2')],
   pants: [I('jeans'), I('shorts'), I('skirt', 20), I('cargo', 20)],
-  glasses: [I('none'), I('round', 20), I('goggles', 30), I('sun', 40), I('monocle', 60), I('mask', 0, 'heist'), I('grinmask', 0, 'fabrica')],
+  glasses: [I('none'), I('round', 20), I('goggles', 30), I('sun', 40), I('monocle', 60), I('mask', 0, 'heist'), I('grinmask', 0, 'fabrica'), I('goldmask', 0, 'fabrica2')],
   back: [I('none'), I('backpack', 30), I('guitar', 60), I('cape', 80), I('jetpack', 150), I('dragon', 300), I('wings', 0, 'days'), I('icewings', 0, 'treasure2')],
 };
 // the order the slots travel in, colors between them
@@ -39,7 +39,7 @@ export const DEFAULT_AVATAR = { tone: 6, face: 'smile', hair: 'short', hairC: 15
 // ---------- achievements ----------
 // what the player has done, read from the profile (it follows them between worlds)
 export const ACHIEVEMENTS = [
-  { id: 'malaga', test: (p) => Object.keys((p.missions && p.missions.done) || {}).filter((k) => !k.startsWith('h_') && !k.startsWith('f_')).length >= 5 },
+  { id: 'malaga', test: (p) => Object.keys((p.missions && p.missions.done) || {}).filter((k) => !/^(h|f|f2)_/.test(k)).length >= 5 },
   { id: 'treasure', test: (p) => !!(p.rewards && p.rewards.starfall) },
   { id: 'treasure2', test: (p) => !!(p.rewards && p.rewards.frostbrand) },
   { id: 'days', test: (p) => (p.bestDay || 0) >= 30 },
@@ -47,6 +47,7 @@ export const ACHIEVEMENTS = [
   { id: 'heist', test: (p) => !!(p.heist && (p.heist.robbed || p.heist.traded)) },
   { id: 'mayor', test: (p) => !!p.mayorAt },
   { id: 'fabrica', test: (p) => !!(p.fabrica && p.fabrica.done) },
+  { id: 'fabrica2', test: (p) => !!(p.oro && p.oro.done) },
 ];
 // (the superadmin's test account wears every achievement's items)
 export const hasAch = (p, id) => { if (p.testAll) return true; const a = ACHIEVEMENTS.find((x) => x.id === id); return !!(a && a.test(p)); };
@@ -92,7 +93,7 @@ export function armColors(skin) {
   const sleeve = c.top === 'tank' || c.top === 'tee' ? tone : topColor(c);
   return { skin: tone, shirt: sleeve };
 }
-const topColor = (c) => ({ suit: '#22232a', robber: '#22232a', knight: '#c9ccd2', explorer: '#b9a06a', redsuit: '#c81e1e' })[c.top] || COLORS[c.topC];
+const topColor = (c) => ({ suit: '#22232a', robber: '#22232a', knight: '#c9ccd2', explorer: '#b9a06a', redsuit: '#c81e1e', diver: '#16181d' })[c.top] || COLORS[c.topC];
 
 // ---------- the model ----------
 const geoCache = new Map();
@@ -188,6 +189,12 @@ function drawTop(x, kind, color, w, h) {
     x.fillStyle = '#e8e8e8'; for (let y = 4; y < h; y += 8) x.fillRect(w * 0.47, y, w * 0.06, 2);
     x.fillStyle = 'rgba(0,0,0,0.2)'; x.fillRect(w * 0.15, h * 0.2, w * 0.22, h * 0.18);
     x.fillStyle = '#f4efe6'; x.fillRect(w * 0.62, h * 0.2, w * 0.24, h * 0.1);
+  } else if (kind === 'diver') {
+    // the wetsuit: yellow stripes down the sides, a zip, a gauge on the chest
+    x.fillStyle = '#e8b830'; x.fillRect(0, 0, w * 0.08, h); x.fillRect(w * 0.92, 0, w * 0.08, h);
+    x.fillStyle = '#3a3d45'; x.fillRect(w * 0.49, 0, w * 0.02, h * 0.7);
+    x.fillStyle = '#c9ccd2'; x.beginPath(); x.arc(w * 0.72, h * 0.32, h * 0.12, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#16181d'; x.fillRect(w * 0.71, h * 0.24, 2, h * 0.09);
   } else if (kind === 'tank') {
     x.fillStyle = color; x.fillRect(w * 0.2, 0, w * 0.6, h); x.clearRect(w * 0.36, 0, w * 0.28, h * 0.18);
   }
@@ -198,7 +205,7 @@ function drawTop(x, kind, color, w, h) {
 // the classic humanoid (head, body, armL/R, legL/R) plus elbows and knees.
 export function buildAvatar(cfg) {
   const c = { ...DEFAULT_AVATAR, ...cfg };
-  const tone = TONES[c.tone] || TONES[6], hairC = COLORS[c.hairC] || COLORS[15], topC = topColor(c), pantsC = c.top === 'redsuit' ? '#b01818' : COLORS[c.pantsC] || COLORS[7]; // the jumpsuit is one piece
+  const tone = TONES[c.tone] || TONES[6], hairC = COLORS[c.hairC] || COLORS[15], topC = topColor(c), pantsC = c.top === 'redsuit' ? '#b01818' : c.top === 'diver' ? '#16181d' : COLORS[c.pantsC] || COLORS[7]; // the jumpsuit is one piece
   const shoe = '#2b2b33';
   const g = new THREE.Group();
   const root = new THREE.Group(); g.add(root);
@@ -210,7 +217,7 @@ export function buildAvatar(cfg) {
   const upperColor = c.top === 'tank' ? tone : topC;
   const torso = part(0.7, 0.44, 0.34, upperColor, 0.08); torso.position.y = 0.22; waist.add(torso);
   // the print on the front
-  if (['striped', 'robber', 'star', 'hoodie', 'suit', 'knight', 'explorer', 'tank', 'redsuit'].includes(c.top)) {
+  if (['striped', 'robber', 'star', 'hoodie', 'suit', 'knight', 'explorer', 'tank', 'redsuit', 'diver'].includes(c.top)) {
     const p = plane(0.66, 0.42, decal('top:' + c.top + (c.top === 'tank' ? topC : ''), 128, 84, (x, w, h) => drawTop(x, c.top, COLORS[c.topC], w, h)));
     p.position.set(0, 0.22, 0.173); waist.add(p);
   }
@@ -302,10 +309,10 @@ function addGlasses(head, kind) {
   else if (kind === 'sun') { for (const s of [-1, 1]) add(part(0.17, 0.09, 0.025, '#111114', 0.02), s * 0.11, 0.02, z); add(part(0.36, 0.02, 0.02, '#111114', 0.008), 0, 0.055, z); }
   else if (kind === 'goggles') { add(mesh(new THREE.CylinderGeometry(0.272, 0.272, 0.07, 20, 1, true), '#3a2614', { side: THREE.DoubleSide }), 0, 0.03, 0); for (const s of [-1, 1]) { const l = add(mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 14), '#f0a030', { emissive: '#3a2000' }), s * 0.1, 0.03, z); l.rotation.x = Math.PI / 2; } }
   else if (kind === 'monocle') { add(mesh(new THREE.TorusGeometry(0.07, 0.013, 6, 16), '#f6c667'), 0.1, 0.02, z); const ch = add(part(0.01, 0.2, 0.01, '#f6c667', 0.004), 0.16, -0.08, z - 0.01); ch.rotation.z = 0.3; }
-  else if (kind === 'grinmask') {
-    // a white mask over the whole face: arched brows, a wide painted grin, a thin moustache
-    const tex = decal('grinmask', 128, 128, (x) => {
-      x.fillStyle = '#f4efe6'; x.beginPath(); x.ellipse(64, 66, 58, 60, 0, 0, Math.PI * 2); x.fill();
+  else if (kind === 'grinmask' || kind === 'goldmask') {
+    // a mask over the whole face (white, or gold for season 2): arched brows, a wide painted grin, a thin moustache
+    const tex = decal(kind, 128, 128, (x) => {
+      x.fillStyle = kind === 'goldmask' ? '#e8b830' : '#f4efe6'; x.beginPath(); x.ellipse(64, 66, 58, 60, 0, 0, Math.PI * 2); x.fill();
       x.fillStyle = '#1b1b22'; x.beginPath(); x.ellipse(42, 54, 9, 6, 0, 0, Math.PI * 2); x.ellipse(86, 54, 9, 6, 0, 0, Math.PI * 2); x.fill();
       x.strokeStyle = '#1b1b22'; x.lineWidth = 4; x.beginPath(); x.moveTo(28, 40); x.quadraticCurveTo(42, 30, 56, 40); x.moveTo(72, 40); x.quadraticCurveTo(86, 30, 100, 40); x.stroke();
       x.lineWidth = 3; x.beginPath(); x.moveTo(40, 82); x.quadraticCurveTo(52, 76, 64, 80); x.quadraticCurveTo(76, 76, 88, 82); x.stroke();

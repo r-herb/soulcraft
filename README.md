@@ -139,7 +139,7 @@ friends like any other world.
   otherwise. Blue stop signs stand at the stops; using one shows the next
   buses of each line and the lines on the map, and sells tickets (a single
   ride for 2 coins, a bonobús of 10 rides for 13). The buses drive on the
-  right, each in its own lane (2.2 blocks right of the route's line, so the
+  right, each in its own lane (1.5 blocks right of the route's line, so the
   two directions pass each other), with the doors on the right. They are
   open-top double-deckers: at a stop the doors open and a player walks in
   through one, or uses the bus (F, or the "Get on" button that shows up by
@@ -279,6 +279,7 @@ or come only from an **achievement**, never for real money:
 | El Gran Golpe | robbing the bank's vault | robber's mask and shirt |
 | Mayor of Malaga | trading the Gran Diamante | mayor's crown and suit |
 | La Fábrica | season 1 to the end | red jumpsuit, grinning mask |
+| The gold of La Térmica | season 2 to the end | diving suit, golden mask |
 
 The bosses beaten and the best day follow the player between worlds (in the
 profile); a new achievement is announced once. "Play as my avatar" switches
@@ -413,6 +414,45 @@ with a story of its own. It starts in the missions list.
 Played together, the host's game runs the siege; a guest's presses, doors
 and phone answers go to the host, and the state comes back every two
 seconds. The superadmin's test panel jumps to any act.
+
+## La Fábrica: season 2, the gold
+
+Season 2 opens when season 1 is done (in the missions list).
+
+1. **El Maestro calls**: Siroco was caught after the factory. A second
+   class at the farmhouse (five lessons, a five-question quiz).
+2. **The rescue's tools**: a forged transfer order (Mercado de Atarazanas),
+   a police uniform (Calle Larios), a boat ready (La Malagueta).
+3. **Free Siroco**: at Muelle Uno an officer guards him. His three questions
+   (who signed the order, its number, where the prisoner goes) open on
+   their own; the story comes from the class. Two right answers and Siroco
+   walks free (the order and the uniform are used up); otherwise come back
+   a little later.
+4. **The gold's tools**: diving suits (Pedregalejo), the furnace man (El
+   Palo), the guards' shifts (Gibralfaro).
+5. **La Térmica**: the old building by the sea, near La Misericordia, is a
+   building of its own (at most 42 deep and 34 wide): a lobby with the red
+   phone and the generator, a hall with four melting furnaces, two pumps by
+   the vault's wall, and the vault with gold bars on its shelves and the
+   outflow grate in its floor.
+6. **The siege**: twelve bars to melt. Bars come from the shelves (two at a
+   time) and a furnace melts one in 22 seconds while there is power; the
+   crew starts an idle furnace every 45 seconds. The water seeps in (0.9 %
+   a second) and each running pump takes 0.5 % out: when a pump stops, use
+   it; at 100 % the vault floods and no bars can be taken for 30 seconds.
+   The police cut the power (use the generator in the lobby), drill a side
+   wall (use the glowing spot within 25 seconds, or lose 15 patience) and
+   call on the red phone (Inspector Vega, four answers). Out of patience,
+   they storm in and the entry starts again. Nobody is hurt: the guards wait
+   in the lobby.
+7. **The pipe**: with twelve bars melted the outflow grate opens; it leads
+   out behind the building with twelve sacks of gold.
+8. **To the sea**: El Maestro waits with a boat on La Misericordia beach:
+   the end of the season, 30,000 coins a sack (once per account, signed in),
+   soul crystals, and the **diving suit** and the **golden mask** for the
+   avatar.
+
+The test panel jumps to any act of season 2 (it counts season 1 as done).
 
 ## Gems and gold
 
@@ -752,6 +792,17 @@ What the tests cover:
   caught; no patience left means the police storm in and the entry starts
   again; ten pallets open the tunnel, which leads out with ten bags; the
   bags at the farmhouse end the season.
+- `tests/oro.spec.js` (desktop): season 2 is hidden until season 1 is
+  done; El Maestro's call opens the second class; the contacts give the
+  forged order and the uniform; a wrong story on the quay keeps Siroco in,
+  the right one frees him; La Térmica has its furnaces, gold shelves,
+  pumps, generator, red phone and outflow grate; a furnace needs a bar and
+  power; the shelves give two bars at a time; with no pumps the vault
+  floods and gives no bars; stopped pumps and the generator start again; a
+  drilled wall is braced, an unbraced one costs patience; the phone's calm
+  answer adds patience; no patience left means the police storm in; twelve
+  bars open the pipe, which leads out with twelve sacks; the beach ends the
+  season.
 - `tests/guides.spec.js` (desktop): the Malaga card opens the city guide,
   its start button the tour's guide (the plaza ticked off), the ? of a
   mission and following one the first time open its guide (not the second

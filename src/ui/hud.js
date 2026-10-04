@@ -60,7 +60,7 @@ export class Hud {
         <p class="br-hint"></p></div>
       <div class="bus-board pe hidden"><b class="bb-line"></b><span class="bb-text"></span><span class="bb-tickets"></span><span class="bb-keys desktop-only"></span>
         <button class="btn small primary" data-a="busboard"><span></span><kbd class="desktop-only">F</kbd></button></div>
-      <div class="fab-panel hidden"><b class="fp-title"></b><div class="fp-row"><span class="fp-printed"></span></div><div class="fp-bar"><i></i></div><span class="fp-pat small"></span><div class="fp-alerts"></div></div>
+      <div class="fab-panel hidden"><b class="fp-title"></b><div class="fp-row"><span class="fp-printed"></span></div><div class="fp-bar"><i></i></div><span class="fp-pat small"></span><span class="fp-water small hidden"></span><div class="fp-bar fp-bar2 hidden"><i></i></div><div class="fp-alerts"></div></div>
       <div class="quest-obj hidden"><b></b><span></span><i class="mis-arrow hidden">&#9650;</i></div>
       <div class="boss-bar hidden"><div class="boss-name"></div><div class="boss-hp"><i></i></div><div class="boss-hint"></div></div>
       <div class="held-name"></div>
@@ -314,25 +314,38 @@ export class Hud {
     if (net) c.textContent = `${net.code} · ${net.count}/4`;
   }
 
-  // La Fábrica's siege: the pallets printed, the police's patience, what needs doing now
+  // La Fábrica's sieges: what is printed (season 1) or melted (season 2), the police's patience, the water, what needs doing now
   fabUpdate(g) {
-    const F = g.fabrica, s = F && g.missions && g.missions.active ? F.state() : null, on = !!(s && s.act === 4);
+    const act = g.missions && g.missions.active;
+    const F = g.fabrica, O = g.oro, f = act && F ? F.state() : null, o = act && O && O.open ? O.state() : null;
+    const s = f && f.act === 4 ? f : o && o.act === 6 ? o : null, two = !!s && s === o, on = !!s;
     if (this.last.fabOn !== on) { this.last.fabOn = on; this.fabPanel.classList.toggle('hidden', !on); }
     if (!on) return;
     const alerts = [];
     if (s.phone) alerts.push(t('fab.hud.phone', { s: Math.ceil(s.phone.t) }));
-    if (s.raid && !s.raid.held) alerts.push(t('fab.hud.raid.' + s.raid.door, { s: Math.ceil(s.raid.t) }));
-    if (s.esc) alerts.push(t('fab.hud.escape'));
-    for (const [k, pr] of Object.entries(s.presses || {})) if (pr.jam) alerts.push(t('fab.hud.jam', { n: +k + 1 }));
-    const key = [s.printed, Math.round(s.patience), alerts.join('|')].join(';');
+    if (two) {
+      if (!s.power) alerts.push(t('oro.hud.power'));
+      if (s.flood > 0) alerts.push(t('oro.hud.flood', { s: Math.ceil(s.flood) }));
+      (s.pumps || []).forEach((p, i) => { if (!p) alerts.push(t('oro.hud.pump', { n: i + 1 })); });
+      if (s.drill) alerts.push(t('oro.hud.drill.' + s.drill.side, { s: Math.ceil(s.drill.t) }));
+    } else {
+      if (s.raid && !s.raid.held) alerts.push(t('fab.hud.raid.' + s.raid.door, { s: Math.ceil(s.raid.t) }));
+      if (s.esc) alerts.push(t('fab.hud.escape'));
+      for (const [k, pr] of Object.entries(s.presses || {})) if (pr.jam) alerts.push(t('fab.hud.jam', { n: +k + 1 }));
+    }
+    const key = [two, two ? s.melted : s.printed, Math.round(s.patience), two ? Math.round(s.water) : 0, alerts.join('|')].join(';');
     if (this.last.fab === key) return;
     this.last.fab = key;
-    this.fabPanel.querySelector('.fp-title').textContent = t('fab.hud.title');
-    this.fabPanel.querySelector('.fp-printed').textContent = t('fab.hud.printed', { n: s.printed, total: 10 });
+    this.fabPanel.classList.toggle('two', two);
+    this.fabPanel.querySelector('.fp-title').textContent = t(two ? 'oro.hud.title' : 'fab.hud.title');
+    this.fabPanel.querySelector('.fp-printed').textContent = two ? t('oro.hud.melted', { n: s.melted, total: 12 }) : t('fab.hud.printed', { n: s.printed, total: 10 });
     const bar = this.fabPanel.querySelector('.fp-bar i');
     bar.style.width = Math.max(0, Math.min(100, s.patience)) + '%';
     bar.classList.toggle('low', s.patience < 30);
     this.fabPanel.querySelector('.fp-pat').textContent = t('fab.hud.patience', { n: Math.round(s.patience) });
+    const wt = this.fabPanel.querySelector('.fp-water'), wb = this.fabPanel.querySelector('.fp-bar2');
+    wt.classList.toggle('hidden', !two); wb.classList.toggle('hidden', !two);
+    if (two) { wt.textContent = t('oro.hud.water', { n: Math.round(s.water) }); const i2 = wb.querySelector('i'); i2.style.width = Math.max(0, Math.min(100, s.water)) + '%'; i2.classList.toggle('low', s.water > 70); }
     this.fabPanel.querySelector('.fp-alerts').innerHTML = alerts.map((a) => `<p>${a.replace(/[&<>]/g, '')}</p>`).join('');
   }
 

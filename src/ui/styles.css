@@ -224,7 +224,11 @@ body.touch .desktop-only { display: none !important; }
 .fab-panel .fp-bar { height: 8px; background: rgba(0, 0, 0, 0.5); border-radius: 4px; overflow: hidden; }
 .fab-panel .fp-bar i { display: block; height: 100%; background: #6fe39a; transition: width 0.4s; }
 .fab-panel .fp-bar i.low { background: #ff5a3a; }
-.fab-panel .fp-pat { color: var(--c-text-dim); }
+.fab-panel .fp-pat, .fab-panel .fp-water { color: var(--c-text-dim); }
+.fab-panel.two { background: rgba(40, 30, 4, 0.72); border-color: #e8b830; }
+.fab-panel.two .fp-title { color: #ffe680; }
+.fab-panel .fp-bar2 i { background: #38b6e8; }
+.fab-panel .fp-bar2 i.low { background: #ff5a3a; }
 .fab-panel .fp-alerts p { margin: 2px 0 0; font-size: var(--fs-xs); color: #ffd65c; animation: fabBlink 1s infinite; }
 @keyframes fabBlink { 50% { opacity: 0.55; } }
 @media (max-height: 420px) { .fab-panel { top: calc(var(--safe-t) + 84px); width: 180px; } }

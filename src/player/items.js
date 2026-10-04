@@ -8,7 +8,8 @@ const NOT_ITEMS = new Set(['farmland', 'wheat_0', 'wheat_1', 'wheat_2', 'wheat_3
   'tile_off', 'tile_lit', 'tile_ok', 'trap', 'trap_lit', 'treasure_chest',
   'blink_on', 'blink_off', 'plate_off', 'plate_on', 'jet', 'jet_lit', 'vent',
   'bank_counter', 'bank_stone', 'bank_sign', 'vault_door', 'vault_floor', 'bank_lamp', 'gem_cache', 'gem_cache_open', 'weak_wall', 'grand_diamond', 'vault_gold', 'sewer_grate',
-  'soft_earth', 'factory_door', 'fab_sign', 'money_press', 'money_press_on', 'paper_stack', 'ink_barrel', 'red_phone', 'cash_pallet']);
+  'soft_earth', 'factory_door', 'fab_sign', 'money_press', 'money_press_on', 'paper_stack', 'ink_barrel', 'red_phone', 'cash_pallet',
+  'gold_shelf', 'gold_furnace', 'gold_furnace_on', 'water_pump', 'water_pump_off', 'generator', 'generator_off', 'drill_wall', 'oro_sign']);
 for (const b of BLOCKS) {
   if (!b || NOT_ITEMS.has(b.key)) continue;
   ITEMS[b.key] = { key: b.key, block: b.id, stack: 64, kind: 'block' };
@@ -39,6 +40,10 @@ item('vault_code', { stack: 1 });
 item('paper_roll', { stack: 16 });
 item('ink_can', { stack: 16 });
 item('money_bag', { stack: 16 });
+item('gold_bar', { stack: 2 });
+item('fake_order', { stack: 1 });
+item('police_uniform', { stack: 1 });
+item('gold_sack', { stack: 16 });
 item('emberite_shard');
 item('emberite_ingot');
 item('soul_crystal', { currency: true });

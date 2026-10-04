@@ -1,9 +1,12 @@
 // La Fábrica's screens: El Maestro's class (five lessons on a blackboard, a
 // quiz, then the player's alias), the red phone (the negotiator, four ways
 // to answer) and the end of the season (what was carried out, what it paid).
+// Season 2 has its own class, the officer's questions on the quay (Siroco's
+// rescue), a new negotiator and its own end.
 import { t, applyI18n } from '../i18n/index.js';
 import { SVG } from './icons.js';
 import { ALIASES, TARGET } from '../quest/fabrica.js';
+import { ORO_TARGET } from '../quest/oro.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -76,6 +79,117 @@ export function fabFinale(args, ui) {
       <p class="faint small">${esc(t('fab.end.items'))}</p>
       <p class="faint small">${esc(t('fab.end.next'))}</p>
       <button class="btn primary" data-act="close" data-i18n="heist.mayorOk"></button>
+    </div></div>`);
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  g.audio.sfx('victory');
+  return node;
+}
+
+// ---------- season 2 ----------
+const ANSWERS2 = [2, 0, 1, 2, 0];
+// the officer on the quay: who signed the order, its number, where the prisoner goes
+const RESCUE = [1, 0, 2];
+
+export function oroLesson(args, ui) {
+  const g = ui.game, O = g.oro;
+  let step = 0, picks = [];
+  const node = el(`<div class="screen scrim" data-screen="oroLesson">
+    <div class="panel fab-panel-ui">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="oro.class.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body fab-body"></div>
+    </div></div>`);
+  const body = node.querySelector('.fab-body');
+  const draw = () => {
+    if (step < LESSONS) {
+      body.innerHTML = `<div class="blackboard"><span class="bb-n">${esc(t('fab.class.lesson', { n: step + 1, total: LESSONS }))}</span><h3>${esc(t('oro.lesson.' + (step + 1) + '.title'))}</h3><p>${esc(t('oro.lesson.' + (step + 1)))}</p></div>
+        <div class="row" style="justify-content:space-between"><span class="faint small">${esc(t('fab.maestroSays'))}</span><button class="btn primary" data-a="next">${esc(t(step === LESSONS - 1 ? 'fab.class.toQuiz' : 'fab.class.next'))}</button></div>`;
+      body.querySelector('[data-a="next"]').onclick = () => { ui.click(); step++; draw(); };
+    } else if (step === LESSONS) {
+      const qi = picks.length;
+      body.innerHTML = `<div class="quiz"><span class="bb-n">${esc(t('fab.class.question', { n: qi + 1, total: ANSWERS2.length }))}</span><h3>${esc(t('oro.q.' + (qi + 1)))}</h3>
+        <div class="col">${[0, 1, 2].map((i) => `<button class="btn quiz-a" data-i="${i}">${esc(t('oro.q.' + (qi + 1) + '.a' + i))}</button>`).join('')}</div></div>`;
+      body.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { ui.click(); picks.push(+b.dataset.i); if (picks.length >= ANSWERS2.length) step++; draw(); }; });
+    } else {
+      const right = picks.filter((p, i) => p === ANSWERS2[i]).length, pass = right >= 4;
+      body.innerHTML = `<div class="blackboard"><h3>${esc(t(pass ? 'fab.class.passed' : 'fab.class.failed', { n: right, total: ANSWERS2.length }))}</h3>${pass ? `<p>${esc(t('oro.class.ready'))}</p>` : ''}</div>
+        <div class="row" style="justify-content:flex-end">${pass ? `<button class="btn primary" data-a="go">${esc(t('oro.class.go'))}</button>` : `<button class="btn primary" data-a="again">${esc(t('fab.class.again'))}</button>`}</div>`;
+      if (!pass) body.querySelector('[data-a="again"]').onclick = () => { ui.click(); step = 0; picks = []; draw(); };
+      else body.querySelector('[data-a="go"]').onclick = () => { ui.click(); O.passClass(); ui.back(); };
+    }
+  };
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  draw();
+  return node;
+}
+
+// Muelle Uno: the officer guarding Siroco asks about the transfer order
+export function oroRescue(args, ui) {
+  const g = ui.game, O = g.oro;
+  const ready = g.inventory.count('fake_order') > 0 && g.inventory.count('police_uniform') > 0;
+  let picks = [];
+  const node = el(`<div class="screen scrim" data-screen="oroRescue">
+    <div class="panel fab-panel-ui phone">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="oro.rescue.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body col fab-body" style="gap:var(--sp-2)"></div>
+    </div></div>`);
+  const body = node.querySelector('.fab-body');
+  const draw = () => {
+    if (!ready) {
+      body.innerHTML = `<p class="neg-line">${esc(t('oro.rescue.need'))}</p><div class="row" style="justify-content:flex-end"><button class="btn primary" data-a="ok">${esc(t('guide.ok'))}</button></div>`;
+      body.querySelector('[data-a="ok"]').onclick = () => { ui.click(); ui.back(); };
+      return;
+    }
+    if (picks.length < RESCUE.length) {
+      const qi = picks.length;
+      body.innerHTML = `${qi === 0 ? `<p class="faint small">${esc(t('oro.rescue.intro'))}</p>` : ''}<p class="neg-line">&laquo;${esc(t('oro.rescue.q' + (qi + 1)))}&raquo;</p>
+        ${[0, 1, 2].map((i) => `<button class="btn quiz-a" data-i="${i}">${esc(t('oro.rescue.q' + (qi + 1) + '.a' + i))}</button>`).join('')}`;
+      body.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { ui.click(); picks.push(+b.dataset.i); draw(); }; });
+      return;
+    }
+    const right = picks.filter((p, i) => p === RESCUE[i]).length, pass = right >= 2;
+    body.innerHTML = `<p class="neg-line">&laquo;${esc(t(pass ? 'oro.rescue.yes' : 'oro.rescue.no'))}&raquo;</p><div class="row" style="justify-content:flex-end"><button class="btn primary" data-a="ok">${esc(t('guide.ok'))}</button></div>`;
+    body.querySelector('[data-a="ok"]').onclick = () => { ui.click(); ui.back(); if (pass) O.freed(); };
+  };
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  draw();
+  return node;
+}
+
+// the red phone in La Térmica: a new negotiator
+export function oroPhone(args, ui) {
+  const g = ui.game, O = g.oro, s = O.state();
+  const line = s.phone ? s.phone.line : 0;
+  const node = el(`<div class="screen scrim" data-screen="oroPhone">
+    <div class="panel fab-panel-ui phone">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="oro.neg.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body col" style="gap:var(--sp-2)">
+        <p class="neg-line">&laquo;${esc(t('oro.neg.line' + line))}&raquo;</p>
+        ${[0, 1, 2, 3].map((i) => `<button class="btn" data-c="${i}">${esc(t('oro.neg.c' + i))}</button>`).join('')}
+        <p class="faint small">${esc(t('oro.neg.hint'))}</p>
+      </div>
+    </div></div>`);
+  node.querySelectorAll('[data-c]').forEach((b) => b.addEventListener('click', () => { ui.click(); O.action('phone', { choice: +b.dataset.c }); ui.back(); }));
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  return node;
+}
+
+// the end of season 2: the gold on El Maestro's boat
+export function oroFinale(args, ui) {
+  const g = ui.game, f = g.fabrica.state();
+  const node = el(`<div class="screen scrim" data-screen="oroFinale">
+    <div class="panel fab-panel-ui finale">
+      <div class="mayor-crown" aria-hidden="true">&#129689;</div>
+      <h2 class="panel-title" data-i18n="oro.end.title"></h2>
+      <p>${esc(t('oro.end.text', { alias: f.alias ? t('fab.alias.' + f.alias) : t('heist.you') }))}</p>
+      <p class="mayor-paid">${esc(t('oro.end.sacks', { n: args.sacks || 0, total: ORO_TARGET }))}</p>
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('oro.end.guest'))}</p>`}
+      <p class="faint small">${esc(t('oro.end.items'))}</p>
+      <p class="faint small">${esc(t('oro.end.next'))}</p>
+      <button class="btn primary" data-act="close" data-i18n="oro.end.ok"></button>
     </div></div>`);
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
   applyI18n(node);

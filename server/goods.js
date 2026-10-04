@@ -37,6 +37,8 @@ for (const k of HEIST_TASKS) MISSION_PAY['h_' + k] = 25;
 export const TEST_CASH = 10000;
 // La Fábrica: what each bag of printed money pays at the end of the season (once per account, at most ten)
 export const FAB_PER_BAG = 25000, FAB_MAX_BAGS = 10;
+// La Fábrica, season 2: each sack of gold brought to El Maestro's boat (once per account)
+export const ORO_PER_SACK = 30000, ORO_MAX_SACKS = 12;
 export const HEIST_PAY = 1000000;
 export const HEIST_NEEDS = 12; // tasks done
 export const HEIST_MIN_MS = 15 * 60 * 1000; // from the first task to the payout

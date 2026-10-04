@@ -116,6 +116,12 @@ test.describe('Economy', () => {
     expect(await r.json()).toMatchObject({ paid: 250000 });
     r = await request.post('/api/econ/fabrica', { data: { bags: 10 } });
     expect((await r.json()).paid).toBe(0);
+    // season 2: the sacks of gold, once per account, twelve at most
+    expect((await request.post('/api/econ/oro', { data: { sacks: 0 } })).status()).toBe(400);
+    r = await request.post('/api/econ/oro', { data: { sacks: 40 } });
+    expect(await r.json()).toMatchObject({ paid: 360000 });
+    r = await request.post('/api/econ/oro', { data: { sacks: 12 } });
+    expect((await r.json()).paid).toBe(0);
 
     // guests have no wallet
     const guest = await playwright.request.newContext({ baseURL });

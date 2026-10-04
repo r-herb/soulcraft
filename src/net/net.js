@@ -156,6 +156,7 @@ export class Net {
       // a teammate's firecrackers: the guards run to the bank's door in every game
       // La Fábrica: a guest's action for the host, or the host's "everyone in / out"
       case 'fab': if (g.fabrica) g.fabrica.onNet(msg, from); break;
+      case 'oro': if (g.oro) g.oro.onNet(msg, from); break;
       case 'hdistract': if (g.heist) g.heist.distract(Math.min(30, Number(msg.s) || 0)); break;
       case 'save': if (this.isHost && from) { g.meta.guests = g.meta.guests || {}; g.meta.guests[from] = { player: msg.player, inventory: msg.inventory, name: this.names.get(from) }; } break;
       default: break;

@@ -34,6 +34,8 @@ export const TILES = [
   'weak_wall', 'grand_diamond', 'vault_gold', 'sewer_grate',
   // La Fábrica
   'soft_earth', 'factory_door', 'fab_sign', 'money_press', 'money_press_top', 'money_press_on', 'paper_stack', 'paper_stack_top', 'ink_barrel', 'ink_barrel_top', 'red_phone', 'red_phone_top', 'cash_pallet', 'cash_pallet_top',
+  // La Fábrica, season 2
+  'gold_shelf', 'gold_shelf_top', 'gold_furnace', 'gold_furnace_top', 'gold_furnace_on', 'water_pump', 'water_pump_top', 'water_pump_off', 'generator', 'generator_top', 'generator_off', 'drill_wall', 'oro_sign',
   // farm 2
   'orange_0', 'orange_1', 'orange_2', 'orange_3', 'nest_box', 'nest_box_top', 'incubator', 'incubator_top',
 ];
@@ -203,6 +205,16 @@ const LIST = [
   def(147, 'ink_barrel', { tex: { top: 'ink_barrel_top', side: 'ink_barrel', bottom: 'ink_barrel_top' }, hardness: -1 }),
   def(148, 'red_phone', { tex: { top: 'red_phone_top', side: 'red_phone', bottom: 'planks' }, hardness: -1 }),
   def(149, 'cash_pallet', { tex: { top: 'cash_pallet_top', side: 'cash_pallet', bottom: 'planks' }, hardness: -1 }),
+  // La Fábrica, season 2: gold bars on the vault's shelves, the melting furnaces, the pumps, the generator, a wall being drilled, the sign
+  def(150, 'gold_shelf', { tex: { top: 'gold_shelf_top', side: 'gold_shelf', bottom: 'bank_stone' }, hardness: -1, light: 4 }),
+  def(151, 'gold_furnace', { tex: { top: 'gold_furnace_top', side: 'gold_furnace', bottom: 'concrete' }, hardness: -1 }),
+  def(152, 'gold_furnace_on', { tex: { top: 'gold_furnace_top', side: 'gold_furnace_on', bottom: 'concrete' }, hardness: -1, light: 12 }),
+  def(153, 'water_pump', { tex: { top: 'water_pump_top', side: 'water_pump', bottom: 'concrete' }, hardness: -1 }),
+  def(154, 'water_pump_off', { tex: { top: 'water_pump_top', side: 'water_pump_off', bottom: 'concrete' }, hardness: -1 }),
+  def(155, 'generator', { tex: { top: 'generator_top', side: 'generator', bottom: 'concrete' }, hardness: -1, light: 5 }),
+  def(156, 'generator_off', { tex: { top: 'generator_top', side: 'generator_off', bottom: 'concrete' }, hardness: -1 }),
+  def(157, 'drill_wall', { tex: 'drill_wall', hardness: -1, light: 6 }),
+  def(158, 'oro_sign', { tex: 'oro_sign', hardness: -1 }),
   def(134, 'orange_0', { tex: 'orange_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 0 }),
   def(135, 'orange_1', { tex: 'orange_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 1 }),
   def(136, 'orange_2', { tex: 'orange_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 2 }),

@@ -1,5 +1,44 @@
 [
   {
+    "id": "2026-10-04-fabrica2",
+    "title": {
+      "en": "La Fábrica: season 2, the gold",
+      "lv": "La Fábrica: 2. sezona, zelts",
+      "ru": "La Fábrica: 2-й сезон, золото",
+      "es": "La Fábrica: temporada 2, el oro"
+    },
+    "items": {
+      "en": [
+        "Season 2 opens after season 1: Siroco was caught, and El Maestro calls the crew back for a second class.",
+        "Free Siroco without a single blow: a forged order, a police uniform, a boat, and the right answers for the officer at Muelle Uno.",
+        "The gold of La Térmica, the old building by the sea: melt twelve bars in the furnaces while the vault floods, the police cut the power, drill the walls and call on the red phone.",
+        "Out through the outflow pipe and on to El Maestro's boat on La Misericordia beach: coins, crystals, the diving suit and the golden mask.",
+        "Play it with friends, as season 1."
+      ],
+      "lv": [
+        "2. sezona atveras pēc 1. sezonas: Siroco ir notverts, un El Maestro aicina komandu uz otro stundu.",
+        "Atbrīvo Siroco bez neviena sitiena: viltots rīkojums, policijas forma, laiva un pareizās atbildes dežurantam Muelle Uno.",
+        "La Térmica zelts vecajā ēkā pie jūras: izkausē krāsnīs divpadsmit stieņus, kamēr seifs applūst, policija atslēdz strāvu, urbj sienas un zvana pa sarkano telefonu.",
+        "Ārā pa noteces cauruli un uz El Maestro laivu La Misericordia pludmalē: monētas, kristāli, niršanas tērps un zelta maska.",
+        "Spēlē ar draugiem, tāpat kā 1. sezonu."
+      ],
+      "ru": [
+        "2-й сезон открывается после 1-го: Siroco поймали, и El Maestro зовёт команду на второй урок.",
+        "Освободи Siroco без единого удара: поддельный приказ, полицейская форма, лодка и верные ответы дежурному на Muelle Uno.",
+        "Золото La Térmica, старого здания у моря: расплавь двенадцать слитков, пока хранилище затапливает, полиция отключает ток, сверлит стены и звонит по красному телефону.",
+        "Наружу через сливную трубу и к лодке El Maestro на пляже La Misericordia: монеты, кристаллы, гидрокостюм и золотая маска.",
+        "Играй с друзьями, как и 1-й сезон."
+      ],
+      "es": [
+        "La temporada 2 se abre tras la temporada 1: Siroco ha caído y El Maestro llama a la banda a una segunda clase.",
+        "Libera a Siroco sin dar un golpe: una orden falsa, un uniforme de policía, una lancha y las respuestas correctas para el agente de Muelle Uno.",
+        "El oro de La Térmica, el viejo edificio junto al mar: funde doce lingotes mientras la cámara se inunda, la policía corta la luz, taladra las paredes y llama al teléfono rojo.",
+        "Fuera por la tubería del desagüe y a la lancha de El Maestro en la playa de La Misericordia: monedas, cristales, el traje de buzo y la máscara dorada.",
+        "Juega con amigos, como la temporada 1."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-buses",
     "title": {
       "en": "Buses: on the right, and easy to get on",
