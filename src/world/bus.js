@@ -3,12 +3,12 @@
 // every bus is right now. Buses run on Malaga's real clock (Europe/Madrid),
 // on the real timetable when the file has one, so every player sees the
 // same bus at the same place, and a bus due at 14:32 comes at 14:32.
-export const BUS_SPEED = 6; // metres per second between stops
-export const DWELL = 18; // seconds at each stop
+export const BUS_SPEED = 12; // metres per second between stops (twice a real bus, so a ride is not a long wait)
+export const DWELL = 12; // seconds at each stop
 // Spain drives on the right: a bus keeps this far to the right of the
 // route's line (the middle of the road), so the two directions pass
-// (two buses 2.6 wide, their middles 3 apart)
-export const LANE = 1.5;
+// (two buses 2.6 wide, their middles 3.6 apart)
+export const LANE = 1.8;
 const DEFAULT_HEADWAY = 15; // minutes, when there is no timetable
 
 // minutes after midnight in Malaga (with seconds as a fraction)
@@ -40,6 +40,7 @@ export class BusNet {
       for (let i = 1; i < l.pts.length; i++) l.cum.push(l.cum[i - 1] + Math.hypot(l.pts[i][0] - l.pts[i - 1][0], l.pts[i][1] - l.pts[i - 1][1]));
       l.trip = l.len / BUS_SPEED + l.stops.length * DWELL; // seconds
       if (!l.deps || !l.deps.length) l.deps = defaultDeparts(l);
+      l.deps = busier(l.deps);
     }
   }
 
@@ -86,7 +87,46 @@ export class BusNet {
         }
       }
     }
-    return out;
+    this.queue(out);
+    return out.filter((b) => !b.waiting);
+  }
+
+  // Buses in the same lane do not drive through each other: one that
+  // catches up with another (at a shared stop, or on a street many lines
+  // share) waits a bus length behind it. Worked out from the clock alone, so
+  // every player sees the same queue, and a bus moves on smoothly when the
+  // one ahead leaves.
+  queue(buses) {
+    const GAP = 13.5, CELL = 16, grid = new Map();
+    const key = (x, z) => Math.floor(x / CELL) + ',' + Math.floor(z / CELL);
+    for (const b of buses) { const k = key(b.x, b.z); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(b); }
+    for (let pass = 0; pass < 3; pass++) {
+      let moved = false;
+      for (const a of buses) {
+        if (a.waiting) continue;
+        const cx = Math.floor(a.x / CELL), cz = Math.floor(a.z / CELL);
+        for (let ox = -1; ox <= 1; ox++) for (let oz = -1; oz <= 1; oz++) for (const b of grid.get((cx + ox) + ',' + (cz + oz)) || []) {
+          if (b === a || b.waiting) continue;
+          let dh = b.heading - a.heading;
+          dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+          if (Math.abs(dh) > 0.8) continue; // not the same way
+          // b ahead of a, in the same lane, too close: a waits behind
+          const fx = Math.sin(a.heading), fz = Math.cos(a.heading), dx = b.x - a.x, dz = b.z - a.z;
+          const along = dx * fx + dz * fz, side = Math.abs(dx * fz - dz * fx);
+          // (two at the very same spot: the later key waits)
+          const ahead = along > 0.5 || (along > -0.5 && b.key < a.key);
+          if (!ahead || along >= GAP || side > 2.4) continue;
+          const need = a.d - (GAP - along) - 0.01;
+          // at the very start of its line it cannot wait further back: it leaves the depot later
+          if (need < 0) { a.waiting = true; continue; }
+          const d = need;
+          if (d >= a.d) continue;
+          Object.assign(a, this.pointAt(a.line, d), { d, queued: true });
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
   }
 
   // the next buses at a stop: [{ line, in (minutes), at (clock) }]
@@ -124,4 +164,16 @@ function defaultDeparts(l) {
   const out = [];
   for (let t = a + offset; t <= b; t += every) out.push(t % 1440);
   return out.sort((x, y) => x - y);
+}
+
+// The game runs more buses than the timetable: between two departures more
+// than 10 minutes apart one more leaves half way, so a wait at a stop is
+// about half as long.
+function busier(deps) {
+  const d = [...deps].sort((a, b) => a - b), out = [];
+  for (let i = 0; i < d.length; i++) {
+    out.push(d[i]);
+    if (i + 1 < d.length && d[i + 1] - d[i] > 10) out.push(Math.round((d[i] + d[i + 1]) / 2));
+  }
+  return out;
 }

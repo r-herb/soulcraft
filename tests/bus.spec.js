@@ -26,7 +26,7 @@ test.describe('Malaga buses', () => {
       const g = window.__sc.game, n = g.buses.net;
       n.fixedMinutes = 12 * 60;
       const l = n.lines.find((x) => x.stops.length >= 5 && x.len > 1500 && x.deps.some((d) => d > 600 && d < 900));
-      const k = 2, BUS = 6, DW = 18;
+      const k = 2, BUS = 12, DW = 12;
       let t = 0, d = 0;
       for (let i = 0; i <= k; i++) { t += (l.stops[i].d - d) / BUS; d = l.stops[i].d; if (i < k) t += DW; }
       const dep = l.deps.find((x) => x > 600 && x < 900);
@@ -44,6 +44,24 @@ test.describe('Malaga buses', () => {
     await toDoor(plan.bus.key);
     await page.evaluate((b) => { const g = window.__sc.game, p = g.player; p.yaw = Math.atan2(-(b.x - p.pos.x), -(b.z - p.pos.z)); p.pitch = -0.05; }, plan.bus);
     await shot(page, 'bus-at-stop');
+    // the stop's arrival board: the line standing here, now
+    await page.waitForFunction((si) => { const bd = window.__sc.game.buses.boards.get(si); return !!(bd && bd.sprite); }, plan.stop, { timeout: 5_000 });
+    expect(await page.evaluate(([si, ref]) => window.__sc.game.buses.boards.get(si).sprite.userData.rows.some((r) => r.ref === ref), [plan.stop, plan.ref])).toBe(true);
+    // no two buses going the same way in the same lane closer than a bus length
+    expect(await page.evaluate(() => {
+      const n = window.__sc.game.buses.net, all = n.active();
+      let worst = 99;
+      for (const a of all) for (const b of all) {
+        if (a === b) continue;
+        let dh = b.heading - a.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+        if (Math.abs(dh) > 0.8) continue;
+        const fx = Math.sin(a.heading), fz = Math.cos(a.heading), dx = b.x - a.x, dz = b.z - a.z;
+        if (Math.abs(dx * fz - dz * fx) > 2.4) continue;
+        const along = Math.abs(dx * fx + dz * fz);
+        worst = Math.min(worst, along);
+      }
+      return worst;
+    })).toBeGreaterThan(11.5);
 
     // Spain drives on the right: the doors are on the right of the way the bus goes,
     // and the bus keeps to the right of its line (the two directions pass each other)
@@ -71,6 +89,14 @@ test.describe('Malaga buses', () => {
     await page.evaluate((key) => { const g = window.__sc.game, b = g.buses.meshes.get(key).bus, [x, z] = g.buses.toWorld(b, 1.0, -0.6); g.player.pos.set(x, b.y + 0.05, z); g.player.vel.set(0, 0, 0); }, plan.bus.key);
     await page.waitForFunction(() => !!window.__sc.game.buses.riding, null, { timeout: 5_000 });
     await expect(page.locator('.bus-board')).toBeHidden();
+    // walking about inside: forward along the bus (the joystick held), and back
+    const walkFor = (z, ms) => page.evaluate(([z, ms]) => new Promise((done) => { const g = window.__sc.game, r = g.buses.riding, b = g.buses.meshes.get(r.key).bus; g.player.yaw = b.heading + Math.PI; window.__sc.input.move.z = z; setTimeout(() => { window.__sc.input.move.z = 0; done(); }, ms); }), [z, ms]);
+    const lz0 = await page.evaluate(() => window.__sc.game.buses.riding.lz);
+    await walkFor(-1, 600);
+    const lz1 = await page.evaluate(() => window.__sc.game.buses.riding.lz);
+    expect(lz0 - lz1).toBeGreaterThan(0.4);
+    await walkFor(1, 600);
+    expect(await page.evaluate(() => window.__sc.game.buses.riding.lz)).toBeGreaterThan(lz1 + 0.4);
     // off again, on the pavement to the right
     const off = await page.evaluate((key) => { const g = window.__sc.game, b = g.buses.meshes.get(key).bus; g.buses.getOff(b); const [lx] = g.buses.toLocal(b, g.player.pos.x, g.player.pos.z); return { riding: g.buses.riding, lx }; }, plan.bus.key);
     expect(off.riding).toBeNull();
@@ -87,7 +113,7 @@ test.describe('Malaga buses', () => {
     await page.evaluate(() => window.__sc.game.buses.action());
     expect(await page.evaluate(() => { const r = window.__sc.game.buses.riding; return { valid: r.valid, offer: r.offer }; })).toEqual({ valid: false, offer: true });
     await expect(page.locator('.bus-ride [data-a="busact"]')).toContainText(/driver/);
-    await page.evaluate((at) => { window.__sc.game.buses.net.fixedMinutes = at + 0.5; }, plan.at);
+    await page.evaluate((at) => { window.__sc.game.buses.net.fixedMinutes = at + 0.2; }, plan.at);
     await page.waitForFunction(() => window.__sc.game.buses.riding === null);
     await expect(page.locator('.bus-ride')).toBeHidden();
 
@@ -105,14 +131,14 @@ test.describe('Malaga buses', () => {
     expect(Math.abs(top.dy - 2.85)).toBeLessThan(0.05);
     const before = await page.evaluate(() => { const p = window.__sc.game.player.pos; return { x: p.x, z: p.z }; });
     // STOP while driving: the bus carries the player on and lets them off at the next stop
-    await page.evaluate((at) => { window.__sc.game.buses.net.fixedMinutes = at + 0.5; }, plan.at);
+    await page.evaluate((at) => { window.__sc.game.buses.net.fixedMinutes = at + 0.2; }, plan.at);
     await page.waitForTimeout(500);
     await shot(page, 'bus-top-deck');
     await page.evaluate(() => window.__sc.game.buses.requestStop());
     expect(await page.evaluate(() => window.__sc.game.buses.riding.stop)).toBe(true);
     await expect(page.locator('.bus-ride .br-stop')).toHaveClass(/on/);
     const next = await page.evaluate((p) => {
-      const n = window.__sc.game.buses.net, l = n.lines[p.li], k = 3, BUS = 6, DW = 18;
+      const n = window.__sc.game.buses.net, l = n.lines[p.li], k = 3, BUS = 12, DW = 12;
       let t = 0, d = 0;
       for (let i = 0; i <= k; i++) { t += (l.stops[i].d - d) / BUS; d = l.stops[i].d; if (i < k) t += DW; }
       const dep = l.deps.find((x) => x > 600 && x < 900);
@@ -129,7 +155,7 @@ test.describe('Malaga buses', () => {
     await toDoor(plan.bus.key);
     expect(await page.evaluate(() => window.__sc.game.buses.tryBoard())).toBe(true);
     await page.evaluate(() => { const bm = window.__sc.game.buses; bm.action(); bm.action(); });
-    await page.evaluate((at) => { window.__sc.game.buses.net.fixedMinutes = at + 0.5; }, next);
+    await page.evaluate((at) => { window.__sc.game.buses.net.fixedMinutes = at + 0.2; }, next);
     await page.waitForTimeout(400);
     const jump = await page.evaluate(() => { const g = window.__sc.game, bm = g.buses, m = bm.meshes.get(bm.riding.key); const y0 = m.bus.y; bm.jumpOff(m.bus); return { y0, y: g.player.pos.y, riding: bm.riding }; });
     expect(jump.riding).toBeNull();
@@ -145,9 +171,12 @@ test.describe('Malaga buses', () => {
       const clear = (x) => { for (let k = 0; k <= 50; k += 2) { const q = n.pointAt(x.line, x.d + k), gx = Math.floor(q.x), gz = Math.floor(q.z), y = g.city.groundAt(gx, gz) + 1 + 2.85; for (let dy = 0; dy < 3; dy++) for (const [ox, oz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (g.world.getBlock(gx + ox, Math.floor(y + dy), gz + oz) > 0) return false; } return true; };
       const free = (x) => x.stop < 0 && x.next < x.line.stops.length && x.line.stops[x.next].d - x.d > 60 && clear(x);
       const b = n.active().find((x) => free(x) && Math.hypot(x.x - g.player.pos.x, x.z - g.player.pos.z) < 150) || n.active().find(free);
+      // (buses are drawn near the player: go close to this one)
+      if (Math.hypot(b.x - g.player.pos.x, b.z - g.player.pos.z) > 120) g.player.pos.set(b.x + 20, 130, b.z + 20);
       return { key: b.key, x: b.x, z: b.z };
     }, plan.at);
-    // (wait for a frame to move the bus to the new time)
+    // (the world loaded there, and a frame to move the bus to the new time)
+    await page.evaluate(async () => { await window.__sc.game.ensureLoaded(); });
     await page.waitForFunction((r) => { const m = window.__sc.game.buses.meshes.get(r.key); return m && Math.hypot(m.bus.x - r.x, m.bus.z - r.z) < 3; }, roof, { timeout: 30_000 });
     await page.evaluate((r) => { const g = window.__sc.game, b = g.buses.meshes.get(r.key).bus; g.player.pos.set(b.x, b.y + 3.0, b.z); g.player.vel.set(0, 0, 0); }, roof);
     const start = await page.evaluate(() => { const p = window.__sc.game.player.pos; return { x: p.x, z: p.z }; });
@@ -164,7 +193,12 @@ test.describe('Malaga buses', () => {
     // a stop sign opens the timetable of its stop
     const sign = await page.evaluate((si) => { const g = window.__sc.game, c = g.city, s = g.buses.net.stops[si]; let best = null, bd = 1e9; for (let z = s.z - 12; z <= s.z + 12; z++) for (let x = s.x - 12; x <= s.x + 12; x++) { if (c.markAt(x, z) === 3) { const d = Math.hypot(x - s.x, z - s.z); if (d < bd) { bd = d; best = { x, z }; } } } return best; }, plan.stop);
     expect(sign).not.toBeNull();
-    await page.evaluate((s) => { const g = window.__sc.game; g.buses.net.fixedMinutes = 12 * 60; g.player.pos.set(s.x + 2.5, 120, s.z + 2.5); g.placeOnGround(); window.__sc.ui.open('busStop', s); }, sign);
+    await page.evaluate((s) => { const g = window.__sc.game; g.buses.net.fixedMinutes = 12 * 60; const c = g.city.openCellNear(s.x + 4, s.z + 4, 6) || { x: s.x + 4, z: s.z + 4 }; g.player.pos.set(c.x + 0.5, g.city.groundAt(c.x, c.z) + 1.05, c.z + 0.5); g.player.vel.set(0, 0, 0); }, sign);
+    // the arrival board over the sign
+    await page.waitForFunction((s) => [...window.__sc.game.buses.boards.values()].some((bd) => bd.sprite && Math.hypot(bd.pos.x - s.x - 0.5, bd.pos.z - s.z - 0.5) < 1), sign, { timeout: 5_000 });
+    await page.evaluate((s) => { const g = window.__sc.game, bd = [...g.buses.boards.values()].find((b) => b.sprite && Math.hypot(b.pos.x - s.x - 0.5, b.pos.z - s.z - 0.5) < 1), e = g.player.eye, q = bd.sprite.position; g.player.yaw = Math.atan2(-(q.x - e.x), -(q.z - e.z)); g.player.pitch = Math.atan2(q.y - e.y, Math.hypot(q.x - e.x, q.z - e.z)); }, sign);
+    await shot(page, 'bus-board');
+    await page.evaluate((s) => window.__sc.ui.open('busStop', s), sign);
     await expect(page.locator('[data-screen="busStop"] .bus-row').first()).toBeVisible();
     expect(await page.locator('[data-screen="busStop"] .bus-row').count()).toBeGreaterThan(0);
     await expect(page.locator('[data-screen="busStop"] .bus-times b').first()).toContainText(/min|now/);

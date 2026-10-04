@@ -174,9 +174,75 @@ export class BusManager {
     this.riding = null; // { key, lx, lz, deck, valid, stop, offer }
     this.lastStop = -1;
     this.hudT = 0;
+    this.boards = new Map(); // stop index -> { sprite, key, pos }
+    this.boardT = 0;
   }
 
-  clear() { for (const m of this.meshes.values()) this.game.scene.remove(m.obj); this.meshes.clear(); this.riding = null; this.drawHud(); }
+  clear() {
+    for (const m of this.meshes.values()) this.game.scene.remove(m.obj);
+    this.meshes.clear(); this.riding = null; this.drawHud();
+    for (const bd of this.boards.values()) this.dropBoard(bd);
+    this.boards.clear();
+  }
+
+  // ---------- the arrival boards at the stops ----------
+  // Over every stop sign near the player, a board like the real ones: the
+  // stop's name, then the next buses - the line, where it goes, in how many
+  // minutes.
+  updateBoards() {
+    const p = this.game.player.pos, want = new Set();
+    for (const [s, i] of this.net.stopsNear(p.x, p.z, 60)) {
+      want.add(i);
+      let bd = this.boards.get(i);
+      if (!bd) { bd = { i, key: '', pos: this.signOf(s) }; this.boards.set(i, bd); }
+      this.drawBoard(bd, s);
+    }
+    for (const [i, bd] of this.boards) if (!want.has(i) && Math.hypot(bd.pos.x - p.x, bd.pos.z - p.z) > 80) { this.dropBoard(bd); this.boards.delete(i); }
+  }
+  // the stop's sign (the blue post), or the stop itself
+  signOf(s) {
+    const c = this.game.city;
+    let best = null, bd = 1e9;
+    for (let z = s.z - 10; z <= s.z + 10; z++) for (let x = s.x - 10; x <= s.x + 10; x++) {
+      if (c.markAt(x, z) !== 3) continue;
+      const d = Math.hypot(x - s.x, z - s.z);
+      if (d < bd) { bd = d; best = { x, z }; }
+    }
+    const q = best || { x: Math.round(s.x), z: Math.round(s.z) };
+    return { x: q.x + 0.5, y: c.groundAt(q.x, q.z) + 3.8, z: q.z + 0.5 };
+  }
+  drawBoard(bd, s) {
+    const rows = this.net.arrivals(bd.i, this.net.now(), 1).filter((r) => r.times.length).slice(0, 4);
+    const when = (x) => (x.in <= 0 ? t('bus.now') : x.in > 90 ? x.at : t('bus.inMin', { n: x.in }));
+    const key = rows.map((r) => r.line.ref + ':' + when(r.times[0])).join('|');
+    if (bd.sprite && bd.key === key) return;
+    bd.key = key;
+    const W2 = 512, H2 = 70 + Math.max(1, rows.length) * 50;
+    const cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
+    const x = cv.getContext('2d');
+    x.fillStyle = '#0b0f14'; x.fillRect(0, 0, W2, H2);
+    x.strokeStyle = '#c8102e'; x.lineWidth = 6; x.strokeRect(3, 3, W2 - 6, H2 - 6);
+    x.fillStyle = '#ffffff'; x.font = '700 30px "Segoe UI", Roboto, Arial, sans-serif'; x.textBaseline = 'middle';
+    x.fillText(String(s.name || t('bus.stop')).slice(0, 28), 18, 36);
+    if (!rows.length) { x.fillStyle = '#8a94a6'; x.font = '26px "Segoe UI", Roboto, Arial, sans-serif'; x.fillText(t('bus.noMore'), 18, 95); }
+    rows.forEach((r, k) => {
+      const y = 95 + k * 50;
+      x.fillStyle = r.line.colour || '#c8102e'; x.fillRect(16, y - 20, 70, 40);
+      x.fillStyle = '#ffffff'; x.font = '700 26px "Segoe UI", Roboto, Arial, sans-serif'; x.textAlign = 'center'; x.fillText(String(r.line.ref).slice(0, 4), 51, y + 1);
+      x.textAlign = 'left'; x.fillStyle = '#ffb300'; x.font = '26px "Segoe UI", Roboto, Arial, sans-serif';
+      x.fillText(String(r.line.to || r.line.name || '').toUpperCase().slice(0, 18), 100, y + 1);
+      x.textAlign = 'right'; x.fillStyle = '#7dff8a'; x.font = '700 28px "Segoe UI", Roboto, Arial, sans-serif';
+      x.fillText(when(r.times[0]), W2 - 18, y + 1);
+      x.textAlign = 'left';
+    });
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearFilter;
+    if (bd.sprite) { bd.sprite.material.map.dispose(); bd.sprite.material.map = tex; bd.sprite.material.needsUpdate = true; }
+    else { bd.sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex })); this.game.scene.add(bd.sprite); }
+    const w = 3.2; bd.sprite.scale.set(w, w * (H2 / W2), 1);
+    bd.sprite.position.set(bd.pos.x, bd.pos.y + (w * (H2 / W2)) / 2 - 0.6, bd.pos.z);
+    bd.sprite.userData = { stop: bd.i, rows: rows.map((r) => ({ ref: r.line.ref, to: r.line.to, when: when(r.times[0]) })) };
+  }
+  dropBoard(bd) { if (!bd.sprite) return; this.game.scene.remove(bd.sprite); bd.sprite.material.map.dispose(); bd.sprite.material.dispose(); }
 
   groundY(x, z) {
     const c = this.game.city;
@@ -215,10 +281,12 @@ export class BusManager {
       if (m.light > 0) { m.light -= dt; if (m.light <= 0) m.obj.userData.light.material.color.set('#203020'); }
     }
     for (const [k, m] of this.meshes) if (!seen.has(k)) { g.scene.remove(m.obj); this.meshes.delete(k); }
-    if (this.riding) this.ride(inp);
+    if (this.riding) this.ride(inp, dt);
     else if (inp && inp.pressed.has('busboard')) this.tryBoard();
     this.hudT -= dt;
-    if (this.hudT <= 0) { this.hudT = 0.25; this.drawHud(); this.drawBoard(); }
+    if (this.hudT <= 0) { this.hudT = 0.25; this.drawHud(); this.drawBoardCard(); }
+    this.boardT -= dt;
+    if (this.boardT <= 0) { this.boardT = 1; this.updateBoards(); }
   }
 
   // the bus the player stands by (not riding), or null
@@ -236,7 +304,7 @@ export class BusManager {
   }
 
   // by a bus: how to get on, and where the tickets are
-  drawBoard() {
+  drawBoardCard() {
     const hud = this.game.ui && this.game.ui.hud, el = hud && hud.busBoard;
     if (!el) return;
     const b = this.riding ? null : this.nextTo();
@@ -256,12 +324,13 @@ export class BusManager {
     btn.querySelector('span').textContent = t('bus.boardBtn');
   }
 
-  // on a bus: the player moves with it
-  ride(inp) {
+  // on a bus: the player moves with it, and walks about on its deck
+  ride(inp, dt = 0) {
     const g = this.game, pl = g.player, r = this.riding;
     const m = this.meshes.get(r.key);
     if (!m) { this.getOff(null); return; }
     const b = m.bus;
+    if (this.walk(inp, dt, b)) return;
     const [x, z] = this.toWorld(b, r.lx, r.lz);
     pl.pos.set(x, b.y + (r.deck ? UPPER : FLOOR), z);
     pl.vel.set(0, 0, 0);
@@ -294,6 +363,24 @@ export class BusManager {
       g.ui.toast(t('bus.doorsShut'));
     }
     this.jumpHeld = !!(inp && inp.jump);
+  }
+
+  // walking on the deck (WASD or the joystick, as on the ground), within its sides;
+  // on the lower deck at a stop, walking out through an open door gets off
+  walk(inp, dt, b) {
+    const r = this.riding, mv = inp && inp.move;
+    if (!mv || Math.abs(mv.x) + Math.abs(mv.z) < 0.05 || !dt) return false;
+    const yaw = this.game.player.yaw, sp = 2.6 * dt;
+    const wx = (-Math.sin(yaw) * mv.z + Math.cos(yaw) * mv.x) * sp, wz = (-Math.cos(yaw) * mv.z - Math.sin(yaw) * mv.x) * sp;
+    // the world step in the bus's own frame (lx to its right, lz forward)
+    const s = Math.sin(b.heading), c = Math.cos(b.heading);
+    const dlx = -(wx * c - wz * s), dlz = wx * s + wz * c;
+    const side = W / 2 - 0.32;
+    if (!r.deck && b.stop >= 0 && r.lx >= side - 0.01 && dlx > 0 && DOORS.some((d) => Math.abs(r.lz - d) < DOOR_W / 2)) { this.getOff(b); return true; }
+    r.lx = Math.max(-side, Math.min(side, r.lx + dlx));
+    // (downstairs the front door's corner is open, the driver's cab on the left is not)
+    r.lz = r.deck ? Math.max(-L / 2 + 0.45, Math.min(L / 2 - 0.45, r.lz + dlz)) : Math.max(-L / 2 + 0.5, Math.min(r.lx > 0 ? L / 2 - 1.1 : L / 2 - 1.9, r.lz + dlz));
+    return false;
   }
 
   // the one action button while riding: validate (or buy from the driver), then go up or down the stairs

@@ -246,6 +246,10 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Iekāpšana:**
   - biļetes pērk pie pieturas zīmes (viens brauciens **2 monētas**, bonobús 10 braucieni **13**) vai pie vadītāja;
   - autobusi brauc **pa labo pusi** kā Spānijā, katrs savā joslā, ar durvīm labajā pusē (šoferis kreisajā);
+  - autobusi brauc **divreiz ātrāk** nekā īsti (12 m/s), pieturās stāv 12 sekundes, un starp diviem reisiem, kas atiet vairāk nekā 10 minūšu atstarpē, kursē vēl viens;
+  - vienā joslā vienā virzienā autobusi **stāv rindā** viens aiz otra, nevis brauc cauri;
+  - virs katras pieturas zīmes ir **tablo**: pieturas nosaukums, līnija, galapunkts un pēc cik minūtēm nāk nākamais autobuss;
+  - autobusā var **staigāt** pa abiem stāviem (WASD vai kursorsvira) un pieturā izkāpt, izejot pa atvērtām durvīm;
   - autobusi ir divstāvu ar **atvērtu augšējo stāvu**; pieturā atveras durvis: ieej pa tām vai nospied F (labais klikšķis, Mac skārienpaliktnī klikšķis ar diviem pirkstiem); pie autobusa kartīte rāda, kā iekāpt, cik braucienu atlicis un kur nopirkt biļeti;
   - iekšā ir vadītājs un **kontrolieris**; biļeti **nopīkstina** dzeltenajā validatorā (zaļa gaisma); bez biļetes kontrolieris izsēdina, kad durvis aizveras;
   - ar derīgu biļeti var **uzkāpt augšā** un braukt ar skatu pār pilsētu;

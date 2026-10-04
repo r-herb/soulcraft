@@ -136,16 +136,25 @@ friends like any other world.
   route relations, `scripts/city/build-bus.mjs` -> `public/city/malaga-bus.json`)
   drive their real routes on Malaga's clock (Europe/Madrid), with the real
   timetable when the city data has the EMT GTFS feed and every 15 minutes
-  otherwise. Blue stop signs stand at the stops; using one shows the next
+  otherwise, plus one more bus half way between two departures more than
+  10 minutes apart (so a wait is about half as long). A bus drives at 12 m/s
+  (twice a real one, so a ride is quick) and stands 12 s at each stop. Blue stop signs stand at the stops; using one shows the next
   buses of each line and the lines on the map, and sells tickets (a single
   ride for 2 coins, a bonobús of 10 rides for 13). The buses drive on the
-  right, each in its own lane (1.5 blocks right of the route's line, so the
-  two directions pass each other), with the doors on the right. They are
+  right, each in its own lane (1.8 blocks right of the route's line, so the
+  two directions pass each other), with the doors on the right. Buses going
+  the same way in the same lane queue a bus length apart instead of
+  driving through each other (at shared stops and on streets many lines
+  share); worked out from the clock, so every player sees the same queue.
+  Over every stop sign an arrival board shows the stop's name and the next
+  bus of each line, with where it goes and in how many minutes. They are
   open-top double-deckers: at a stop the doors open and a player walks in
   through one, or uses the bus (F, or the "Get on" button that shows up by
   a bus, with the rides left and where tickets are sold); inside,
   the driver and an inspector wait by the yellow validator, where the ticket
-  is validated with a beep (or bought from the driver). Validated, the rider
+  is validated with a beep (or bought from the driver). Inside, the rider
+  walks about both decks (WASD or the joystick) and at a stop can walk out
+  through an open door. Validated, the rider
   may go up to the open top deck and ride with the view over the city;
   without a ticket the inspector puts the rider out when the doors close.
   STOP (X) gets off at the next stop, and from the top deck one can jump off.
@@ -931,7 +940,9 @@ What the tests cover:
   deck lands in the street, and the top deck of a driving bus carries a
   player; the doors are on the right of the way the bus goes and the bus keeps
   to the right of its line; by a bus a card says how to get on and where
-  the tickets are, and walking in through an open door gets the player on.
+  the tickets are, and walking in through an open door gets the player on; the stop's board shows the line standing there; no two buses going the
+  same way in one lane are closer than a bus length; the rider walks
+  forward and back inside the bus.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
 - `tests/friends.spec.js`: a friend request by username, accepting it, the

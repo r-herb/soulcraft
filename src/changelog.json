@@ -1,5 +1,40 @@
 [
   {
+    "id": "2026-10-04-buses2",
+    "title": {
+      "en": "Buses: faster, arrival boards, walking inside",
+      "lv": "Autobusi: ātrāki, tablo, staigāšana iekšā",
+      "ru": "Автобусы: быстрее, табло, можно ходить внутри",
+      "es": "Autobuses: más rápidos, paneles y caminar dentro"
+    },
+    "items": {
+      "en": [
+        "Buses drive twice as fast and stop for less time, and one more bus runs between two that are far apart: shorter waits, quicker rides.",
+        "Every stop has an arrival board over its sign: the line, where it goes and in how many minutes the next bus comes.",
+        "Walk about inside the bus on both decks (WASD or the joystick); at a stop, walk out through an open door to get off.",
+        "Buses going the same way in the same lane now queue a bus length apart instead of driving through each other."
+      ],
+      "lv": [
+        "Autobusi brauc divreiz ātrāk un pieturās stāv īsāk, un starp diviem tālu viens no otra esošiem reisiem kursē vēl viens: mazāk jāgaida, ātrāk jābrauc.",
+        "Virs katras pieturas zīmes ir tablo: līnija, galapunkts un pēc cik minūtēm nāk nākamais autobuss.",
+        "Autobusā var staigāt pa abiem stāviem (WASD vai kursorsvira); pieturā izkāp, izejot pa atvērtām durvīm.",
+        "Viena virziena autobusi vienā joslā tagad stāv rindā viens aiz otra, nevis brauc viens otram cauri."
+      ],
+      "ru": [
+        "Автобусы ездят вдвое быстрее и короче стоят на остановках, а между двумя далёкими рейсами ходит ещё один: меньше ждать, быстрее ехать.",
+        "На каждой остановке над знаком есть табло: маршрут, куда он идёт и через сколько минут придёт следующий автобус.",
+        "По автобусу можно ходить на обоих этажах (WASD или джойстик); на остановке выйди через открытую дверь.",
+        "Автобусы в одну сторону в одной полосе теперь стоят в очереди, а не проезжают друг сквозь друга."
+      ],
+      "es": [
+        "Los autobuses van el doble de rápido y paran menos tiempo, y entre dos salidas muy separadas pasa uno más: menos espera y viajes más rápidos.",
+        "Cada parada tiene un panel sobre su señal: la línea, adónde va y en cuántos minutos llega el próximo autobús.",
+        "Camina por dentro del autobús en las dos plantas (WASD o el joystick); en una parada, sal por una puerta abierta para bajar.",
+        "Los autobuses que van en el mismo sentido por el mismo carril ahora hacen cola en vez de atravesarse."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-fabrica3",
     "title": {
       "en": "La Fábrica: season 3, El Maestro",
