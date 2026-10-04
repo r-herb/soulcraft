@@ -61,7 +61,7 @@ test.describe('Malaga buses', () => {
       return { door: (d.x - b.x) * rx + (d.z - b.z) * rz, lane };
     }, plan.bus.key);
     expect(side.door).toBeGreaterThan(0.8);
-    expect(side.lane).toBeGreaterThan(1.5);
+    expect(side.lane).toBeGreaterThan(1.2);
     // by the bus: how to get on, and where the tickets are
     await expect(page.locator('.bus-board')).toBeVisible();
     await expect(page.locator('.bus-board .bb-text')).toContainText('doors are open');
@@ -99,7 +99,7 @@ test.describe('Malaga buses', () => {
     await page.evaluate(() => window.__sc.game.buses.action());
     expect(await page.evaluate(() => ({ valid: window.__sc.game.buses.riding.valid, left: window.__sc.game.profile.tickets }))).toEqual({ valid: true, left: 1 });
     await page.evaluate(() => window.__sc.game.buses.action());
-    await page.waitForTimeout(200);
+    await page.waitForFunction(() => { const g = window.__sc.game, m = g.buses.meshes.get(g.buses.riding.key); return Math.abs(g.player.pos.y - m.bus.y - 2.85) < 0.05; }, null, { timeout: 5_000 });
     const top = await page.evaluate(() => { const g = window.__sc.game, m = g.buses.meshes.get(g.buses.riding.key); return { deck: g.buses.riding.deck, dy: g.player.pos.y - m.bus.y }; });
     expect(top.deck).toBe(1);
     expect(Math.abs(top.dy - 2.85)).toBeLessThan(0.05);
@@ -141,8 +141,9 @@ test.describe('Malaga buses', () => {
     const roof = await page.evaluate((at) => {
       const g = window.__sc.game, n = g.buses.net;
       n.fixedMinutes = at + 1.5;
-      // a bus driving, with its next stop still well ahead
-      const free = (x) => x.stop < 0 && x.next < x.line.stops.length && x.line.stops[x.next].d - x.d > 60;
+      // a bus driving, with its next stop still well ahead and nothing in the way at the height of its top deck (a palm, a lamp)
+      const clear = (x) => { for (let k = 0; k <= 50; k += 2) { const q = n.pointAt(x.line, x.d + k), gx = Math.floor(q.x), gz = Math.floor(q.z), y = g.city.groundAt(gx, gz) + 1 + 2.85; for (let dy = 0; dy < 3; dy++) for (const [ox, oz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (g.world.getBlock(gx + ox, Math.floor(y + dy), gz + oz) > 0) return false; } return true; };
+      const free = (x) => x.stop < 0 && x.next < x.line.stops.length && x.line.stops[x.next].d - x.d > 60 && clear(x);
       const b = n.active().find((x) => free(x) && Math.hypot(x.x - g.player.pos.x, x.z - g.player.pos.z) < 150) || n.active().find(free);
       return { key: b.key, x: b.x, z: b.z };
     }, plan.at);

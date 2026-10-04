@@ -449,29 +449,35 @@ export class BusManager {
   afterPlayer() {
     if (this.riding) return;
     const pl = this.game.player, p = pl.pos;
+    const near = [];
     for (const m of this.meshes.values()) {
-      const b = m.bus, prev = m.prev;
-      const [lx, lz] = this.toLocal(b, p.x, p.z);
-      if (Math.abs(lx) > W / 2 + 1.5 || Math.abs(lz) > L / 2 + 1.5) continue;
-      const deck = b.y + UPPER;
-      const over = Math.abs(lx) < W / 2 + 0.25 && Math.abs(lz) < L / 2 + 0.25;
-      if (over && p.y >= deck - 0.8 && p.y <= deck + 1.2 && pl.vel.y <= 0.01) {
-        // carried by the top deck: follow the bus's move since the last frame
-        if (prev) {
-          const [plx, plz] = this.toLocal(prev, p.x, p.z);
-          const [nx, nz] = this.toWorld(b, plx, plz);
-          p.x = nx; p.z = nz;
-          pl.yaw += b.heading - prev.heading;
-        }
-        p.y = deck; pl.vel.y = 0; pl.onGround = true; pl.fallStart = null;
-      } else if (over && p.y < deck - 0.8 && p.y + 1.7 > b.y) {
-        // walking in through an open door on the right
-        if (b.stop >= 0 && m.door > 0.6 && lx > 0 && DOORS.some((d) => Math.abs(lz - d) < DOOR_W / 2)) { this.board(b); return; }
-        // pushed out of the side (or the ends)
-        const outX = W / 2 + 0.35 - Math.abs(lx), outZ = L / 2 + 0.35 - Math.abs(lz);
-        const [x, z] = outX < outZ ? this.toWorld(b, Math.sign(lx || 1) * (W / 2 + 0.35), lz) : this.toWorld(b, lx, Math.sign(lz || 1) * (L / 2 + 0.35));
-        p.x = x; p.z = z;
+      const [lx, lz] = this.toLocal(m.bus, p.x, p.z);
+      if (Math.abs(lx) < W / 2 + 0.25 && Math.abs(lz) < L / 2 + 0.25) near.push({ m, lx, lz });
+    }
+    // on a top deck: carried by that bus (and by no other one standing in the same place)
+    const top = near.find(({ m }) => { const deck = m.bus.y + UPPER; return p.y >= deck - 0.8 && p.y <= deck + 1.2 && pl.vel.y <= 0.01; });
+    if (top) {
+      const b = top.m.bus, prev = top.m.prev;
+      // follow the bus's move since the last frame
+      if (prev) {
+        const [plx, plz] = this.toLocal(prev, p.x, p.z);
+        const [nx, nz] = this.toWorld(b, plx, plz);
+        p.x = nx; p.z = nz;
+        pl.yaw += b.heading - prev.heading;
       }
+      p.y = b.y + UPPER; pl.vel.y = 0; pl.onGround = true; pl.fallStart = null;
+      return;
+    }
+    for (const { m, lx, lz } of near) {
+      const b = m.bus;
+      if (!(p.y < b.y + UPPER - 0.8 && p.y + 1.7 > b.y)) continue;
+      // walking in through an open door on the right (on foot, at the floor's height)
+      if (b.stop >= 0 && m.door > 0.6 && lx > 0 && p.y < b.y + FLOOR + 0.9 && DOORS.some((d) => Math.abs(lz - d) < DOOR_W / 2)) { this.board(b); return; }
+      // pushed out of the side (or the ends)
+      const outX = W / 2 + 0.35 - Math.abs(lx), outZ = L / 2 + 0.35 - Math.abs(lz);
+      const [x, z] = outX < outZ ? this.toWorld(b, Math.sign(lx || 1) * (W / 2 + 0.35), lz) : this.toWorld(b, lx, Math.sign(lz || 1) * (L / 2 + 0.35));
+      p.x = x; p.z = z;
+      return;
     }
   }
 

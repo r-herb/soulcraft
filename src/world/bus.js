@@ -7,7 +7,8 @@ export const BUS_SPEED = 6; // metres per second between stops
 export const DWELL = 18; // seconds at each stop
 // Spain drives on the right: a bus keeps this far to the right of the
 // route's line (the middle of the road), so the two directions pass
-export const LANE = 2.2;
+// (two buses 2.6 wide, their middles 3 apart)
+export const LANE = 1.5;
 const DEFAULT_HEADWAY = 15; // minutes, when there is no timetable
 
 // minutes after midnight in Malaga (with seconds as a fraction)
