@@ -241,7 +241,8 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Pieturas:** 860 pieturas (1037 zilas pieturas zīmes). Izmantojot zīmi, redzi nākamos autobusus katrai līnijai (pēc minūtēm un pulksteņa laika) un vari parādīt līnijas uz kartes.
 - **Iekāpšana:**
   - biļetes pērk pie pieturas zīmes (viens brauciens **2 monētas**, bonobús 10 braucieni **13**) vai pie vadītāja;
-  - autobusi ir divstāvu ar **atvērtu augšējo stāvu**; pieturā atveras durvis un var iekāpt;
+  - autobusi brauc **pa labo pusi** kā Spānijā, katrs savā joslā, ar durvīm labajā pusē (šoferis kreisajā);
+  - autobusi ir divstāvu ar **atvērtu augšējo stāvu**; pieturā atveras durvis: ieej pa tām vai nospied F (labais klikšķis, Mac skārienpaliktnī klikšķis ar diviem pirkstiem); pie autobusa kartīte rāda, kā iekāpt, cik braucienu atlicis un kur nopirkt biļeti;
   - iekšā ir vadītājs un **kontrolieris**; biļeti **nopīkstina** dzeltenajā validatorā (zaļa gaisma); bez biļetes kontrolieris izsēdina, kad durvis aizveras;
   - ar derīgu biļeti var **uzkāpt augšā** un braukt ar skatu pār pilsētu;
   - **STOP** (X) - izkāpt nākamajā pieturā; no augšējā stāva var arī **izlēkt**;

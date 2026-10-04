@@ -58,6 +58,8 @@ export class Hud {
       <div class="bus-ride pe hidden"><div class="br-head"><b class="br-line"></b><span class="br-next"></span></div><span class="br-ticket"></span>
         <div class="br-acts"><button class="btn small primary" data-a="busact"><span></span><kbd class="desktop-only">F</kbd></button><button class="btn small br-stop" data-a="busstop">STOP<kbd class="desktop-only">X</kbd></button></div>
         <p class="br-hint"></p></div>
+      <div class="bus-board pe hidden"><b class="bb-line"></b><span class="bb-text"></span><span class="bb-tickets"></span><span class="bb-keys desktop-only"></span>
+        <button class="btn small primary" data-a="busboard"><span></span><kbd class="desktop-only">F</kbd></button></div>
       <div class="fab-panel hidden"><b class="fp-title"></b><div class="fp-row"><span class="fp-printed"></span></div><div class="fp-bar"><i></i></div><span class="fp-pat small"></span><div class="fp-alerts"></div></div>
       <div class="quest-obj hidden"><b></b><span></span><i class="mis-arrow hidden">&#9650;</i></div>
       <div class="boss-bar hidden"><div class="boss-name"></div><div class="boss-hp"><i></i></div><div class="boss-hint"></div></div>
@@ -85,6 +87,7 @@ export class Hud {
     this.questObj = q('.quest-obj');
     this.misArrow = q('.mis-arrow');
     this.busRide = q('.bus-ride');
+    this.busBoard = q('.bus-board');
     this.fabPanel = q('.fab-panel');
     this.roomChip = q('.room-chip');
     this.chatBtn = q('[data-b="chat"]');

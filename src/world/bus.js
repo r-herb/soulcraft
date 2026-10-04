@@ -5,6 +5,9 @@
 // same bus at the same place, and a bus due at 14:32 comes at 14:32.
 export const BUS_SPEED = 6; // metres per second between stops
 export const DWELL = 18; // seconds at each stop
+// Spain drives on the right: a bus keeps this far to the right of the
+// route's line (the middle of the road), so the two directions pass
+export const LANE = 2.2;
 const DEFAULT_HEADWAY = 15; // minutes, when there is no timetable
 
 // minutes after midnight in Malaga (with seconds as a fraction)
@@ -60,7 +63,9 @@ export class BusNet {
     while (i < c.length - 1 && c[i] < d) i++;
     const f = Math.max(0, Math.min(1, (d - c[i - 1]) / ((c[i] - c[i - 1]) || 1)));
     const x = p[i - 1][0] + (p[i][0] - p[i - 1][0]) * f, z = p[i - 1][1] + (p[i][1] - p[i - 1][1]) * f;
-    return { x, z, heading: Math.atan2(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]) };
+    const heading = Math.atan2(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+    // in its lane: to the right of the way it goes (right of (sin h, cos h) is (-cos h, sin h))
+    return { x: x - Math.cos(heading) * LANE, z: z + Math.sin(heading) * LANE, heading };
   }
 
   now() { return this.fixedMinutes ?? malagaMinutes(); }

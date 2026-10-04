@@ -45,6 +45,37 @@ test.describe('Malaga buses', () => {
     await page.evaluate((b) => { const g = window.__sc.game, p = g.player; p.yaw = Math.atan2(-(b.x - p.pos.x), -(b.z - p.pos.z)); p.pitch = -0.05; }, plan.bus);
     await shot(page, 'bus-at-stop');
 
+    // Spain drives on the right: the doors are on the right of the way the bus goes,
+    // and the bus keeps to the right of its line (the two directions pass each other)
+    const side = await page.evaluate((key) => {
+      const g = window.__sc.game, m = g.buses.meshes.get(key), b = m.bus;
+      const d = m.obj.userData.doors[0].m.getWorldPosition(m.obj.position.clone());
+      const rx = -Math.cos(b.heading), rz = Math.sin(b.heading);
+      let lane = 1e9;
+      const P = b.line.pts;
+      for (let i = 1; i < P.length; i++) {
+        const [ax, az] = P[i - 1], [bx, bz] = P[i], vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1;
+        const f = Math.max(0, Math.min(1, ((b.x - ax) * vx + (b.z - az) * vz) / l2));
+        lane = Math.min(lane, Math.hypot(b.x - ax - vx * f, b.z - az - vz * f));
+      }
+      return { door: (d.x - b.x) * rx + (d.z - b.z) * rz, lane };
+    }, plan.bus.key);
+    expect(side.door).toBeGreaterThan(0.8);
+    expect(side.lane).toBeGreaterThan(1.5);
+    // by the bus: how to get on, and where the tickets are
+    await expect(page.locator('.bus-board')).toBeVisible();
+    await expect(page.locator('.bus-board .bb-text')).toContainText('doors are open');
+    await expect(page.locator('.bus-board .bb-tickets')).toContainText('ride free');
+    await expect(page.locator('.bus-board [data-a="busboard"]')).toBeVisible();
+    // walking in through the middle door gets the player on
+    await page.evaluate((key) => { const g = window.__sc.game, b = g.buses.meshes.get(key).bus, [x, z] = g.buses.toWorld(b, 1.0, -0.6); g.player.pos.set(x, b.y + 0.05, z); g.player.vel.set(0, 0, 0); }, plan.bus.key);
+    await page.waitForFunction(() => !!window.__sc.game.buses.riding, null, { timeout: 5_000 });
+    await expect(page.locator('.bus-board')).toBeHidden();
+    // off again, on the pavement to the right
+    const off = await page.evaluate((key) => { const g = window.__sc.game, b = g.buses.meshes.get(key).bus; g.buses.getOff(b); const [lx] = g.buses.toLocal(b, g.player.pos.x, g.player.pos.z); return { riding: g.buses.riding, lx }; }, plan.bus.key);
+    expect(off.riding).toBeNull();
+    expect(off.lx).toBeGreaterThan(1.5);
+
     // a paying rider without a ticket: the validator refuses, and when the doors close the inspector puts them out
     await page.evaluate(() => { const bm = window.__sc.game.buses; Object.defineProperty(bm, 'pays', { configurable: true, get: () => true }); window.__sc.game.profile.tickets = 0; });
     await toDoor(plan.bus.key);

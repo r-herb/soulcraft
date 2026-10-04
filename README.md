@@ -138,8 +138,12 @@ friends like any other world.
   timetable when the city data has the EMT GTFS feed and every 15 minutes
   otherwise. Blue stop signs stand at the stops; using one shows the next
   buses of each line and the lines on the map, and sells tickets (a single
-  ride for 2 coins, a bonobús of 10 rides for 13). The buses are open-top
-  double-deckers: at a stop the doors open and a player can step in; inside,
+  ride for 2 coins, a bonobús of 10 rides for 13). The buses drive on the
+  right, each in its own lane (2.2 blocks right of the route's line, so the
+  two directions pass each other), with the doors on the right. They are
+  open-top double-deckers: at a stop the doors open and a player walks in
+  through one, or uses the bus (F, or the "Get on" button that shows up by
+  a bus, with the rides left and where tickets are sold); inside,
   the driver and an inspector wait by the yellow validator, where the ticket
   is validated with a beep (or bought from the driver). Validated, the rider
   may go up to the open top deck and ride with the view over the city;
@@ -799,7 +803,9 @@ What the tests cover:
   ticket is validated (no ticket: the inspector puts the player out), the
   top deck is reached, STOP gets off at the next stop, a jump from the top
   deck lands in the street, and the top deck of a driving bus carries a
-  player.
+  player; the doors are on the right of the way the bus goes and the bus keeps
+  to the right of its line; by a bus a card says how to get on and where
+  the tickets are, and walking in through an open door gets the player on.
 - `tests/city.spec.js` (desktop): a Malaga world starts on the Plaza de la
   Constitucion and its buildings stand where the city file says.
 - `tests/friends.spec.js`: a friend request by username, accepting it, the

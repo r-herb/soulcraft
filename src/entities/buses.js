@@ -1,6 +1,8 @@
 // City buses: drawn where the bus network (src/world/bus.js) says they are,
 // on Malaga's real clock. They are open-top double-deckers: at a stop the
-// doors on the right open, and a player standing by the bus can step in.
+// doors on the right open (Spain drives on the right), and a player walks
+// in through an open door, or uses the bus (F, or the button that shows up
+// next to one).
 // Inside the driver and an inspector wait by the validator: a ticket (bought
 // at the stop, or from the driver) is validated with a beep, and only then
 // may the bus be ridden - on the lower deck or up on the open top deck, with
@@ -154,8 +156,12 @@ function busModel(line) {
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.4), new THREE.MeshBasicMaterial({ map: tex }));
     sign.position.set(0, 2.62, s * (L / 2 + 0.02));
     if (s < 0) sign.rotation.y = Math.PI;
+    sign.scale.x = -1; // (the bus is mirrored, its signs read the right way)
     g.add(sign);
   }
+  // the model is built with its doors at +x; mirrored, +x is the right side
+  // of the bus going forward (the kerb side in Spain), the driver on the left
+  g.scale.x = -1;
   g.userData = { doors, light, insp };
   return g;
 }
@@ -177,9 +183,9 @@ export class BusManager {
     return c ? c.groundAt(Math.floor(x), Math.floor(z)) + 1 : 0;
   }
 
-  // world position of a point (lx right, lz forward) on a bus
-  toWorld(b, lx, lz) { const s = Math.sin(b.heading), c = Math.cos(b.heading); return [b.x + lx * c + lz * s, b.z - lx * s + lz * c]; }
-  toLocal(b, x, z) { const dx = x - b.x, dz = z - b.z, s = Math.sin(b.heading), c = Math.cos(b.heading); return [dx * c - dz * s, dx * s + dz * c]; }
+  // world position of a point (lx to the right, lz forward) on a bus
+  toWorld(b, lx, lz) { const s = Math.sin(b.heading), c = Math.cos(b.heading); return [b.x - lx * c + lz * s, b.z + lx * s + lz * c]; }
+  toLocal(b, x, z) { const dx = x - b.x, dz = z - b.z, s = Math.sin(b.heading), c = Math.cos(b.heading); return [-(dx * c - dz * s), dx * s + dz * c]; }
 
   // who pays: signed-in players outside creative; guests and creative ride free
   get pays() { const g = this.game; return !g.creative && !!(account.user && account.available); }
@@ -210,8 +216,44 @@ export class BusManager {
     }
     for (const [k, m] of this.meshes) if (!seen.has(k)) { g.scene.remove(m.obj); this.meshes.delete(k); }
     if (this.riding) this.ride(inp);
+    else if (inp && inp.pressed.has('busboard')) this.tryBoard();
     this.hudT -= dt;
-    if (this.hudT <= 0) { this.hudT = 0.25; this.drawHud(); }
+    if (this.hudT <= 0) { this.hudT = 0.25; this.drawHud(); this.drawBoard(); }
+  }
+
+  // the bus the player stands by (not riding), or null
+  nextTo() {
+    const p = this.game.player.pos;
+    let best = null, bd = 1e9;
+    for (const m of this.meshes.values()) {
+      const b = m.bus;
+      const [lx, lz] = this.toLocal(b, p.x, p.z);
+      if (Math.abs(lx) > W / 2 + 3 || Math.abs(lz) > L / 2 + 2.5 || Math.abs(p.y - b.y) > 3) continue;
+      const d = Math.hypot(lx, lz);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
+  }
+
+  // by a bus: how to get on, and where the tickets are
+  drawBoard() {
+    const hud = this.game.ui && this.game.ui.hud, el = hud && hud.busBoard;
+    if (!el) return;
+    const b = this.riding ? null : this.nextTo();
+    el.classList.toggle('hidden', !b);
+    if (!b) { el.dataset.k = ''; return; }
+    const open = b.stop >= 0 || this.game.creative;
+    const tk = this.pays ? t('bus.boardTickets', { n: this.tickets }) : t('bus.freeShort');
+    const key = `${b.key}|${open}|${tk}`;
+    if (el.dataset.k === key) return;
+    el.dataset.k = key;
+    el.querySelector('.bb-line').textContent = `${b.line.ref} - ${b.line.to || ''}`;
+    el.querySelector('.bb-text').textContent = open ? t('bus.boardOpen') : t('bus.boardWait');
+    el.querySelector('.bb-tickets').textContent = tk;
+    el.querySelector('.bb-keys').textContent = open ? t('bus.boardKeys') : '';
+    const btn = el.querySelector('[data-a="busboard"]');
+    btn.classList.toggle('hidden', !open);
+    btn.querySelector('span').textContent = t('bus.boardBtn');
   }
 
   // on a bus: the player moves with it
@@ -423,6 +465,8 @@ export class BusManager {
         }
         p.y = deck; pl.vel.y = 0; pl.onGround = true; pl.fallStart = null;
       } else if (over && p.y < deck - 0.8 && p.y + 1.7 > b.y) {
+        // walking in through an open door on the right
+        if (b.stop >= 0 && m.door > 0.6 && lx > 0 && DOORS.some((d) => Math.abs(lz - d) < DOOR_W / 2)) { this.board(b); return; }
         // pushed out of the side (or the ends)
         const outX = W / 2 + 0.35 - Math.abs(lx), outZ = L / 2 + 0.35 - Math.abs(lz);
         const [x, z] = outX < outZ ? this.toWorld(b, Math.sign(lx || 1) * (W / 2 + 0.35), lz) : this.toWorld(b, lx, Math.sign(lz || 1) * (L / 2 + 0.35));

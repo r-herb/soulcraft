@@ -455,6 +455,11 @@ body.touch .desktop-only { display: none !important; }
 .bus-ride { position: absolute; left: calc(var(--sp-3) + var(--safe-l, 0px)); top: 26%; width: min(250px, 44vw); display: flex; flex-direction: column; gap: 6px; background: rgba(5, 4, 15, 0.62); border: 2px solid rgba(200, 16, 46, 0.8); border-radius: var(--r-md); padding: var(--sp-2); }
 .bus-ride .br-head b { display: block; font-family: var(--font-display); font-size: 10px; font-weight: 400; color: #ffd36b; text-shadow: var(--text-shadow); }
 .bus-ride .br-head span, .bus-ride .br-hint { font-size: var(--fs-xs, 12px); color: var(--c-text-dim, #cfd3e6); margin: 0; }
+.bus-board { position: absolute; left: 50%; bottom: calc(var(--safe-b, 0px) + 150px); transform: translateX(-50%); width: min(320px, 70vw); display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center; background: rgba(5, 4, 15, 0.7); border: 2px solid rgba(200, 16, 46, 0.8); border-radius: var(--r-md); padding: var(--sp-2); }
+.bus-board .bb-line { font-family: var(--font-display); font-size: 10px; font-weight: 400; color: #ffd36b; text-shadow: var(--text-shadow); }
+.bus-board .bb-text { font-size: var(--fs-sm, 14px); }
+.bus-board .bb-keys { font-size: var(--fs-xs, 12px); color: #ffd36b; }
+.bus-board .bb-tickets { font-size: var(--fs-xs, 12px); color: var(--c-text-dim, #cfd3e6); }
 .bus-ride .br-ticket { font-size: var(--fs-sm); color: #ffb3a8; }
 .bus-ride .br-ticket.ok { color: #7dffa0; }
 .bus-ride .br-acts { display: flex; gap: 6px; flex-wrap: wrap; }

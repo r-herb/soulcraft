@@ -1,5 +1,40 @@
 [
   {
+    "id": "2026-10-04-buses",
+    "title": {
+      "en": "Buses: on the right, and easy to get on",
+      "lv": "Autobusi: pa labo pusi, un viegli iekāpt",
+      "ru": "Автобусы: по правой стороне, и сесть легко",
+      "es": "Autobuses: por la derecha, y fáciles de coger"
+    },
+    "items": {
+      "en": [
+        "Buses drive on the right, as in Spain, each in its own lane: they no longer drive through each other.",
+        "The doors are on the right, on the pavement side; the driver sits on the left.",
+        "By a bus a card shows how to get on: walk in through an open door, or press F (or the Get on button).",
+        "The card also shows your rides left and where to buy tickets: at the blue stop sign, or from the driver."
+      ],
+      "lv": [
+        "Autobusi brauc pa labo pusi kā Spānijā, katrs savā joslā: vairs nebrauc viens otram cauri.",
+        "Durvis ir labajā pusē, no ietves puses; šoferis sēž kreisajā pusē.",
+        "Pie autobusa kartīte parāda, kā iekāpt: ieej pa atvērtām durvīm vai nospied F (vai pogu Iekāpt).",
+        "Kartītē redzami arī atlikušie braucieni un kur nopirkt biļeti: pie zilās pieturas zīmes vai pie šofera."
+      ],
+      "ru": [
+        "Автобусы ездят по правой стороне, как в Испании, каждый в своей полосе: больше не проезжают друг сквозь друга.",
+        "Двери справа, со стороны тротуара; водитель сидит слева.",
+        "У автобуса карточка подсказывает, как сесть: войди в открытую дверь или нажми F (или кнопку Войти).",
+        "Там же видно, сколько поездок осталось и где купить билет: у синего знака остановки или у водителя."
+      ],
+      "es": [
+        "Los autobuses circulan por la derecha, como en España, cada uno por su carril: ya no se atraviesan.",
+        "Las puertas están a la derecha, del lado de la acera; el conductor va a la izquierda.",
+        "Junto a un autobús, una tarjeta explica cómo subir: entra por una puerta abierta o pulsa F (o el botón Subir).",
+        "La tarjeta también muestra tus viajes y dónde comprar billetes: en la señal azul de la parada o al conductor."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-fabrica",
     "title": {
       "en": "La Fábrica: season 1",
