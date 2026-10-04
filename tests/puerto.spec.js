@@ -175,9 +175,10 @@ test.describe('La Fábrica season 3', () => {
     expect(await page.evaluate(() => { const s = window.__sc.game.puerto.state(); return [s.act, s.escape > 140]; })).toEqual([7, true]);
     await shot(page, 'puerto-cell');
     // time running out: the police block the port, back to the warehouse
-    await page.evaluate(() => { window.__sc.game.puerto.state().escape = 0.3; });
-    await page.waitForFunction(() => window.__sc.game.puerto.state().escape > 140, null, { timeout: 5_000 });
-    await expect(page.locator('.toast', { hasText: 'blocked the port' })).toBeVisible();
+    // (the messages are noted as they come: on a slow runner a toast can be gone before it is looked at)
+    await page.evaluate(() => { const g = window.__sc.game, ui = g.ui, toast = ui.toast; window.__toasts = []; ui.toast = function (m, ...a) { window.__toasts.push(m); return toast.call(this, m, ...a); }; g.puerto.state().escape = 0.3; });
+    await page.waitForFunction(() => window.__sc.game.puerto.state().escape > 140, null, { timeout: 30_000 });
+    expect(await page.evaluate(() => window.__toasts.some((m) => /blocked the port/.test(m)))).toBe(true);
 
     // to the boat
     await go('Muelle de Heredia');

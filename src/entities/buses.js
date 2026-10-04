@@ -541,8 +541,12 @@ export class BusManager {
       const [lx, lz] = this.toLocal(m.bus, p.x, p.z);
       if (Math.abs(lx) < W / 2 + 0.25 && Math.abs(lz) < L / 2 + 0.25) near.push({ m, lx, lz });
     }
-    // on a top deck: carried by that bus (and by no other one standing in the same place)
-    const top = near.find(({ m }) => { const deck = m.bus.y + UPPER; return p.y >= deck - 0.8 && p.y <= deck + 1.2 && pl.vel.y <= 0.01; });
+    // on a top deck: carried by that bus (and by no other one standing in the same place).
+    // The player stood on it where it was a frame ago: on a slow frame a bus can move
+    // more than half its length, so that is where to look.
+    const onDeck = (b) => { const [lx, lz] = this.toLocal(b, p.x, p.z), deck = b.y + UPPER; return Math.abs(lx) < W / 2 + 0.25 && Math.abs(lz) < L / 2 + 0.25 && p.y >= deck - 0.8 && p.y <= deck + 1.2 && pl.vel.y <= 0.01; };
+    let top = null;
+    for (const m of this.meshes.values()) if (onDeck(m.prev || m.bus)) { top = { m }; break; }
     if (top) {
       const b = top.m.bus, prev = top.m.prev;
       // follow the bus's move since the last frame
