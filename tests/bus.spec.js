@@ -90,13 +90,15 @@ test.describe('Malaga buses', () => {
     await page.waitForFunction(() => !!window.__sc.game.buses.riding, null, { timeout: 5_000 });
     await expect(page.locator('.bus-board')).toBeHidden();
     // walking about inside: forward along the bus (the joystick held), and back
-    const walkFor = (z, ms) => page.evaluate(([z, ms]) => new Promise((done) => { const g = window.__sc.game, r = g.buses.riding, b = g.buses.meshes.get(r.key).bus; g.player.yaw = b.heading + Math.PI; window.__sc.input.move.z = z; setTimeout(() => { window.__sc.input.move.z = 0; done(); }, ms); }), [z, ms]);
-    const lz0 = await page.evaluate(() => window.__sc.game.buses.riding.lz);
-    await walkFor(-1, 600);
-    const lz1 = await page.evaluate(() => window.__sc.game.buses.riding.lz);
-    expect(lz0 - lz1).toBeGreaterThan(0.4);
-    await walkFor(1, 600);
-    expect(await page.evaluate(() => window.__sc.game.buses.riding.lz)).toBeGreaterThan(lz1 + 0.4);
+    // (the joystick held until the rider has walked half a block, however slow the frames)
+    const walkTo = (z) => page.evaluate((z) => new Promise((done) => {
+      const g = window.__sc.game, r = g.buses.riding, b = g.buses.meshes.get(r.key).bus, from = r.lz, t0 = performance.now();
+      g.player.yaw = b.heading + Math.PI;
+      window.__sc.input.move.z = z;
+      const iv = setInterval(() => { if (Math.abs(r.lz - from) > 0.5 || performance.now() - t0 > 10000) { clearInterval(iv); window.__sc.input.move.z = 0; done(r.lz - from); } }, 30);
+    }), z);
+    expect(await walkTo(-1)).toBeLessThan(-0.4);
+    expect(await walkTo(1)).toBeGreaterThan(0.4);
     // off again, on the pavement to the right
     const off = await page.evaluate((key) => { const g = window.__sc.game, b = g.buses.meshes.get(key).bus; g.buses.getOff(b); const [lx] = g.buses.toLocal(b, g.player.pos.x, g.player.pos.z); return { riding: g.buses.riding, lx }; }, plan.bus.key);
     expect(off.riding).toBeNull();
