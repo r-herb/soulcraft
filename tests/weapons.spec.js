@@ -13,7 +13,8 @@ test.describe('Weapons', () => {
     const problems = watchConsole(page);
     await openTitle(page);
     await startNewWorld(page, 'armory');
-    await page.evaluate(() => { window.__sc.game.player.god = true; });
+    // (no monsters of the night wander in: one in front would take a blow meant for the line)
+    await page.evaluate(() => { const g = window.__sc.game; g.player.god = true; g.entities.trySpawn = () => {}; });
     const give = (k, n = 1) => page.evaluate(([k, n]) => { const g = window.__sc.game; g.inventory.slots[0] = null; g.giveItem(k, n); g.selectSlot(g.inventory.slots.findIndex((s) => s && s.item === k)); }, [k, n]);
     // three monsters in a row in front of the player, standing still (put back after each blow's knockback)
     const line = () => page.evaluate(() => {
@@ -54,6 +55,7 @@ test.describe('Weapons', () => {
     await page.evaluate(() => { window.__hits = []; });
     await hold(4000);
     await page.waitForTimeout(200);
+    expect(await page.evaluate(() => window.__hits[0] && window.__hits[0].who)).toBe(0);
     const ham = await hp();
     // (a full blow on the one struck, six tenths of it on each one beside it)
     expect([...ham].sort((a, b) => a - b)).toEqual([190, 194, 194]);
