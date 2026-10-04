@@ -305,6 +305,7 @@ or come only from an **achievement**, never for real money:
 | Mayor of Malaga | trading the Gran Diamante | mayor's crown and suit |
 | La Fábrica | season 1 to the end | red jumpsuit, grinning mask |
 | The gold of La Térmica | season 2 to the end | diving suit, golden mask |
+| El Maestro's rescue | season 3 to the end | captain's cap, night-vision goggles |
 
 The bosses beaten and the best day follow the player between worlds (in the
 profile); a new achievement is announced once. "Play as my avatar" switches
@@ -478,6 +479,41 @@ Season 2 opens when season 1 is done (in the missions list).
    avatar.
 
 The test panel jumps to any act of season 2 (it counts season 1 as done).
+
+## La Fábrica: season 3, El Maestro
+
+Season 3 opens when season 2 is done. Inspector Vega caught El Maestro on
+the beach; he is held in the old port warehouse (near the Plaza de la
+Marina). This season is not a siege but a quiet way in.
+
+1. **Bad news**: Siroco calls the crew to the farmhouse; his plan on the
+   blackboard (five lessons) and a quiz.
+2. **The contacts**: a hacker (La Rosaleda) who knows the warehouse's fuse
+   box, a locksmith (Huelin) with a **stethoscope**, a boatman (Muelle Uno)
+   who will wait at the Muelle de Heredia.
+3. **The warehouse** (a building of its own, at most 34 by 34): a lobby with
+   the fuse box, a hall of crates, a narrow corridor, the office with the
+   safe (left, at the back) and El Maestro's barred cell (right).
+4. **Past the cameras**: two cameras on the walls sweep the hall, their red
+   cones showing where they look (15 blocks, about 44 degrees wide; a crate
+   hides the player). The fuse box switches them off for 25 seconds, then
+   needs a minute. In the corridor two laser beams go on and off (on 2.6 s
+   of every 4, the second 2 s later). Seen by a camera or touching a beam
+   that is on: the alarm, and the crew slips out to try again (nobody is
+   hurt). The lobby is out of the cameras' sight. The cameras and the
+   lasers run on the clock, so every player in a room sees them the same.
+5. **The safe**: turn the dial with the arrows and listen with the
+   stethoscope: a click on the right number, a faint click within three.
+   Three numbers (new ones each time the crew goes in); the key to the
+   cell is inside.
+6. **The cell**: the key opens it and El Maestro follows the player.
+7. **The run**: the alarm rings; two and a half minutes to the boat at the
+   Muelle de Heredia, or the police block the port and the crew is back at
+   the warehouse. The end: 200,000 coins from El Maestro (once per account,
+   signed in), soul crystals, the **captain's cap** and the **night-vision
+   goggles** for the avatar.
+
+The test panel jumps to any act of season 3 and can switch the cameras off.
 
 ## Gems and gold
 
@@ -833,6 +869,15 @@ What the tests cover:
   next blow; the axe throws back further and hits only its target); the war
   hammer's blow also hits the monsters beside the one struck; the crossbow
   uses an arrow, the soul staff none; a thrown knife can be picked up again.
+- `tests/puerto.spec.js` (desktop): season 3 is hidden until season 2 is
+  done; Siroco's plan and quiz; the contacts give the stethoscope; the
+  warehouse has its door, fuse box, crates, safe and cell; a camera that
+  sees the player sets off the alarm and the crew is put out (the lobby is
+  safe); the fuse box blinds the cameras and then needs a minute; a laser
+  that is on sets off the alarm, one that is off is gone; past them the
+  office; a wrong combination keeps the safe shut, the clicks open it and
+  give the key; the key opens the cell; time running out on the run sends
+  the crew back; the boat ends the season.
 - `tests/guides.spec.js` (desktop): the Malaga card opens the city guide,
   its start button the tour's guide (the plaza ticked off), the ? of a
   mission and following one the first time open its guide (not the second

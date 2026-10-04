@@ -53,6 +53,9 @@ export const CITY_PLACES = {
     { name: 'La Tabacalera', lat: 36.70910, lon: -4.44240 },
     { name: 'Finca El Maestro', lat: 36.74650, lon: -4.42080 },
     { name: 'La Térmica', lat: 36.68930, lon: -4.44570 },
+    // season 3: the old port warehouse where El Maestro is held, and the quay where the boat waits
+    { name: 'Almacén del Puerto', lat: 36.71720, lon: -4.42150 },
+    { name: 'Muelle de Heredia', lat: 36.71450, lon: -4.42250 },
   ],
 };
 
@@ -211,6 +214,8 @@ export class CityData {
     if (fab && fab.old.x1 >= x0 && fab.old.x0 < x0 + W && fab.old.z1 >= z0 && fab.old.z0 < z0 + W) out.fab = fab;
     const oro = this.oroPlan();
     if (oro && oro.old.x1 >= x0 && oro.old.x0 < x0 + W && oro.old.z1 >= z0 && oro.old.z0 < z0 + W) out.oro = oro;
+    const pu = this.puertoPlan();
+    if (pu && pu.old.x1 >= x0 && pu.old.x0 < x0 + W && pu.old.z1 >= z0 && pu.old.z0 < z0 + W) out.puerto = pu;
     return out;
   }
 
@@ -229,6 +234,13 @@ export class CityData {
     const r = this.standalonePlan('La Tabacalera', 16);
     if (r !== undefined) this._fab = r;
     return r;
+  }
+  // La Fábrica, season 3: the port warehouse (no deeper than 34, no wider than 34)
+  puertoPlan() {
+    if (this._puerto !== undefined) return this._puerto;
+    const r = this.standalonePlan('Almacén del Puerto', 18);
+    if (r !== undefined) this._puerto = r && clampPlan(r, 34, 34);
+    return this._puerto;
   }
   // La Fábrica, season 2: the gold vault in La Térmica (no deeper than 42, no wider than 34)
   oroPlan() {
@@ -394,6 +406,24 @@ export function oroLayout(depth, width) {
   return { vault, mid, furnaces, shelves, phone: [2, 2], generator: [2, width - 2], pumps: [[vault - 2, 2], [vault - 2, width - 2]], outflow: [depth - 2, mid], hall: [5, vault - 2] };
 }
 
+// The port warehouse inside (season 3), by depth from the entrance and width
+// across: the lobby with the fuse box, a hall of crates watched by two
+// sweeping cameras, a narrow corridor crossed by two laser beams, then the
+// office with the safe (left) and the barred cell where El Maestro is held
+// (right, at the back).
+export function puertoLayout(depth, width) {
+  const mid = Math.floor(width / 2), c0 = Math.max(12, depth - 12);
+  const crates = [[6, mid - 5], [6, mid + 5], [9, mid - 2], [9, mid + 3], [7, 3], [8, width - 3], [c0 - 2, 4], [c0 - 2, width - 5]].filter(([d, a]) => d > 4 && d < c0 && a > 0 && a < width);
+  const hallMid = [Math.floor((4 + c0) / 2), mid];
+  return {
+    mid, c0, crates, hallMid,
+    fuse: [2, width - 2], safe: [depth - 2, 2],
+    lasers: [c0 + 1, c0 + 3], corridor: [mid - 1, mid + 1],
+    cell: { a0: width - 7, d0: depth - 7, door: [depth - 7, width - 4], maestro: [depth - 3, width - 3] },
+    cams: [{ d: 4, a: 1 }, { d: c0 - 1, a: width - 1 }],
+  };
+}
+
 // ---------- worker: blocks for one chunk ----------
 export function genCity(cx, cz, data, e) {
   const W = S + 2 * M, seaY = e.seaY;
@@ -415,6 +445,10 @@ export function genCity(cx, cz, data, e) {
     const ob = e.oro;
     if (ob && wx >= ob.x0 && wx <= ob.x1 && wz >= ob.z0 && wz <= ob.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; oroBuilding(lx, lz, wx, wz, g); continue; }
     if (ob && b === ob.gid) { b = 0; s = SURF.paving; }
+    // the port warehouse (season 3)
+    const pb = e.puerto;
+    if (pb && wx >= pb.x0 && wx <= pb.x1 && wz >= pb.z0 && wz <= pb.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; puertoBuilding(lx, lz, wx, wz, g); continue; }
+    if (pb && b === pb.gid) { b = 0; s = SURF.paving; }
     data[idx(lx, 0, lz)] = B.coreite;
     const natural = NATURAL.has(s) && !b;
     for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : (y < g - 3 && cityGemAt(wx, y, wz)) || B.stone;
@@ -610,6 +644,38 @@ export function genCity(cx, cz, data, e) {
     }
     data[idx(lx, topY, lz)] = B.concrete;
   }
+  // the port warehouse (season 3): cream walls, crates, a laser corridor, the office and the cell
+  function puertoBuilding(lx, lz, wx, wz, g) {
+    const P = e.puerto, base = P.base;
+    const topY = Math.min(HEIGHT - 2, base + 8);
+    const { d, a, mid, depth } = bankCoords(P, wx, wz);
+    const width = bankWidth(P), L = puertoLayout(depth, width);
+    const edge = wx === P.x0 || wx === P.x1 || wz === P.z0 || wz === P.z1;
+    for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
+    for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
+    data[idx(lx, base, lz)] = edge ? B.plaster_cream : B.concrete;
+    const C = L.cell, inCorridor = d >= L.c0 && d <= L.c0 + 3;
+    for (let y = base + 1; y < topY; y++) {
+      const r = y - base;
+      let id = B.air;
+      if (edge) {
+        const front = d === 0 && Math.abs(a - mid) <= 1 && r <= 3;
+        const sign = d === 0 && Math.abs(a - mid) <= 3 && r === 5;
+        const win = r >= 3 && r <= 4 && ((a % 4) + 4) % 4 === 2 && !(d === 0 && Math.abs(a - mid) <= 3);
+        id = front ? B.factory_door : sign ? B.puerto_sign : win ? B.window : B.plaster_cream;
+      } else if (r === 6) id = ((a % 5) + 5) % 5 === 2 && ((d % 5) + 5) % 5 === 2 ? B.bank_lamp : B.concrete; // the ceiling, with lamps
+      else if (r < 6) {
+        if (inCorridor && (a < L.corridor[0] || a > L.corridor[1])) id = B.plaster_cream; // the corridor's walls
+        else if (r <= 2 && L.crates.some(([cd, ca]) => cd === d && ca === a)) id = B.crate;
+        else if (r === 1 && d === L.fuse[0] && a === L.fuse[1]) id = B.fuse_box;
+        else if (r === 1 && d === L.safe[0] && a === L.safe[1]) id = B.safe;
+        else if (r <= 3 && ((a === C.a0 && d >= C.d0) || (d === C.d0 && a >= C.a0))) id = d === C.door[0] && a === C.door[1] && r <= 2 ? B.cell_door : B.cell_bars;
+      }
+      data[idx(lx, y, lz)] = id;
+    }
+    data[idx(lx, topY, lz)] = B.concrete;
+  }
+
 
 
   // A hidden gem cache in about one chunk in eight: a stone lid flush with
@@ -617,7 +683,7 @@ export function genCity(cx, cz, data, e) {
   if (hash3(cx, 5, cz, 31) < 0.12) {
     const lx = Math.floor(hash3(cx, 6, cz, 31) * S), lz = Math.floor(hash3(cx, 7, cz, 31) * S), k = at(lx, lz);
     const s = e.surf[k] & 0x7f, g = Math.min(HEIGHT - 2, e.ground[k]), wx = cx * S + lx, wz = cz * S + lz;
-    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1) || (e.oro && wx >= e.oro.old.x0 && wx <= e.oro.old.x1 && wz >= e.oro.old.z0 && wz <= e.oro.old.z1);
+    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1) || (e.oro && wx >= e.oro.old.x0 && wx <= e.oro.old.x1 && wz >= e.oro.old.z0 && wz <= e.oro.old.z1) || (e.puerto && wx >= e.puerto.old.x0 && wx <= e.puerto.old.x1 && wz >= e.puerto.old.z0 && wz <= e.puerto.old.z1);
     if (!e.bid[k] && !e.mark[k] && !e.wall[k] && !inBank && [SURF.park, SURF.garden, SURF.sand, SURF.plaza, SURF.ground, SURF.scrub, SURF.forest].includes(s) && g > seaY) data[idx(lx, g, lz)] = B.gem_cache;
   }
 
@@ -630,6 +696,7 @@ export function genCity(cx, cz, data, e) {
     if (e.bank && wx >= e.bank.x0 - 3 && wx <= e.bank.x1 + 3 && wz >= e.bank.z0 - 3 && wz <= e.bank.z1 + 3) continue; // none on the bank
     if (e.fab && wx >= e.fab.x0 - 3 && wx <= e.fab.x1 + 3 && wz >= e.fab.z0 - 3 && wz <= e.fab.z1 + 3) continue; // nor on the factory
     if (e.oro && wx >= e.oro.x0 - 3 && wx <= e.oro.x1 + 3 && wz >= e.oro.z0 - 3 && wz <= e.oro.z1 + 3) continue; // nor on La Térmica
+    if (e.puerto && wx >= e.puerto.x0 - 3 && wx <= e.puerto.x1 + 3 && wz >= e.puerto.z0 - 3 && wz <= e.puerto.z1 + 3) continue; // nor on the port warehouse
     const s = e.surf[k] & 0x7f, g = e.ground[k];
     const palm = [SURF.road, SURF.pavement, SURF.marble, SURF.plaza, SURF.sand, SURF.dock].includes(s) || hash3(wx, 9, wz, 3) < 0.25;
     const h = palm ? 6 + Math.floor(hash3(wx, 4, wz, 3) * 3) : 4 + Math.floor(hash3(wx, 4, wz, 3) * 2);

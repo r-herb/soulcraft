@@ -36,6 +36,8 @@ export const TILES = [
   'soft_earth', 'factory_door', 'fab_sign', 'money_press', 'money_press_top', 'money_press_on', 'paper_stack', 'paper_stack_top', 'ink_barrel', 'ink_barrel_top', 'red_phone', 'red_phone_top', 'cash_pallet', 'cash_pallet_top',
   // La Fábrica, season 2
   'gold_shelf', 'gold_shelf_top', 'gold_furnace', 'gold_furnace_top', 'gold_furnace_on', 'water_pump', 'water_pump_top', 'water_pump_off', 'generator', 'generator_top', 'generator_off', 'drill_wall', 'oro_sign',
+  // La Fábrica, season 3
+  'laser', 'safe', 'safe_top', 'fuse_box', 'cell_bars', 'cell_door', 'puerto_sign', 'crate', 'crate_top',
   // farm 2
   'orange_0', 'orange_1', 'orange_2', 'orange_3', 'nest_box', 'nest_box_top', 'incubator', 'incubator_top',
 ];
@@ -215,6 +217,14 @@ const LIST = [
   def(156, 'generator_off', { tex: { top: 'generator_top', side: 'generator_off', bottom: 'concrete' }, hardness: -1 }),
   def(157, 'drill_wall', { tex: 'drill_wall', hardness: -1, light: 6 }),
   def(158, 'oro_sign', { tex: 'oro_sign', hardness: -1 }),
+  // La Fábrica, season 3: a laser beam (passes through, sets off the alarm), the safe, the fuse box, the cell's bars and door, the sign, crates
+  def(159, 'laser', { tex: 'laser', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: -1, light: 10, drop: 'none' }),
+  def(160, 'safe', { tex: { top: 'safe_top', side: 'safe', bottom: 'safe_top' }, hardness: -1 }),
+  def(161, 'fuse_box', { tex: 'fuse_box', hardness: -1 }),
+  def(162, 'cell_bars', { tex: 'cell_bars', layer: 1, opaque: false, hardness: -1 }),
+  def(163, 'cell_door', { tex: 'cell_door', layer: 1, opaque: false, hardness: -1 }),
+  def(164, 'puerto_sign', { tex: 'puerto_sign', hardness: -1 }),
+  def(165, 'crate', { tex: { top: 'crate_top', side: 'crate', bottom: 'crate_top' }, hardness: -1 }),
   def(134, 'orange_0', { tex: 'orange_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 0 }),
   def(135, 'orange_1', { tex: 'orange_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 1 }),
   def(136, 'orange_2', { tex: 'orange_2', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 2 }),

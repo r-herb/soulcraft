@@ -160,6 +160,7 @@ export class Net {
       // La Fábrica: a guest's action for the host, or the host's "everyone in / out"
       case 'fab': if (g.fabrica) g.fabrica.onNet(msg, from); break;
       case 'oro': if (g.oro) g.oro.onNet(msg, from); break;
+      case 'puerto': if (g.puerto) g.puerto.onNet(msg, from); break;
       case 'hdistract': if (g.heist) g.heist.distract(Math.min(30, Number(msg.s) || 0)); break;
       case 'save': if (this.isHost && from) { g.meta.guests = g.meta.guests || {}; g.meta.guests[from] = { player: msg.player, inventory: msg.inventory, name: this.names.get(from) }; } break;
       default: break;

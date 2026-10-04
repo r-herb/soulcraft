@@ -317,6 +317,10 @@ export class Hud {
   // La Fábrica's sieges: what is printed (season 1) or melted (season 2), the police's patience, the water, what needs doing now
   fabUpdate(g) {
     const act = g.missions && g.missions.active;
+    // season 3: the cameras, the fuse box, the alarms, then the run to the boat
+    const U = g.puerto, u = act && U && U.open ? U.state() : null;
+    if (u && u.act >= 4 && u.act <= 7) { this.puertoPanel(u); return; }
+    if (this.fabPanel.classList.contains('three')) { this.fabPanel.classList.remove('three'); this.last.fab = null; }
     const F = g.fabrica, O = g.oro, f = act && F ? F.state() : null, o = act && O && O.open ? O.state() : null;
     const s = f && f.act === 4 ? f : o && o.act === 6 ? o : null, two = !!s && s === o, on = !!s;
     if (this.last.fabOn !== on) { this.last.fabOn = on; this.fabPanel.classList.toggle('hidden', !on); }
@@ -347,6 +351,25 @@ export class Hud {
     wt.classList.toggle('hidden', !two); wb.classList.toggle('hidden', !two);
     if (two) { wt.textContent = t('oro.hud.water', { n: Math.round(s.water) }); const i2 = wb.querySelector('i'); i2.style.width = Math.max(0, Math.min(100, s.water)) + '%'; i2.classList.toggle('low', s.water > 70); }
     this.fabPanel.querySelector('.fp-alerts').innerHTML = alerts.map((a) => `<p>${a.replace(/[&<>]/g, '')}</p>`).join('');
+  }
+
+  puertoPanel(s) {
+    if (this.last.fabOn !== true) { this.last.fabOn = true; this.fabPanel.classList.remove('hidden'); }
+    const run = s.act === 7, off = s.camsOff > 0;
+    const key = ['three', s.act, Math.ceil(s.camsOff), Math.ceil(s.fuseCd), Math.ceil(s.escape), s.alarms].join(';');
+    if (this.last.fab === key) return;
+    this.last.fab = key;
+    this.fabPanel.classList.remove('two'); this.fabPanel.classList.add('three');
+    this.fabPanel.querySelector('.fp-title').textContent = t('puerto.hud.title');
+    this.fabPanel.querySelector('.fp-printed').textContent = run ? t('puerto.hud.run', { s: Math.ceil(s.escape) }) : off ? t('puerto.hud.camsOff', { s: Math.ceil(s.camsOff) }) : t('puerto.hud.camsOn');
+    const bar = this.fabPanel.querySelector('.fp-bar i');
+    bar.style.width = (run ? Math.max(0, Math.min(100, (s.escape / 150) * 100)) : off ? (s.camsOff / 25) * 100 : 0) + '%';
+    bar.classList.toggle('low', run && s.escape < 40);
+    this.fabPanel.querySelector('.fp-pat').textContent = run ? t('puerto.hud.boat') : s.fuseCd > 0 ? t('puerto.hud.fuseWait', { s: Math.ceil(s.fuseCd) }) : t('puerto.hud.fuseReady');
+    const wt = this.fabPanel.querySelector('.fp-water'), wb = this.fabPanel.querySelector('.fp-bar2');
+    wb.classList.add('hidden'); wt.classList.toggle('hidden', run);
+    wt.textContent = t('puerto.hud.alarms', { n: s.alarms });
+    this.fabPanel.querySelector('.fp-alerts').innerHTML = `<p>${t('puerto.hud.step.' + s.act).replace(/[&<>]/g, '')}</p>`;
   }
 
   showTutorial(text, onDone) {

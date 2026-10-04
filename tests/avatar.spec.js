@@ -63,7 +63,7 @@ test.describe('Avatar', () => {
     await expect(W.locator('.wd-hint')).not.toBeEmpty();
     // leaving the tab takes off what was only tried on
     await W.locator('[data-tab="ach"]').click();
-    await expect(W.locator('.wd-ach-row')).toHaveCount(9);
+    await expect(W.locator('.wd-ach-row')).toHaveCount(10);
     await expect(W.locator('.wd-ach-row.done')).toHaveCount(0);
 
     // becoming mayor (and robbing the bank) unlocks their items, announced once

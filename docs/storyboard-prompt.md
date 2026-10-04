@@ -295,6 +295,14 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Aplenkums:** jāizkausē 12 stieņi. Stieņus nes no plauktiem (pa diviem) uz krāsnīm; tās kausē, kamēr ir strāva. Seifā sūcas ūdens: sūkņiem jāstrādā, citādi seifs applūst un 30 sekundes stieņus ņemt nevar. Policija atslēdz strāvu (iedarbini ģeneratoru), urbj sienu (nostiprini to) un zvana pa sarkano telefonu (inspektore Vega). Neviens netiek ievainots: sargi gaida vestibilā.
 - **Caurule un jūra:** ar 12 stieņiem atveras noteces reste; pa cauruli tiec ārā aiz ēkas ar 12 zelta maisiem un aiznes tos uz El Maestro laivu La Misericordia pludmalē: 30 000 monētu par maisu (vienreiz kontam), kristāli, **niršanas tērps** un **zelta maska**.
 
+### La Fábrica: 3. sezona, El Maestro
+- Atveras pēc 2. sezonas. Inspektore Vega pludmalē notvēra El Maestro; viņu tur vecajā ostas noliktavā pie Plaza de la Marina. Šoreiz nav aplenkuma: klusa ielaušanās.
+- Siroco sauc komandu uz fermu: plāns uz tāfeles un viktorīna. Kontakti: hakeris (La Rosaleda) zina drošinātāju kārbu, atslēdznieks (Huelin) dod **stetoskopu**, laivinieks (Muelle Uno) gaidīs pie Muelle de Heredia.
+- **Kameras** zālē griežas, to sarkanie konusi rāda, kur tās skatās; aiz kastes var paslēpties. **Drošinātāju kārba** tās izslēdz uz 25 sekundēm, pēc tam tai vajag minūti. Koridorā divi **lāzeru stari** ieslēdzas un izslēdzas. Ja ierauga vai pieskaries staram, skan trauksme, un komanda izslīd ārā, lai mēģinātu vēlreiz; neviens netiek ievainots.
+- **Seifs**: griez ciparripu un klausies ar stetoskopu, klikšķis nozīmē pareizo ciparu; trīs cipari. Iekšā ir kameras atslēga.
+- **Kamera**: atslēga to atver, El Maestro seko spēlētājam. Tad skan trauksme: divarpus minūtes līdz laivai pie Muelle de Heredia.
+- Balva: 200 000 monētu (vienreiz kontam), kristāli, **kapteiņa cepure** un **nakts redzamības brilles** tēlam.
+
 ### Dārgakmeņi un zelts
 
 - Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).
@@ -369,7 +377,7 @@ Kristāli nāk izdzīvošanas režīmā, bet monētas pilsēta izmaksā vienreiz
 - **Roblox stila tēli:** pasaule paliek kubiņos, bet spēlētājs var nomainīt pikseļu figūru pret **3D tēlu**: liela apaļa galva ar gludu seju, rokas un kājas, kas liecas elkoņos un ceļos.
   - Tēlu atbloķē par 150 dvēseļu kristāliem vai bez maksas par jebkuru sasniegumu.
   - **Garderobē** ("Mans tēls") tēls griežas 3D; var mainīt ādas toni, seju, matus un to krāsu, cepures, kreklus, bikses, brilles un lietas uz muguras (mugursoma, ģitāra, apmetnis, reaktīvā soma, spārni).
-  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi), sarkanais kombinezons un smaidošā maska (La Fábrica), niršanas tērps un zelta maska (La Fábrica 2). Par īstu naudu nekas netiek pārdots.
+  - Labākās lietas dod tikai sasniegumi: mēra kronis un uzvalks (Malagas mērs), laupītāja maska (El Gran Golpe), bruņinieka ķivere (visi 5 bosi), eņģeļa spārni (30. diena), pētnieka cepure (Dārgumu meklējumi), sarkanais kombinezons un smaidošā maska (La Fábrica), niršanas tērps un zelta maska (La Fábrica 2), kapteiņa cepure un nakts redzamības brilles (La Fábrica 3). Par īstu naudu nekas netiek pārdots.
   - Emocijas: māt, dejot, priecāties; draugi tās redz.
   - F5 vai tēla poga pārslēdz kameru: no acīm, no mugurpuses, no priekšpuses.
 

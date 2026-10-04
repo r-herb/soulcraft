@@ -343,6 +343,15 @@ const painters = {
   generator_off: (p) => { p.noise(['#8a7020', '#7f681c', '#947826']); p.border('#3c300a'); for (let y = 4; y < 12; y += 2) for (let x = 3; x < 13; x++) p.set(x, y, hex('#2e2606')); p.set(13, 2, hex('#ff5a3a')); },
   drill_wall: (p) => { p.noise(['#e8e4da', '#dcd7cb', '#f0ece2']); for (const [x, y] of [[8, 8], [7, 7], [9, 9], [6, 6], [10, 10], [5, 5], [11, 7], [12, 6], [7, 10], [6, 11], [9, 5], [10, 4]]) p.set(x, y, hex('#3a3a3a')); for (let x = 7; x < 10; x++) for (let y = 7; y < 10; y++) p.set(x, y, hex('#ff8a20')); },
   oro_sign: (p) => { p.noise(['#14243a', '#18293f']); p.border('#e8b830'); for (const [x, y] of [[3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [4, 5], [5, 5], [6, 5], [6, 6], [6, 7], [6, 8], [6, 9], [4, 9], [5, 9], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [9, 5], [10, 6], [9, 7], [10, 8], [10, 9], [12, 5], [12, 6], [12, 7], [12, 8], [12, 9], [13, 5], [14, 5], [13, 9], [14, 9], [14, 6], [14, 7], [14, 8]]) p.set(x, y, hex('#ffd65c')); },
+  laser: (p) => { for (let i = 0; i < 16; i++) { p.set(i, 7, hex('#ff2a2a')); p.set(i, 8, hex('#ff8080')); } },
+  safe: (p) => { p.noise(['#3a3d45', '#33363d', '#41444c']); p.border('#1e2026'); for (let x = 5; x < 11; x++) for (let y = 5; y < 11; y++) if ((x - 7.5) ** 2 + (y - 7.5) ** 2 < 9) p.set(x, y, hex('#9aa0a8')); p.set(8, 6, hex('#1e2026')); p.set(8, 7, hex('#1e2026')); p.set(12, 8, hex('#c9a227')); },
+  safe_top: (p) => { p.noise(['#41444c', '#3a3d45']); p.border('#1e2026'); },
+  fuse_box: (p) => { p.noise(['#d9d2b8', '#e0d9c0']); p.border('#6b6f78'); for (let x = 4; x < 12; x++) for (let y = 3; y < 13; y++) p.set(x, y, hex('#9aa0a8')); for (const y of [5, 8, 11]) for (let x = 5; x < 11; x += 2) p.set(x, y, hex('#22232a')); p.set(10, 4, hex('#ffd65c')); },
+  cell_bars: (p) => { for (let x = 1; x < 16; x += 4) for (let y = 0; y < 16; y++) { p.set(x, y, hex('#5c5f66')); p.set(x + 1, y, hex('#3a3d45')); } for (const y of [1, 14]) for (let x = 0; x < 16; x++) p.set(x, y, hex('#4b4e55')); },
+  cell_door: (p) => { for (let x = 1; x < 16; x += 4) for (let y = 0; y < 16; y++) { p.set(x, y, hex('#6b6f78')); p.set(x + 1, y, hex('#44474e')); } for (const y of [1, 7, 14]) for (let x = 0; x < 16; x++) p.set(x, y, hex('#55585f')); p.set(12, 8, hex('#c9a227')); p.set(12, 9, hex('#c9a227')); },
+  puerto_sign: (p) => { p.noise(['#1f3a5a', '#22405f']); p.border('#d9d2b8'); for (const [x, y] of [[3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [4, 5], [5, 5], [5, 6], [4, 7], [8, 5], [8, 6], [8, 7], [8, 8], [8, 9], [9, 9], [10, 5], [10, 6], [10, 7], [10, 8], [10, 9], [12, 5], [13, 5], [14, 5], [13, 6], [13, 7], [13, 8], [13, 9]]) p.set(x, y, hex('#f0ead8')); },
+  crate: (p) => { p.noise(['#a87a48', '#9a6e40', '#b08452']); p.border('#6b4a2f'); for (let i = 1; i < 15; i++) { p.set(i, i, hex('#7a5530')); p.set(15 - i, i, hex('#7a5530')); } },
+  crate_top: (p) => { p.noise(['#b08452', '#a87a48']); p.border('#6b4a2f'); for (let x = 1; x < 15; x++) p.set(x, 8, hex('#7a5530')); },
   // a cast-iron manhole cover with slots (the sewer under the bank)
   sewer_grate: (p) => {
     p.noise(['#3b3f45', '#42464d', '#363a40']); p.border('#24272b');

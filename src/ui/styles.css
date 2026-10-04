@@ -226,6 +226,14 @@ body.touch .desktop-only { display: none !important; }
 .fab-panel .fp-bar i.low { background: #ff5a3a; }
 .fab-panel .fp-pat, .fab-panel .fp-water { color: var(--c-text-dim); }
 .fab-panel.two { background: rgba(40, 30, 4, 0.72); border-color: #e8b830; }
+.fab-panel.three { background: rgba(6, 20, 40, 0.75); border-color: #38b6e8; }
+.fab-panel.three .fp-title { color: #9fd3ff; }
+.fab-panel.three .fp-alerts p { animation: none; color: #e8eef5; }
+.safe-dial { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+.safe-dial .sd-num { font-size: 44px; font-weight: 700; color: #ffd65c; font-variant-numeric: tabular-nums; }
+.safe-dial .sd-ear { min-height: 1.4em; font-size: 18px; color: #9fd3ff; }
+.safe-dial .sd-set { display: flex; gap: 8px; }
+.safe-dial .sd-set span { width: 48px; text-align: center; padding: 4px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); color: #e8eef5; }
 .fab-panel.two .fp-title { color: #ffe680; }
 .fab-panel .fp-bar2 i { background: #38b6e8; }
 .fab-panel .fp-bar2 i.low { background: #ff5a3a; }

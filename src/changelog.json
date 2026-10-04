@@ -1,5 +1,40 @@
 [
   {
+    "id": "2026-10-04-fabrica3",
+    "title": {
+      "en": "La Fábrica: season 3, El Maestro",
+      "lv": "La Fábrica: 3. sezona, El Maestro",
+      "ru": "La Fábrica: 3-й сезон, El Maestro",
+      "es": "La Fábrica: temporada 3, El Maestro"
+    },
+    "items": {
+      "en": [
+        "Season 3 opens after season 2: El Maestro was caught and is held in the old port warehouse.",
+        "A quiet way in: cameras with red cones of sight (hide behind crates, or pull the fuse), laser beams that go on and off.",
+        "Crack the safe by ear with the stethoscope, open the cell, and run with El Maestro to the boat before the police block the port.",
+        "New in the wardrobe: the captain's cap and the night-vision goggles."
+      ],
+      "lv": [
+        "3. sezona atveras pēc 2. sezonas: El Maestro ir notverts un ieslēgts vecajā ostas noliktavā.",
+        "Klusa ielaušanās: kameras ar sarkaniem redzes konusiem (slēpies aiz kastēm vai izņem drošinātāju) un lāzeru stari, kas ieslēdzas un izslēdzas.",
+        "Atver seifu, klausoties ar stetoskopu, atver kameru un skrien ar El Maestro uz laivu, pirms policija aizver ostu.",
+        "Jaunums garderobē: kapteiņa cepure un nakts redzamības brilles."
+      ],
+      "ru": [
+        "3-й сезон открывается после 2-го: El Maestro поймали и держат на старом портовом складе.",
+        "Тихое проникновение: камеры с красными конусами обзора (прячься за ящиками или выкрути пробку) и лазерные лучи, которые включаются и выключаются.",
+        "Вскрой сейф на слух со стетоскопом, открой камеру и беги с El Maestro к лодке, пока полиция не перекрыла порт.",
+        "Новое в гардеробе: капитанская фуражка и очки ночного видения."
+      ],
+      "es": [
+        "La temporada 3 se abre tras la temporada 2: El Maestro ha caído y lo retienen en el viejo almacén del puerto.",
+        "Entrar en silencio: cámaras con conos rojos de visión (escóndete tras las cajas o quita el fusible) y rayos láser que se encienden y se apagan.",
+        "Abre la caja fuerte de oído con el estetoscopio, abre la celda y corre con El Maestro a la lancha antes de que la policía cierre el puerto.",
+        "Nuevo en el vestidor: la gorra de capitán y las gafas de visión nocturna."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-weapons",
     "title": {
       "en": "New weapons and name tags",

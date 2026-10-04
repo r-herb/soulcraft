@@ -83,7 +83,12 @@ test.describe('El Gran Golpe: the other ways', () => {
     // the guards, standing still mid-round; a spot in front of the vault's guard
     await page.waitForFunction(() => window.__sc.game.heist.guards.length === 3);
     await page.evaluate(() => { window.__sc.game.meta.time = 0.1; for (const gd of window.__sc.game.heist.guards) { gd.u = 0.5; gd.r.speed = 0; } });
-    await page.waitForTimeout(2500);
+    // (they walk to their new spots first: wait until none of them moves)
+    await page.waitForFunction(() => {
+      const now = window.__sc.game.heist.guards.map((gd) => [gd.at.x, gd.at.z]), last = window.__guardsAt;
+      window.__guardsAt = now;
+      return !!last && now.every(([x, z], i) => Math.hypot(x - last[i][0], z - last[i][1]) < 0.01);
+    }, null, { timeout: 30_000, polling: 500 });
     const facing = (dist) => page.evaluate((dist) => { const g = window.__sc.game, gd = g.heist.guards[2], o = gd.rig.group.position; g.player.pos.set(o.x + Math.sin(gd.yaw) * dist, o.y, o.z + Math.cos(gd.yaw) * dist); }, dist);
     const holding = () => page.evaluate(() => window.__sc.game.inventory.count('grand_diamond'));
     const take = () => page.evaluate(({ q, y }) => { const g = window.__sc.game; if (!g.inventory.count('grand_diamond')) g.heist.takeDiamond({ x: q.x, y, z: q.z }); }, { q: pl.diamond, y: pl.base + 2 });

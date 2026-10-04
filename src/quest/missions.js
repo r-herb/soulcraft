@@ -49,7 +49,7 @@ export class Missions {
   constructor(game) { this.game = game; this.t = 0; }
   get active() { const g = this.game; return !!(g.meta && g.meta.dim === 'city' && g.meta.city === 'malaga' && g.city); }
   // the city missions, then the heist's tasks (and its final once the plan is whole)
-  all() { const g = this.game; return MISSIONS.concat(g.heist ? g.heist.missions() : [], g.fabrica ? g.fabrica.missions() : [], g.oro ? g.oro.missions() : []); }
+  all() { const g = this.game; return MISSIONS.concat(g.heist ? g.heist.missions() : [], g.fabrica ? g.fabrica.missions() : [], g.oro ? g.oro.missions() : [], g.puerto ? g.puerto.missions() : []); }
   byId(id) { return this.all().find((m) => m.id === id); }
   placeXZ(name) { const pl = place(name); return pl && this.game.city ? this.game.city.toXZ(pl.lat, pl.lon) : null; }
   // a guest in a friend's world plays the host's (team) missions
@@ -202,7 +202,7 @@ export class Missions {
     // the host sends the team's state when it changed (and now and then)
     this.syncT = (this.syncT || 0) + 1;
     // (often during La Fábrica's sieges: the phone, the raids, the water)
-    const siege = (g.fabrica && g.fabrica.act === 4) || (g.oro && g.oro.act === 6);
+    const siege = (g.fabrica && g.fabrica.act === 4) || (g.oro && g.oro.act === 6) || (g.puerto && g.puerto.act >= 4 && g.puerto.act <= 7);
     if (this.host && (this.dirty || this.syncT >= (siege ? 2 : 10))) this.sendTeam();
     if (this.guest) return;
     // the tour: reaching each landmark (anyone in the team)
@@ -223,13 +223,13 @@ export class Missions {
     const n = this.game.net;
     if (!n || !n.isHost) return;
     this.dirty = false; this.syncT = 0;
-    n.send({ t: 'team', to, missions: this.state(), heist: this.game.heist ? this.game.heist.state() : null, fabrica: this.game.fabrica ? this.game.fabrica.state() : null, oro: this.game.oro ? this.game.oro.state() : null });
+    n.send({ t: 'team', to, missions: this.state(), heist: this.game.heist ? this.game.heist.state() : null, fabrica: this.game.fabrica ? this.game.fabrica.state() : null, oro: this.game.oro ? this.game.oro.state() : null, puerto: this.game.puerto ? this.game.puerto.state() : null });
   }
   // messages of the room about the missions
   onNet(msg, from) {
     const g = this.game;
     if (msg.t === 'mev' && this.host) this.event(msg.ev, msg.data || {}, { x: msg.x, z: msg.z });
-    else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist, fabrica: msg.fabrica, oro: msg.oro };
+    else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist, fabrica: msg.fabrica, oro: msg.oro, puerto: msg.puerto };
     else if (msg.t === 'hplace' && this.host && g.heist) { if (g.heist.place(msg.key, msg.slot)) this.sendTeam(); }
     else if (msg.t === 'mdone' && this.guest) this.rewardMine(this.byId(msg.id) || { id: msg.id, key: msg.key, heist: !!msg.key && !msg.approach && !msg.fab, approach: !!msg.approach, items: msg.items, reward: msg.reward, steps: [] }, true);
   }
@@ -256,7 +256,7 @@ export class Missions {
     if (this.host) { this.game.net.send({ t: 'mdone', id: m.id, key: m.key || null, reward: m.reward, items: m.items || null, approach: !!m.approach, fab: !!m.fab }); this.dirty = true; }
     this.rewardMine(m);
     if (m.heist && g.heist) g.heist.gotPiece(m.key);
-    if (m.fab && m.season === 2) { if (g.oro) g.oro.onMission(m); } else if (m.fab && g.fabrica) g.fabrica.onMission(m);
+    if (m.fab && m.season === 3) { if (g.puerto) g.puerto.onMission(m); } else if (m.fab && m.season === 2) { if (g.oro) g.oro.onMission(m); } else if (m.fab && g.fabrica) g.fabrica.onMission(m);
     g.save(true);
     // the next mission followed: a card for its guide
     const next = this.tracked;

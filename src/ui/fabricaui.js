@@ -196,3 +196,102 @@ export function oroFinale(args, ui) {
   g.audio.sfx('victory');
   return node;
 }
+
+// ---------- season 3 ----------
+const ANSWERS3 = [1, 2, 0, 1, 0];
+
+// the plan on the blackboard (Siroco this time), a quiz
+export function puertoLesson(args, ui) {
+  const g = ui.game, U = g.puerto;
+  let step = 0, picks = [];
+  const node = el(`<div class="screen scrim" data-screen="puertoLesson">
+    <div class="panel fab-panel-ui">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="puerto.class.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body fab-body"></div>
+    </div></div>`);
+  const body = node.querySelector('.fab-body');
+  const draw = () => {
+    if (step < LESSONS) {
+      body.innerHTML = `<div class="blackboard"><span class="bb-n">${esc(t('fab.class.lesson', { n: step + 1, total: LESSONS }))}</span><h3>${esc(t('puerto.lesson.' + (step + 1) + '.title'))}</h3><p>${esc(t('puerto.lesson.' + (step + 1)))}</p></div>
+        <div class="row" style="justify-content:space-between"><span class="faint small">${esc(t('puerto.sirocoSays'))}</span><button class="btn primary" data-a="next">${esc(t(step === LESSONS - 1 ? 'fab.class.toQuiz' : 'fab.class.next'))}</button></div>`;
+      body.querySelector('[data-a="next"]').onclick = () => { ui.click(); step++; draw(); };
+    } else if (step === LESSONS) {
+      const qi = picks.length;
+      body.innerHTML = `<div class="quiz"><span class="bb-n">${esc(t('fab.class.question', { n: qi + 1, total: ANSWERS3.length }))}</span><h3>${esc(t('puerto.q.' + (qi + 1)))}</h3>
+        <div class="col">${[0, 1, 2].map((i) => `<button class="btn quiz-a" data-i="${i}">${esc(t('puerto.q.' + (qi + 1) + '.a' + i))}</button>`).join('')}</div></div>`;
+      body.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { ui.click(); picks.push(+b.dataset.i); if (picks.length >= ANSWERS3.length) step++; draw(); }; });
+    } else {
+      const right = picks.filter((p, i) => p === ANSWERS3[i]).length, pass = right >= 4;
+      body.innerHTML = `<div class="blackboard"><h3>${esc(t(pass ? 'fab.class.passed' : 'fab.class.failed', { n: right, total: ANSWERS3.length }))}</h3>${pass ? `<p>${esc(t('puerto.class.ready'))}</p>` : ''}</div>
+        <div class="row" style="justify-content:flex-end">${pass ? `<button class="btn primary" data-a="go">${esc(t('oro.class.go'))}</button>` : `<button class="btn primary" data-a="again">${esc(t('fab.class.again'))}</button>`}</div>`;
+      if (!pass) body.querySelector('[data-a="again"]').onclick = () => { ui.click(); step = 0; picks = []; draw(); };
+      else body.querySelector('[data-a="go"]').onclick = () => { ui.click(); U.passClass(); ui.back(); };
+    }
+  };
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  draw();
+  return node;
+}
+
+// the safe: turn the dial, listen with the stethoscope, set three numbers
+export function puertoSafe(args, ui) {
+  const g = ui.game, U = g.puerto, s = U.state(), combo = s.combo || [0, 0, 0];
+  let dial = 0, set = [];
+  const node = el(`<div class="screen scrim" data-screen="puertoSafe">
+    <div class="panel fab-panel-ui phone">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="puerto.safe.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body col safe-dial">
+        <p class="faint small" style="margin:0">${esc(t('puerto.safe.how'))}</p>
+        <div class="sd-num">00</div>
+        <div class="sd-ear"></div>
+        <div class="row" style="gap:6px;justify-content:center">
+          <button class="btn" data-d="-5">&laquo;</button><button class="btn" data-d="-1">&lsaquo;</button>
+          <button class="btn" data-d="1">&rsaquo;</button><button class="btn" data-d="5">&raquo;</button>
+        </div>
+        <div class="sd-set"><span>-</span><span>-</span><span>-</span></div>
+        <button class="btn primary" data-a="set">${esc(t('puerto.safe.set'))}</button>
+        <p class="sd-msg small" style="margin:0"></p>
+      </div>
+    </div></div>`);
+  const want = () => combo[set.length];
+  const draw = () => {
+    node.querySelector('.sd-num').textContent = String(dial).padStart(2, '0');
+    const off = Math.abs(dial - want());
+    node.querySelector('.sd-ear').textContent = set.length >= 3 ? '' : off === 0 ? t('puerto.safe.click') : off <= 3 ? t('puerto.safe.faint') : t('puerto.safe.quiet');
+    node.querySelectorAll('.sd-set span').forEach((e, i) => { e.textContent = set[i] !== undefined ? String(set[i]).padStart(2, '0') : '-'; });
+  };
+  node.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => { dial = (dial + Number(b.dataset.d) + 40) % 40; g.audio.sfx('click'); draw(); }));
+  node.querySelector('[data-a="set"]').addEventListener('click', () => {
+    ui.click();
+    set.push(dial);
+    if (set.length < 3) { draw(); return; }
+    draw();
+    const ok = set.every((v, i) => v === combo[i]), msg = node.querySelector('.sd-msg');
+    if (ok) { msg.textContent = t('puerto.safe.open'); U.safeOpened(); setTimeout(() => ui.back(), 700); }
+    else { msg.textContent = t('puerto.safe.wrong'); g.audio.sfx('buzz'); set = []; setTimeout(draw, 600); }
+  });
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  draw();
+  return node;
+}
+
+// the end of season 3: El Maestro on the boat
+export function puertoFinale(args, ui) {
+  const g = ui.game, f = g.fabrica.state();
+  const node = el(`<div class="screen scrim" data-screen="puertoFinale">
+    <div class="panel fab-panel-ui finale">
+      <div class="mayor-crown" aria-hidden="true">&#9875;</div>
+      <h2 class="panel-title" data-i18n="puerto.end.title"></h2>
+      <p>${esc(t('puerto.end.text', { alias: f.alias ? t('fab.alias.' + f.alias) : t('heist.you') }))}</p>
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('puerto.end.guest'))}</p>`}
+      <p class="faint small">${esc(t('puerto.end.items'))}</p>
+      <p class="faint small">${esc(t('puerto.end.next'))}</p>
+      <button class="btn primary" data-act="close" data-i18n="puerto.end.ok"></button>
+    </div></div>`);
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  g.audio.sfx('victory');
+  return node;
+}
