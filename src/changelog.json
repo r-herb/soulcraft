@@ -1,5 +1,44 @@
 [
   {
+    "id": "2026-10-05-fabrica4",
+    "title": {
+      "en": "La Fábrica season 4: El Vuelo",
+      "lv": "La Fábrica 4. sezona: El Vuelo",
+      "ru": "Ла Фабрика, сезон 4: Эль Вуэло",
+      "es": "La Fábrica temporada 4: El Vuelo"
+    },
+    "items": {
+      "en": [
+        "After season 3: Inspector Vega flies the gold of La Térmica out of Málaga airport tonight, and the crew takes it back.",
+        "The forger's passport, the pilot with a jet by the runway, and the baggage handler's staff badge.",
+        "The airport's cargo terminal: guards with torches walk the hall (hide behind the containers), and the baggage belt carries you.",
+        "The routing panel: turn the belt pieces so the container rolls to Hangar 7, then run to the jet and watch it take off.",
+        "The end pays 300,000 coins (once per account) and gives the pilot's cap and the aviator sunglasses."
+      ],
+      "lv": [
+        "Pēc 3. sezonas: inspektore Vega šonakt aizved La Térmica zeltu no Malagas lidostas, un komanda to paņem atpakaļ.",
+        "Viltotāja pase, pilots ar lidmašīnu pie skrejceļa un bagāžas krāvēja darbinieka karte.",
+        "Lidostas kravas terminālis: apsargi ar lukturiem staigā pa zāli (slēpies aiz konteineriem), un bagāžas lente tevi nes.",
+        "Lentu pults: pagriez lentes gabalus, lai konteiners aizripo uz 7. angāru, tad skrien uz lidmašīnu un skaties, kā tā paceļas.",
+        "Beigās 300 000 monētu (vienreiz kontam), pilota cepure un aviatora saulesbrilles."
+      ],
+      "ru": [
+        "После 3-го сезона: инспектор Вега сегодня ночью увозит золото Ла-Термики из аэропорта Малаги, а команда забирает его обратно.",
+        "Паспорт фальсификатора, пилот с самолётом у полосы и служебный пропуск грузчика.",
+        "Грузовой терминал аэропорта: охранники с фонарями ходят по залу (прячься за контейнерами), а багажная лента везёт тебя.",
+        "Пульт маршрутизации: поверни куски ленты, чтобы контейнер поехал в ангар 7, затем беги к самолёту и смотри, как он взлетает.",
+        "В финале 300 000 монет (один раз на аккаунт), фуражка пилота и очки-авиаторы."
+      ],
+      "es": [
+        "Tras la temporada 3: la inspectora Vega se lleva esta noche el oro de La Térmica desde el aeropuerto de Málaga, y la banda lo recupera.",
+        "El pasaporte del falsificador, el piloto con un jet junto a la pista y la tarjeta de personal del mozo de equipajes.",
+        "La terminal de carga del aeropuerto: guardias con linternas recorren la nave (escóndete tras los contenedores) y la cinta de equipajes te lleva.",
+        "El panel de rutas: gira las piezas de cinta para que el contenedor ruede al hangar 7, luego corre al jet y míralo despegar.",
+        "El final paga 300.000 monedas (una vez por cuenta) y da la gorra de piloto y las gafas de aviador."
+      ]
+    }
+  },
+  {
     "id": "2026-10-04-nightlights",
     "title": {
       "en": "Malaga at night: street lamps and lit windows",

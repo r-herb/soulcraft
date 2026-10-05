@@ -235,6 +235,22 @@ body.touch .desktop-only { display: none !important; }
 .safe-dial .sd-set { display: flex; gap: 8px; }
 .safe-dial .sd-set span { width: 48px; text-align: center; padding: 4px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); color: #e8eef5; }
 .fab-panel.two .fp-title { color: #ffe680; }
+.fab-panel.four { background: rgba(10, 16, 30, 0.78); border-color: #f0a030; }
+.fab-panel.four .fp-title { color: #ffd08a; }
+.fab-panel.four .fp-alerts p { animation: none; color: #e8eef5; }
+/* season 4: the belts' routing panel */
+.route-ui .panel-body { align-items: center; gap: var(--sp-2); }
+.route-grid { display: grid; gap: 4px; align-items: center; }
+.route-grid .rt-in { color: #ffd65c; font-size: 18px; text-align: right; padding-right: 4px; }
+.route-grid .rt-out { font-size: 12px; color: #9aa0a8; padding-left: 6px; }
+.route-grid .rt-out.goal { color: #ffd08a; font-weight: 700; }
+.route-grid .rt-out.on { color: #7dff8a; }
+.rt-cell { width: 44px; height: 44px; padding: 0; border-radius: 6px; border: 1px solid #3a3f46; background: #1b1d22; cursor: pointer; }
+.rt-cell svg { width: 100%; height: 100%; transform: rotate(var(--rot)); transition: transform 0.12s; }
+.rt-cell path { fill: none; stroke: #5a6068; stroke-width: 10; }
+.rt-cell.on path { stroke: #7dff8a; }
+.rt-to { margin: 0; color: #e8eef5; }
+.rt-to[data-to="hangar"] { color: #7dff8a; }
 .fab-panel .fp-bar2 i { background: #38b6e8; }
 .fab-panel .fp-bar2 i.low { background: #ff5a3a; }
 .fab-panel .fp-alerts p { margin: 2px 0 0; font-size: var(--fs-xs); color: #ffd65c; animation: fabBlink 1s infinite; }

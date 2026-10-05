@@ -17,6 +17,7 @@ import { bankPoint } from '../world/city.js';
 import { TARGET, fabId } from '../quest/fabrica.js';
 import { ORO_TARGET, oroId } from '../quest/oro.js';
 import { puertoId } from '../quest/puerto.js';
+import { aeroId } from '../quest/aero.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -106,6 +107,11 @@ export function testPanel(args, ui) {
           <button class="btn small" data-t="camsOff" data-i18n="test.camsOff"></button>
           <button class="btn small ember" data-t="puertoReset" data-i18n="test.puertoReset"></button>
         </div></section>
+        <section><h3 data-i18n="test.sAero"></h3><div class="test-row">
+          <button class="btn small" data-t="toTerminal" data-i18n="test.toTerminal"></button>
+          ${['plan', 'entry', 'route', 'run'].map((k) => `<button class="btn small" data-ae="${k}">${esc(t('test.aeroAct.' + k))}</button>`).join('')}
+          <button class="btn small ember" data-t="aeroReset" data-i18n="test.aeroReset"></button>
+        </div></section>
         <section><h3 data-i18n="test.sMissions"></h3><div class="test-row">
           <button class="btn small" data-t="missionsDone" data-i18n="test.missionsDone"></button>
           <button class="btn small ember" data-t="missionsReset" data-i18n="test.missionsReset"></button>
@@ -174,6 +180,8 @@ export function testPanel(args, ui) {
     oroMelt() { const s = g.oro.state(); if (s.act !== 6) { ui.toast(t('test.fabNotSiege'), 'warn'); return; } while (s.melted < ORO_TARGET - 1) { s.melted++; g.missions.event('oro_melt'); } ui.toast(t('test.done'), 'soul'); },
     oroReset() { const M = g.missions, st = M.state(); for (const k of Object.keys(st.done)) if (k.startsWith('f2_')) delete st.done[k]; for (const k of Object.keys(st.prog)) if (k.startsWith('f2_')) delete st.prog[k]; profile.oro = null; g.oro.state(); for (const k of ['gold_sack', 'gold_bar', 'fake_order', 'police_uniform']) g.inventory.remove(k, g.inventory.count(k)); g.save(true); ui.toast(t('test.done'), 'soul'); },
     async toAlmacen() { const q = g.missions.placeXZ('Almacén del Puerto'); if (!q) return; await g.city.ensure(q.x, q.z, 64); const pl = g.puerto.plan(); const f = pl ? bankPoint(pl.P, -4, pl.mid) : q; await teleport(g, f.x, f.z, 4); },
+    async toTerminal() { const q = g.missions.placeXZ('Terminal de Carga'); if (!q) return; await g.city.ensure(q.x, q.z, 64); const pl = g.aero.plan(); const f = pl ? bankPoint(pl.P, -4, pl.mid) : q; await teleport(g, f.x, f.z, 4); },
+    aeroReset() { const M = g.missions, st = M.state(); for (const k of Object.keys(st.done)) if (k.startsWith('f4_')) delete st.done[k]; for (const k of Object.keys(st.prog)) if (k.startsWith('f4_')) delete st.prog[k]; profile.aero = null; g.aero.state(); for (const k of ['fake_passport', 'cargo_badge']) g.inventory.remove(k, g.inventory.count(k)); g.save(true); ui.toast(t('test.done'), 'soul'); },
     camsOff() { const s = g.puerto.state(); s.camsOff = 600; ui.toast(t('test.done'), 'soul'); },
     puertoReset() { const M = g.missions, st = M.state(); for (const k of Object.keys(st.done)) if (k.startsWith('f3_')) delete st.done[k]; for (const k of Object.keys(st.prog)) if (k.startsWith('f3_')) delete st.prog[k]; profile.puerto = null; g.puerto.state(); for (const k of ['stethoscope', 'cell_key']) g.inventory.remove(k, g.inventory.count(k)); g.save(true); ui.toast(t('test.done'), 'soul'); },
     missionsDone() { const st = g.missions.state(); for (const m of MISSIONS) st.done[m.id] = true; g.save(true); ui.toast(t('test.done'), 'soul'); },
@@ -225,6 +233,28 @@ export function testPanel(args, ui) {
     if (n === 6 && !g.inventory.count('cell_key')) g.giveItem('cell_key', 1);
     if (n === 7) s.escape = 150;
     const next = g.missions.all().find((m) => m.season === 3 && !g.missions.isDone(m.id));
+    if (next) g.missions.track(next.id, false);
+    g.save(true);
+    ui.toast(t('test.done'), 'soul');
+  }));
+  // season 4: straight to an act (seasons 1 to 3 and the earlier acts counted as done)
+  const AACTS = { plan: 1, entry: 3, route: 5, run: 6 };
+  const AKEYS = ['vuelo', 'plan4', 'falsificador', 'piloto', 'mozo', 'entrada4', 'patrulla', 'desvio'];
+  const ABEFORE = { 1: 1, 3: 5, 5: 7, 6: 8 };
+  node.querySelectorAll('[data-ae]').forEach((b) => b.addEventListener('click', async () => {
+    ui.click();
+    const f = g.fabrica.state(), o = g.oro.state(), u = g.puerto.state();
+    if (!f.done) { f.done = true; f.act = 7; if (!f.alias) f.alias = 'biznaga'; }
+    if (!o.done) { o.done = true; o.act = 9; }
+    if (!u.done) { u.done = true; u.act = 8; }
+    const n = AACTS[b.dataset.ae], s = g.aero.state(), st = g.missions.state();
+    for (const k of AKEYS.slice(0, ABEFORE[n])) st.done[aeroId(k)] = Date.now();
+    s.act = n;
+    if (n >= 3) for (const k of ['cargo_badge', 'fake_passport']) if (!g.inventory.count(k)) g.giveItem(k, 1);
+    if (n === 3) st.prog[aeroId('entrada4')] = { step: 0, n: 0, seen: [] };
+    if (n >= 5) { await act_.toTerminal(); await (s.act = 3, g.aero.enterTest()); s.act = n; for (const k of AKEYS.slice(0, ABEFORE[n])) st.done[aeroId(k)] = Date.now(); const pl = g.aero.plan(); if (pl) { const q = bankPoint(pl.P, pl.c0 + 3, pl.mid); g.player.pos.set(q.x + 0.5, pl.P.base + 1.05, q.z + 0.5); } }
+    if (n === 6) s.escape = 150;
+    const next = g.missions.all().find((m) => m.season === 4 && !g.missions.isDone(m.id));
     if (next) g.missions.track(next.id, false);
     g.save(true);
     ui.toast(t('test.done'), 'soul');

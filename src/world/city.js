@@ -57,6 +57,9 @@ export const CITY_PLACES = {
     // season 3: the old port warehouse where El Maestro is held, and the quay where the boat waits
     { name: 'Almacén del Puerto', lat: 36.71720, lon: -4.42150 },
     { name: 'Muelle de Heredia', lat: 36.71450, lon: -4.42250 },
+    // season 4: the airport's cargo terminal, and the stand by the runway where the jet waits
+    { name: 'Terminal de Carga', lat: 36.68200, lon: -4.49980 },
+    { name: 'Hangar del Aeropuerto', lat: 36.67941, lon: -4.50112 },
   ],
 };
 
@@ -217,6 +220,8 @@ export class CityData {
     if (oro && oro.old.x1 >= x0 && oro.old.x0 < x0 + W && oro.old.z1 >= z0 && oro.old.z0 < z0 + W) out.oro = oro;
     const pu = this.puertoPlan();
     if (pu && pu.old.x1 >= x0 && pu.old.x0 < x0 + W && pu.old.z1 >= z0 && pu.old.z0 < z0 + W) out.puerto = pu;
+    const ae = this.aeroPlan();
+    if (ae && ae.old.x1 >= x0 && ae.old.x0 < x0 + W && ae.old.z1 >= z0 && ae.old.z0 < z0 + W) out.aero = ae;
     return out;
   }
 
@@ -242,6 +247,13 @@ export class CityData {
     const r = this.standalonePlan('Almacén del Puerto', 18);
     if (r !== undefined) this._puerto = r && clampPlan(r, 34, 34);
     return this._puerto;
+  }
+  // La Fábrica, season 4: the airport's cargo terminal (no deeper than 34, no wider than 34)
+  aeroPlan() {
+    if (this._aero !== undefined) return this._aero;
+    const r = this.standalonePlan('Terminal de Carga', 22);
+    if (r !== undefined) this._aero = r && clampPlan(r, 34, 34);
+    return this._aero;
   }
   // La Fábrica, season 2: the gold vault in La Térmica (no deeper than 42, no wider than 34)
   oroPlan() {
@@ -425,6 +437,24 @@ export function puertoLayout(depth, width) {
   };
 }
 
+// The airport's cargo terminal inside (season 4), by depth from the entrance
+// and width across: the lobby behind the staff door, the cargo hall with rows
+// of containers where two guards walk their lanes with torches, a baggage belt
+// along one side (it carries whoever stands on it), and at the back, behind a
+// wall with a doorway, the control room with the belts' routing panel.
+export function aeroLayout(depth, width) {
+  const mid = Math.floor(width / 2), c0 = Math.max(16, depth - 7);
+  // the guards' lanes across the hall, between rows of containers
+  const lanes = [4 + Math.round((c0 - 4) * 0.33), 4 + Math.round((c0 - 4) * 0.72)];
+  const belt = width - 3;
+  const containers = [];
+  for (const L of lanes) for (const d of [L - 2, L + 2]) {
+    if (d <= 4 || d >= c0 - 1) continue;
+    for (let a = 2; a + 2 <= belt - 2; a += 5) containers.push([d, a, a + 2]); // three long, a gap of two between
+  }
+  return { mid, c0, lanes, belt, beltFrom: 4, containers, panel: [depth - 2, mid], door: [c0, mid] };
+}
+
 // ---------- worker: blocks for one chunk ----------
 export function genCity(cx, cz, data, e) {
   const W = S + 2 * M, seaY = e.seaY;
@@ -450,6 +480,10 @@ export function genCity(cx, cz, data, e) {
     const pb = e.puerto;
     if (pb && wx >= pb.x0 && wx <= pb.x1 && wz >= pb.z0 && wz <= pb.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; puertoBuilding(lx, lz, wx, wz, g); continue; }
     if (pb && b === pb.gid) { b = 0; s = SURF.paving; }
+    // the airport's cargo terminal (season 4)
+    const ab = e.aero;
+    if (ab && wx >= ab.x0 && wx <= ab.x1 && wz >= ab.z0 && wz <= ab.z1) { data[idx(lx, 0, lz)] = B.coreite; for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = B.stone; aeroBuilding(lx, lz, wx, wz, g); continue; }
+    if (ab && b === ab.gid) { b = 0; s = SURF.paving; }
     data[idx(lx, 0, lz)] = B.coreite;
     const natural = NATURAL.has(s) && !b;
     for (let y = 1; y < g; y++) data[idx(lx, y, lz)] = natural && y >= g - 3 ? (s === SURF.sand ? B.sand : B.dirt) : (y < g - 3 && cityGemAt(wx, y, wz)) || B.stone;
@@ -680,13 +714,43 @@ export function genCity(cx, cz, data, e) {
   }
 
 
+  // the airport's cargo terminal (season 4): grey walls, rows of containers, the belt, the control room
+  function aeroBuilding(lx, lz, wx, wz, g) {
+    const P = e.aero, base = P.base;
+    const topY = Math.min(HEIGHT - 2, base + 8);
+    const { d, a, mid, depth } = bankCoords(P, wx, wz);
+    const width = bankWidth(P), L = aeroLayout(depth, width);
+    const edge = wx === P.x0 || wx === P.x1 || wz === P.z0 || wz === P.z1;
+    for (let y = Math.min(g, base) + 1; y < base; y++) data[idx(lx, y, lz)] = B.stone;
+    for (let y = base + 1; y <= g; y++) data[idx(lx, y, lz)] = B.air;
+    const onBelt = !edge && a === L.belt && d >= L.beltFrom && d < L.c0;
+    data[idx(lx, base, lz)] = edge ? B.concrete : onBelt ? B.conveyor : B.concrete;
+    const box = L.containers.find(([cd, a0, a1]) => cd === d && a >= a0 && a <= a1);
+    for (let y = base + 1; y < topY; y++) {
+      const r = y - base;
+      let id = B.air;
+      if (edge) {
+        const front = d === 0 && Math.abs(a - mid) <= 1 && r <= 3;
+        const sign = d === 0 && Math.abs(a - mid) <= 3 && r === 5;
+        const win = r >= 3 && r <= 4 && ((a % 4) + 4) % 4 === 2 && !(d === 0 && Math.abs(a - mid) <= 3);
+        id = front ? B.staff_door : sign ? B.aero_sign : win ? B.window : B.concrete;
+      } else if (r === 6) id = ((a % 5) + 5) % 5 === 2 && ((d % 5) + 5) % 5 === 2 ? B.bank_lamp : B.concrete; // the ceiling, with lamps
+      else if (r < 6) {
+        if (d === L.c0 && !(Math.abs(a - mid) <= 1 && r <= 2)) id = B.concrete; // the control room's wall, with a doorway
+        else if (box && r <= 3) id = ((box[1] - 2) / 5) % 2 ? B.cargo_container_red : B.cargo_container;
+        else if (r === 1 && d === L.panel[0] && Math.abs(a - L.panel[1]) <= 1) id = a === L.panel[1] ? B.route_panel : B.monitor_desk;
+      }
+      data[idx(lx, y, lz)] = id;
+    }
+    data[idx(lx, topY, lz)] = B.concrete;
+  }
 
   // A hidden gem cache in about one chunk in eight: a stone lid flush with
   // the ground of a park, a garden, a beach or a square.
   if (hash3(cx, 5, cz, 31) < 0.12) {
     const lx = Math.floor(hash3(cx, 6, cz, 31) * S), lz = Math.floor(hash3(cx, 7, cz, 31) * S), k = at(lx, lz);
     const s = e.surf[k] & 0x7f, g = Math.min(HEIGHT - 2, e.ground[k]), wx = cx * S + lx, wz = cz * S + lz;
-    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1) || (e.oro && wx >= e.oro.old.x0 && wx <= e.oro.old.x1 && wz >= e.oro.old.z0 && wz <= e.oro.old.z1) || (e.puerto && wx >= e.puerto.old.x0 && wx <= e.puerto.old.x1 && wz >= e.puerto.old.z0 && wz <= e.puerto.old.z1);
+    const inBank = (e.bank && wx >= e.bank.old.x0 && wx <= e.bank.old.x1 && wz >= e.bank.old.z0 && wz <= e.bank.old.z1) || (e.fab && wx >= e.fab.old.x0 && wx <= e.fab.old.x1 && wz >= e.fab.old.z0 && wz <= e.fab.old.z1) || (e.oro && wx >= e.oro.old.x0 && wx <= e.oro.old.x1 && wz >= e.oro.old.z0 && wz <= e.oro.old.z1) || (e.puerto && wx >= e.puerto.old.x0 && wx <= e.puerto.old.x1 && wz >= e.puerto.old.z0 && wz <= e.puerto.old.z1) || (e.aero && wx >= e.aero.old.x0 && wx <= e.aero.old.x1 && wz >= e.aero.old.z0 && wz <= e.aero.old.z1);
     if (!e.bid[k] && !e.mark[k] && !e.wall[k] && !inBank && [SURF.park, SURF.garden, SURF.sand, SURF.plaza, SURF.ground, SURF.scrub, SURF.forest].includes(s) && g > seaY) data[idx(lx, g, lz)] = B.gem_cache;
   }
 
@@ -700,6 +764,7 @@ export function genCity(cx, cz, data, e) {
     if (e.fab && wx >= e.fab.x0 - 3 && wx <= e.fab.x1 + 3 && wz >= e.fab.z0 - 3 && wz <= e.fab.z1 + 3) continue; // nor on the factory
     if (e.oro && wx >= e.oro.x0 - 3 && wx <= e.oro.x1 + 3 && wz >= e.oro.z0 - 3 && wz <= e.oro.z1 + 3) continue; // nor on La Térmica
     if (e.puerto && wx >= e.puerto.x0 - 3 && wx <= e.puerto.x1 + 3 && wz >= e.puerto.z0 - 3 && wz <= e.puerto.z1 + 3) continue; // nor on the port warehouse
+    if (e.aero && wx >= e.aero.x0 - 3 && wx <= e.aero.x1 + 3 && wz >= e.aero.z0 - 3 && wz <= e.aero.z1 + 3) continue; // nor on the cargo terminal
     const s = e.surf[k] & 0x7f, g = e.ground[k];
     const palm = [SURF.road, SURF.pavement, SURF.marble, SURF.plaza, SURF.sand, SURF.dock].includes(s) || hash3(wx, 9, wz, 3) < 0.25;
     const h = palm ? 6 + Math.floor(hash3(wx, 4, wz, 3) * 3) : 4 + Math.floor(hash3(wx, 4, wz, 3) * 2);
@@ -725,7 +790,7 @@ export function genCity(cx, cz, data, e) {
   // door, not on a stop sign or a stall, and not into a tree.
   const surf = (k) => e.surf[k] & 0x7f;
   const nearBy = (lx, lz, r, f) => { for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (f(at(lx + dx, lz + dz))) return true; return false; };
-  const onSquare = (wx, wz) => [e.bank, e.fab, e.oro, e.puerto].some((q) => q && ((wx >= q.x0 - 3 && wx <= q.x1 + 3 && wz >= q.z0 - 3 && wz <= q.z1 + 3) || (q.old && wx >= q.old.x0 - 3 && wx <= q.old.x1 + 3 && wz >= q.old.z0 - 3 && wz <= q.old.z1 + 3)));
+  const onSquare = (wx, wz) => [e.bank, e.fab, e.oro, e.puerto, e.aero].some((q) => q && ((wx >= q.x0 - 3 && wx <= q.x1 + 3 && wz >= q.z0 - 3 && wz <= q.z1 + 3) || (q.old && wx >= q.old.x0 - 3 && wx <= q.old.x1 + 3 && wz >= q.old.z0 - 3 && wz <= q.old.z1 + 3)));
   const doorNext = (lx, lz) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => {
     const n = at(lx + dx, lz + dz), b = e.bid[n];
     return b && (hash3(cx * S + lx + dx, 5, cz * S + lz + dz, b) < 0.12 || e.mark[n] >= 10);

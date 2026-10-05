@@ -307,6 +307,15 @@ Titula ekrānā poga **Malaga** atver pasauli, kas uzbūvēta no **īstā Malaga
 - **Kamera**: atslēga to atver, El Maestro seko spēlētājam. Tad skan trauksme: divarpus minūtes līdz laivai pie Muelle de Heredia.
 - Balva: 200 000 monētu (vienreiz kontam), kristāli, **kapteiņa cepure** un **nakts redzamības brilles** tēlam.
 
+### La Fábrica: 4. sezona, El Vuelo
+- Atveras pēc 3. sezonas. Inspektore Vega konfiscēja La Térmica zeltu kā pierādījumu; šonakt policijas kravas reiss to aizved no Malagas lidostas uz Madridi. Komanda to paņem atpakaļ un aizlido.
+- El Maestro sauc komandu uz fermu: plāns uz tāfeles un viktorīna. Kontakti: viltotājs (Mercado de Atarazanas) dod **viltotu pasi**, pilots (lidosta) gaidīs ar nelielu lidmašīnu pie skrejceļa, bagāžas krāvējs (María Zambrano stacija) dod **darbinieka karti**.
+- **Kravas terminālis** uz ziemeļiem no skrejceļa: darbinieku durvis atveras tikai ar karti. Zālē ir zilu un sarkanu konteineru rindas, gar labo sienu **bagāžas lente**, kas nes spēlētāju, un aizmugurē vadības telpa.
+- **Apsargi** ar lukturiem staigā pāri zālei, katrs pa savu joslu; gaisma rāda, kur viņi skatās, aiz konteinera var paslēpties. Ja gaisma tevi trāpa, skan trauksme, un komanda izslīd ārā, lai mēģinātu vēlreiz; neviens netiek ievainots.
+- **Lentu pults**: 4 x 5 lentes gabali (taisni vai stūri), klikšķis pagriež gabalu. Zaļā līnija rāda, kur konteiners brauc tagad; jāpanāk, lai tas iziet pie **7. angāra**, un jānosūta.
+- **Lidojums**: tornis pamana, divarpus minūtes līdz lidmašīnai pie skrejceļa; pa trapu jāuzkāpj ar pasi. Lidmašīna aizripo pa skrejceļu un paceļas.
+- Balva: 300 000 monētu (vienreiz kontam), kristāli, **pilota cepure** un **aviatora saulesbrilles** tēlam.
+
 ### Dārgakmeņi un zelts
 
 - Dārgakmeņi pēc īstās vērtības no lētākā līdz dārgākajam: **kvarcs, ametists, topāzs, smaragds, safīrs, rubīns, dimants** (birža maksā 3, 6, 12, 35, 45, 60 un 80 monētas).

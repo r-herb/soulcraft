@@ -317,6 +317,10 @@ export class Hud {
   // La Fábrica's sieges: what is printed (season 1) or melted (season 2), the police's patience, the water, what needs doing now
   fabUpdate(g) {
     const act = g.missions && g.missions.active;
+    // season 4: the guards, the panel, then the run to the jet
+    const A = g.aero, ae = act && A && A.open ? A.state() : null;
+    if (ae && ae.act >= 4 && ae.act <= 6) { this.aeroPanel(ae); return; }
+    if (this.fabPanel.classList.contains('four')) { this.fabPanel.classList.remove('four'); this.last.fab = null; }
     // season 3: the cameras, the fuse box, the alarms, then the run to the boat
     const U = g.puerto, u = act && U && U.open ? U.state() : null;
     if (u && u.act >= 4 && u.act <= 7) { this.puertoPanel(u); return; }
@@ -370,6 +374,25 @@ export class Hud {
     wb.classList.add('hidden'); wt.classList.toggle('hidden', run);
     wt.textContent = t('puerto.hud.alarms', { n: s.alarms });
     this.fabPanel.querySelector('.fp-alerts').innerHTML = `<p>${t('puerto.hud.step.' + s.act).replace(/[&<>]/g, '')}</p>`;
+  }
+
+  aeroPanel(s) {
+    if (this.last.fabOn !== true) { this.last.fabOn = true; this.fabPanel.classList.remove('hidden'); }
+    const run = s.act === 6;
+    const key = ['four', s.act, Math.ceil(s.escape), s.alarms].join(';');
+    if (this.last.fab === key) return;
+    this.last.fab = key;
+    this.fabPanel.classList.remove('two', 'three'); this.fabPanel.classList.add('four');
+    this.fabPanel.querySelector('.fp-title').textContent = t('aero.hud.title');
+    this.fabPanel.querySelector('.fp-printed').textContent = run ? t('aero.hud.run', { s: Math.ceil(s.escape) }) : s.act === 5 ? t('aero.hud.panel') : t('aero.hud.guards');
+    const bar = this.fabPanel.querySelector('.fp-bar i');
+    bar.style.width = (run ? Math.max(0, Math.min(100, (s.escape / 150) * 100)) : 0) + '%';
+    bar.classList.toggle('low', run && s.escape < 40);
+    this.fabPanel.querySelector('.fp-pat').textContent = run ? t('aero.hud.jet') : t('aero.hud.belt');
+    const wt = this.fabPanel.querySelector('.fp-water'), wb = this.fabPanel.querySelector('.fp-bar2');
+    wb.classList.add('hidden'); wt.classList.toggle('hidden', run);
+    wt.textContent = t('aero.hud.alarms', { n: s.alarms });
+    this.fabPanel.querySelector('.fp-alerts').innerHTML = `<p>${t('aero.hud.step.' + s.act).replace(/[&<>]/g, '')}</p>`;
   }
 
   showTutorial(text, onDone) {

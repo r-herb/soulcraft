@@ -2,11 +2,13 @@
 // quiz, then the player's alias), the red phone (the negotiator, four ways
 // to answer) and the end of the season (what was carried out, what it paid).
 // Season 2 has its own class, the officer's questions on the quay (Siroco's
-// rescue), a new negotiator and its own end.
+// rescue), a new negotiator and its own end; season 3 the safe's dial;
+// season 4 the belts' routing panel.
 import { t, applyI18n } from '../i18n/index.js';
 import { SVG } from './icons.js';
 import { ALIASES, TARGET } from '../quest/fabrica.js';
 import { ORO_TARGET } from '../quest/oro.js';
+import { openings, traceRoute } from '../quest/aero.js';
 
 const el = (html) => { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -289,6 +291,111 @@ export function puertoFinale(args, ui) {
       <p class="faint small">${esc(t('puerto.end.items'))}</p>
       <p class="faint small">${esc(t('puerto.end.next'))}</p>
       <button class="btn primary" data-act="close" data-i18n="puerto.end.ok"></button>
+    </div></div>`);
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  g.audio.sfx('victory');
+  return node;
+}
+
+// ---------- season 4 ----------
+const ANSWERS4 = [2, 0, 1, 2, 1];
+
+// the plan on the blackboard (El Maestro again), a quiz
+export function aeroLesson(args, ui) {
+  const g = ui.game, U = g.aero;
+  let step = 0, picks = [];
+  const node = el(`<div class="screen scrim" data-screen="aeroLesson">
+    <div class="panel fab-panel-ui">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="aero.class.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body fab-body"></div>
+    </div></div>`);
+  const body = node.querySelector('.fab-body');
+  const draw = () => {
+    if (step < LESSONS) {
+      body.innerHTML = `<div class="blackboard"><span class="bb-n">${esc(t('fab.class.lesson', { n: step + 1, total: LESSONS }))}</span><h3>${esc(t('aero.lesson.' + (step + 1) + '.title'))}</h3><p>${esc(t('aero.lesson.' + (step + 1)))}</p></div>
+        <div class="row" style="justify-content:space-between"><span class="faint small">${esc(t('aero.maestroSays'))}</span><button class="btn primary" data-a="next">${esc(t(step === LESSONS - 1 ? 'fab.class.toQuiz' : 'fab.class.next'))}</button></div>`;
+      body.querySelector('[data-a="next"]').onclick = () => { ui.click(); step++; draw(); };
+    } else if (step === LESSONS) {
+      const qi = picks.length;
+      body.innerHTML = `<div class="quiz"><span class="bb-n">${esc(t('fab.class.question', { n: qi + 1, total: ANSWERS4.length }))}</span><h3>${esc(t('aero.q.' + (qi + 1)))}</h3>
+        <div class="col">${[0, 1, 2].map((i) => `<button class="btn quiz-a" data-i="${i}">${esc(t('aero.q.' + (qi + 1) + '.a' + i))}</button>`).join('')}</div></div>`;
+      body.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => { ui.click(); picks.push(+b.dataset.i); if (picks.length >= ANSWERS4.length) step++; draw(); }; });
+    } else {
+      const right = picks.filter((p, i) => p === ANSWERS4[i]).length, pass = right >= 4;
+      body.innerHTML = `<div class="blackboard"><h3>${esc(t(pass ? 'fab.class.passed' : 'fab.class.failed', { n: right, total: ANSWERS4.length }))}</h3>${pass ? `<p>${esc(t('aero.class.ready'))}</p>` : ''}</div>
+        <div class="row" style="justify-content:flex-end">${pass ? `<button class="btn primary" data-a="go">${esc(t('oro.class.go'))}</button>` : `<button class="btn primary" data-a="again">${esc(t('fab.class.again'))}</button>`}</div>`;
+      if (!pass) body.querySelector('[data-a="again"]').onclick = () => { ui.click(); step = 0; picks = []; draw(); };
+      else body.querySelector('[data-a="go"]').onclick = () => { ui.click(); U.passClass(); ui.back(); };
+    }
+  };
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  draw();
+  return node;
+}
+
+// a belt piece: straight (top to bottom) or a corner (top to right), turned a quarter at a time
+const piece = (k) => `<svg viewBox="0 0 40 40" aria-hidden="true">${k ? '<path d="M20 0 V20 H40" />' : '<path d="M20 0 V40" />'}</svg>`;
+
+// the belts' routing panel: turn the pieces so the container rolls out at Hangar 7
+export function aeroRoute(args, ui) {
+  const g = ui.game, U = g.aero, rt = U.state().route;
+  const node = el(`<div class="screen scrim" data-screen="aeroRoute">
+    <div class="panel fab-panel-ui route-ui">
+      <div class="panel-head"><h2 class="panel-title" data-i18n="aero.route.title"></h2><button class="btn icon-btn ghost close-x" data-act="close" data-i18n-aria="common.close">${SVG.close}</button></div>
+      <div class="panel-body col">
+        <p class="faint small" style="margin:0">${esc(t('aero.route.how'))}</p>
+        <div class="route-grid"></div>
+        <p class="rt-to" data-to=""></p>
+        <button class="btn primary" data-a="send">${esc(t('aero.route.send'))}</button>
+        <p class="rt-msg small" style="margin:0"></p>
+      </div>
+    </div></div>`);
+  if (!rt) { node.querySelector('.panel-body').innerHTML = `<p>${esc(t('aero.panelLater'))}</p>`; applyI18n(node); node.querySelector('[data-act="close"]').addEventListener('click', () => ui.back()); return node; }
+  const rots = rt.cells.map((c) => c.r), grid = node.querySelector('.route-grid');
+  grid.style.gridTemplateColumns = `auto repeat(${rt.C}, 44px) minmax(70px, auto)`;
+  const draw = () => {
+    const tr = traceRoute(rt, rots), on = new Set(tr.path);
+    let html = '';
+    for (let r = 0; r < rt.R; r++) {
+      html += `<span class="rt-in">${r === rt.start ? '&#9654;' : ''}</span>`;
+      for (let c = 0; c < rt.C; c++) {
+        const i = r * rt.C + c;
+        html += `<button class="rt-cell${on.has(i) ? ' on' : ''}" data-i="${i}" data-k="${rt.cells[i].k}" data-r="${rots[i]}" style="--rot:${rots[i] * 90}deg" aria-label="${esc(t('aero.route.piece', { n: i + 1 }))}">${piece(rt.cells[i].k)}</button>`;
+      }
+      html += `<span class="rt-out${tr.to === r ? ' on' : ''}${rt.dests[r] === 'hangar' ? ' goal' : ''}">${esc(t('aero.route.' + rt.dests[r]))}</span>`;
+    }
+    grid.innerHTML = html;
+    const to = node.querySelector('.rt-to');
+    to.dataset.to = tr.to >= 0 ? rt.dests[tr.to] : 'stop';
+    to.textContent = tr.to >= 0 ? t('aero.route.goes', { to: t('aero.route.' + rt.dests[tr.to]) }) : t('aero.route.stops');
+    grid.querySelectorAll('[data-i]').forEach((b) => b.addEventListener('click', () => { const i = +b.dataset.i; rots[i] = (rots[i] + 1) % 4; g.audio.sfx('click'); draw(); }));
+  };
+  node.querySelector('[data-a="send"]').addEventListener('click', () => {
+    ui.click();
+    const tr = traceRoute(rt, rots), msg = node.querySelector('.rt-msg');
+    if (tr.to === rt.exit) { msg.textContent = t('aero.route.done'); U.routeDone(); setTimeout(() => ui.back(), 700); }
+    else { msg.textContent = t(tr.to >= 0 ? 'aero.route.wrong' : 'aero.route.stuck', { to: tr.to >= 0 ? t('aero.route.' + rt.dests[tr.to]) : '' }); g.audio.sfx('buzz'); }
+  });
+  node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
+  applyI18n(node);
+  draw();
+  return node;
+}
+
+// the end of season 4: the jet takes off with the gold
+export function aeroFinale(args, ui) {
+  const g = ui.game, f = g.fabrica.state();
+  const node = el(`<div class="screen scrim" data-screen="aeroFinale">
+    <div class="panel fab-panel-ui finale">
+      <div class="mayor-crown" aria-hidden="true">&#9992;</div>
+      <h2 class="panel-title" data-i18n="aero.end.title"></h2>
+      <p>${esc(t('aero.end.text', { alias: f.alias ? t('fab.alias.' + f.alias) : t('heist.you') }))}</p>
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('aero.end.guest'))}</p>`}
+      <p class="faint small">${esc(t('aero.end.items'))}</p>
+      <p class="faint small">${esc(t('aero.end.next'))}</p>
+      <button class="btn primary" data-act="close" data-i18n="aero.end.ok"></button>
     </div></div>`);
   node.querySelector('[data-act="close"]').addEventListener('click', () => { ui.click(); ui.back(); });
   applyI18n(node);

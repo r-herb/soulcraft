@@ -363,6 +363,33 @@ const painters = {
     for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) { const d = Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5)); p.set(x, y, mix(hex('#fffbe6'), hex('#ffe1a0'), Math.min(1, d / 8))); }
     p.border('#c9b48a');
   },
+  // season 4: the cargo terminal
+  staff_door: (p) => { p.noise(['#8a9099', '#838a93', '#90969f']); p.border('#4a4f57'); for (let y = 1; y < 15; y++) p.set(7, y, hex('#5a6068')); for (let y = 6; y < 11; y++) for (let x = 11; x < 14; x++) p.set(x, y, hex('#22252b')); p.set(12, 7, hex('#ff3030')); p.set(12, 9, hex('#7dff8a')); },
+  aero_sign: (p) => {
+    p.noise(['#14324f', '#163857']); p.border('#d9e2ea');
+    const w = hex('#f2f6fa');
+    for (let x = 3; x < 13; x++) p.set(x, 8, w); // the fuselage
+    for (const [x, y] of [[7, 5], [8, 5], [8, 6], [7, 6], [8, 7], [7, 9], [8, 9], [8, 10], [7, 10], [8, 11], [3, 6], [3, 7], [4, 7], [12, 7], [13, 8], [12, 9]]) p.set(x, y, w); // wings, tail, nose
+  },
+  cargo_container: (p) => { for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex(x % 3 === 0 ? '#1d4f8a' : '#2563a8'), 0.94 + p.r() * 0.08)); p.border('#163a66'); for (const y of [4, 11]) for (let x = 12; x < 14; x++) p.set(x, y, hex('#c9ccd2')); },
+  cargo_container_red: (p) => { for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex(x % 3 === 0 ? '#8a2a1d' : '#b03a26'), 0.94 + p.r() * 0.08)); p.border('#661d14'); for (const y of [4, 11]) for (let x = 12; x < 14; x++) p.set(x, y, hex('#c9ccd2')); },
+  container_top: (p) => { p.noise(['#6b6f78', '#737780', '#666a72']); p.border('#4a4f57'); },
+  // a rubber belt with yellow chevrons that point the way it runs
+  conveyor: (p) => {
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) p.set(x, y, shade(hex('#26282d'), 0.9 + p.r() * 0.15));
+    for (let x = 0; x < T; x++) { p.set(x, 0, hex('#9aa0a8')); p.set(x, T - 1, hex('#9aa0a8')); }
+    for (const c of [3, 10]) for (let k = 0; k < 4; k++) { p.set(5 + k, c + k, hex('#ffd65c')); p.set(10 - k, c + k, hex('#ffd65c')); }
+  },
+  conveyor_side: (p) => { p.noise(['#5a6068', '#636970']); for (let x = 0; x < T; x++) { p.set(x, 0, hex('#26282d')); p.set(x, 1, hex('#26282d')); } for (let x = 2; x < T; x += 5) p.set(x, 8, hex('#c9ccd2')); },
+  route_panel: (p) => {
+    p.noise(['#2b2d33', '#30333a']); p.border('#1b1d22');
+    for (let y = 2; y < 9; y++) for (let x = 2; x < 14; x++) p.set(x, y, hex('#0f2a1a'));
+    for (let x = 3; x < 13; x++) p.set(x, 5, hex('#7dff8a'));
+    for (let y = 3; y < 8; y++) { p.set(6, y, hex('#7dff8a')); p.set(10, y, hex('#7dff8a')); }
+    for (const [x, c] of [[4, '#ff3030'], [7, '#ffd65c'], [10, '#7dff8a']]) { p.set(x, 11, hex(c)); p.set(x + 1, 11, hex(c)); p.set(x, 12, hex(c)); p.set(x + 1, 12, hex(c)); }
+  },
+  monitor_desk: (p) => { p.noise(['#4a4f57', '#50555d']); p.border('#2b2d33'); for (let y = 2; y < 8; y++) for (let x = 3; x < 13; x++) p.set(x, y, hex('#1c3a5a')); for (let x = 4; x < 12; x += 2) p.set(x, 4, hex('#9fd3ff')); for (let x = 2; x < 14; x++) p.set(x, 11, hex('#2b2d33')); },
+  desk_top: (p) => { p.noise(['#5a6068', '#636970']); p.border('#3a3f46'); },
   crate: (p) => { p.noise(['#a87a48', '#9a6e40', '#b08452']); p.border('#6b4a2f'); for (let i = 1; i < 15; i++) { p.set(i, i, hex('#7a5530')); p.set(15 - i, i, hex('#7a5530')); } },
   crate_top: (p) => { p.noise(['#b08452', '#a87a48']); p.border('#6b4a2f'); for (let x = 1; x < 15; x++) p.set(x, 8, hex('#7a5530')); },
   // a cast-iron manhole cover with slots (the sewer under the bank)

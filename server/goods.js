@@ -41,6 +41,8 @@ export const FAB_PER_BAG = 25000, FAB_MAX_BAGS = 10;
 export const ORO_PER_SACK = 30000, ORO_MAX_SACKS = 12;
 // La Fábrica, season 3: El Maestro's thanks for his rescue (once per account)
 export const PUERTO_PAY = 200000;
+// La Fábrica, season 4: the gold flown away from Málaga airport (once per account)
+export const AERO_PAY = 300000;
 export const HEIST_PAY = 1000000;
 export const HEIST_NEEDS = 12; // tasks done
 export const HEIST_MIN_MS = 15 * 60 * 1000; // from the first task to the payout

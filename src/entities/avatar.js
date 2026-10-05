@@ -25,10 +25,10 @@ export const SLOTS = {
   face: [I('smile'), I('grin'), I('wink'), I('surprised'), I('smirk', 20), I('cool', 30), I('kawaii', 40), I('determined', 40)],
   hair: [I('none'), I('short'), I('spiky'), I('long'), I('ponytail', 20), I('bun', 20), I('afro', 40), I('mohawk', 40)],
   hat: [I('none'), I('cap'), I('beanie', 20), I('party', 30), I('headphones', 50), I('tophat', 60), I('sunhat', 0, 'malaga'), I('explorer', 0, 'treasure'),
-    I('crown', 0, 'mayor'), I('knight', 0, 'bosses'), I('frost', 0, 'treasure2'), I('captain', 0, 'fabrica3')],
+    I('crown', 0, 'mayor'), I('knight', 0, 'bosses'), I('frost', 0, 'treasure2'), I('captain', 0, 'fabrica3'), I('pilot', 0, 'fabrica4')],
   top: [I('tee'), I('long'), I('tank'), I('striped', 20), I('star', 30), I('hoodie', 40), I('suit', 0, 'mayor'), I('robber', 0, 'heist'), I('knight', 0, 'bosses'), I('explorer', 0, 'treasure'), I('redsuit', 0, 'fabrica'), I('diver', 0, 'fabrica2')],
   pants: [I('jeans'), I('shorts'), I('skirt', 20), I('cargo', 20)],
-  glasses: [I('none'), I('round', 20), I('goggles', 30), I('sun', 40), I('monocle', 60), I('mask', 0, 'heist'), I('grinmask', 0, 'fabrica'), I('goldmask', 0, 'fabrica2'), I('nightvision', 0, 'fabrica3')],
+  glasses: [I('none'), I('round', 20), I('goggles', 30), I('sun', 40), I('monocle', 60), I('mask', 0, 'heist'), I('grinmask', 0, 'fabrica'), I('goldmask', 0, 'fabrica2'), I('nightvision', 0, 'fabrica3'), I('aviator', 0, 'fabrica4')],
   back: [I('none'), I('backpack', 30), I('guitar', 60), I('cape', 80), I('jetpack', 150), I('dragon', 300), I('wings', 0, 'days'), I('icewings', 0, 'treasure2')],
 };
 // the order the slots travel in, colors between them
@@ -39,7 +39,7 @@ export const DEFAULT_AVATAR = { tone: 6, face: 'smile', hair: 'short', hairC: 15
 // ---------- achievements ----------
 // what the player has done, read from the profile (it follows them between worlds)
 export const ACHIEVEMENTS = [
-  { id: 'malaga', test: (p) => Object.keys((p.missions && p.missions.done) || {}).filter((k) => !/^(h|f|f2|f3)_/.test(k)).length >= 5 },
+  { id: 'malaga', test: (p) => Object.keys((p.missions && p.missions.done) || {}).filter((k) => !/^(h|f|f2|f3|f4)_/.test(k)).length >= 5 },
   { id: 'treasure', test: (p) => !!(p.rewards && p.rewards.starfall) },
   { id: 'treasure2', test: (p) => !!(p.rewards && p.rewards.frostbrand) },
   { id: 'days', test: (p) => (p.bestDay || 0) >= 30 },
@@ -49,6 +49,7 @@ export const ACHIEVEMENTS = [
   { id: 'fabrica', test: (p) => !!(p.fabrica && p.fabrica.done) },
   { id: 'fabrica2', test: (p) => !!(p.oro && p.oro.done) },
   { id: 'fabrica3', test: (p) => !!(p.puerto && p.puerto.done) },
+  { id: 'fabrica4', test: (p) => !!(p.aero && p.aero.done) },
 ];
 // (the superadmin's test account wears every achievement's items)
 export const hasAch = (p, id) => { if (p.testAll) return true; const a = ACHIEVEMENTS.find((x) => x.id === id); return !!(a && a.test(p)); };
@@ -291,6 +292,13 @@ function addHat(head, kind, accent) {
     add(cyl(0.275, 0.275, 0.05, '#1b1b22'), 0, 0.24, 0); add(part(0.36, 0.03, 0.18, '#1b1b22', 0.012), 0, 0.22, 0.3);
     add(part(0.08, 0.08, 0.02, '#f6c667', 0.01), 0, 0.3, 0.29);
   }
+  else if (kind === 'pilot') {
+    // a navy pilot's cap: a gold band, a black peak, gold wings on the front
+    add(cyl(0.3, 0.27, 0.12, '#14244f'), 0, 0.29, 0); add(cyl(0.33, 0.33, 0.04, '#14244f'), 0, 0.36, 0);
+    add(cyl(0.276, 0.276, 0.05, '#f6c667'), 0, 0.24, 0); add(part(0.36, 0.03, 0.18, '#1b1b22', 0.012), 0, 0.22, 0.3);
+    for (const sd of [-1, 1]) { const w = add(part(0.12, 0.03, 0.02, '#f6c667', 0.01), sd * 0.07, 0.31, 0.29); w.rotation.z = sd * 0.25; }
+    add(part(0.05, 0.05, 0.02, '#f6c667', 0.01), 0, 0.31, 0.295);
+  }
   else if (kind === 'explorer') { const br = add(cyl(0.44, 0.44, 0.025, '#8a5a2a', 24), 0, 0.23, 0); br.rotation.x = 0.06; add(cyl(0.22, 0.25, 0.2, '#8a5a2a'), 0, 0.33, 0); add(cyl(0.255, 0.255, 0.05, '#3a2614'), 0, 0.27, 0); }
   else if (kind === 'crown') {
     const gold = mat('#f6c667', { emissive: '#5a4210', side: THREE.DoubleSide });
@@ -319,6 +327,11 @@ function addGlasses(head, kind) {
     // night-vision goggles: a strap, two tubes with green lenses
     add(mesh(new THREE.CylinderGeometry(0.272, 0.272, 0.07, 20, 1, true), '#1b1b22', { side: THREE.DoubleSide }), 0, 0.05, 0);
     for (const s of [-1, 1]) { const tb = add(mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.16, 12), '#2b2d33'), s * 0.1, 0.04, z + 0.06); tb.rotation.x = Math.PI / 2; const l = add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12), '#7dff8a', { emissive: '#1a6a2a' }), s * 0.1, 0.04, z + 0.15); l.rotation.x = Math.PI / 2; }
+  }
+  else if (kind === 'aviator') {
+    // aviator sunglasses: thin gold rims, dark drops of glass, a double bridge
+    for (const sd of [-1, 1]) { const l = add(mesh(new THREE.SphereGeometry(0.075, 14, 10), '#2b3a2e', { emissive: '#0a120c' }), sd * 0.105, 0.0, z); l.scale.set(1, 0.85, 0.25); add(mesh(new THREE.TorusGeometry(0.075, 0.008, 6, 18), '#f6c667'), sd * 0.105, 0.0, z + 0.004).scale.y = 0.85; }
+    add(part(0.07, 0.012, 0.012, '#f6c667', 0.005), 0, 0.055, z); add(part(0.05, 0.01, 0.01, '#f6c667', 0.004), 0, 0.025, z);
   }
   else if (kind === 'monocle') { add(mesh(new THREE.TorusGeometry(0.07, 0.013, 6, 16), '#f6c667'), 0.1, 0.02, z); const ch = add(part(0.01, 0.2, 0.01, '#f6c667', 0.004), 0.16, -0.08, z - 0.01); ch.rotation.z = 0.3; }
   else if (kind === 'grinmask' || kind === 'goldmask') {

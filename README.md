@@ -533,6 +533,45 @@ Marina). This season is not a siege but a quiet way in.
 
 The test panel jumps to any act of season 3 and can switch the cameras off.
 
+## La Fábrica: season 4, El Vuelo
+
+Season 4 opens when season 3 is done. Inspector Vega seized the gold of La
+Térmica as evidence; tonight a police cargo flight takes it from Málaga
+airport to Madrid. The crew takes it back, and leaves with it.
+
+1. **The last flight**: El Maestro, free again, calls the crew to the
+   farmhouse; his plan on the blackboard (five lessons) and a quiz.
+2. **The contacts**: a forger (Mercado de Atarazanas) with a **forged
+   passport**, a pilot (the airport) who will wait with a small jet by the
+   runway, a baggage handler (María Zambrano station) with his **staff
+   badge**.
+3. **The cargo terminal** (the airport's cargo building north of the runway,
+   a building of its own, at most 34 by 34): the **staff door** opens only
+   with the badge; inside, the cargo hall with rows of blue and red
+   containers, a **baggage belt** along the right side, and at the back,
+   behind a wall with a doorway, the control room with the routing panel.
+4. **Past the guards**: two guards walk across the hall, each along his
+   lane, with a torch whose light shows where they look (9 blocks, about
+   57 degrees wide; a container hides the player). Caught in the light: the
+   alarm, and the crew slips out to try again (nobody is hurt). The belt
+   carries whoever stands on it deeper into the hall (3.2 blocks a second).
+   The guards and the belt (with its suitcases) run on the clock, so every
+   player in a room sees them the same.
+5. **The belts**: the routing panel is a grid of 4 x 5 belt pieces,
+   straight or a corner; click one to turn it. The container comes in on
+   the left of one row; the green line shows where it goes now (Hangar 7,
+   customs, the police, lost luggage, or a broken line). Turn the pieces so
+   it comes out at Hangar 7 and send it (a new grid each time the crew goes
+   in).
+6. **The flight**: the tower notices; two and a half minutes to reach the
+   jet by the runway and walk up its airstair with the passport (the pilot
+   wants it), or the tower closes the airport and the crew is back at the
+   terminal. The jet rolls down the runway and climbs away. The end:
+   300,000 coins (once per account, signed in), soul crystals, the
+   **pilot's cap** and the **aviator sunglasses** for the avatar.
+
+The test panel jumps to any act of season 4.
+
 ## Gems and gold
 
 Gems are ranked as in the real world, from cheap to precious: **quartz,
@@ -887,6 +926,15 @@ What the tests cover:
   next blow; the axe throws back further and hits only its target); the war
   hammer's blow also hits the monsters beside the one struck; the crossbow
   uses an arrow, the soul staff none; a thrown knife can be picked up again.
+- `tests/aero.spec.js` (desktop): season 4 is hidden until season 3 is
+  done; El Maestro's plan and quiz; the forger's passport and the baggage
+  handler's badge; the cargo terminal has its staff door, containers, belt
+  and routing panel; without the badge the door stays shut; a guard whose
+  torch lights the player sets off the alarm and the crew is put out; the
+  belt carries the player deeper; past the guards the control room; a wrong
+  send at the panel changes nothing, the belt pieces turned to Hangar 7
+  send the container; time running out sends the crew back; the pilot
+  wants the passport; the end, and the jet takes off.
 - `tests/puerto.spec.js` (desktop): season 3 is hidden until season 2 is
   done; Siroco's plan and quiz; the contacts give the stethoscope; the
   warehouse has its door, fuse box, crates, safe and cell; a camera that

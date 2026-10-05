@@ -40,6 +40,8 @@ export const TILES = [
   'laser', 'safe', 'safe_top', 'fuse_box', 'cell_bars', 'cell_door', 'puerto_sign', 'crate', 'crate_top',
   // street lamps
   'lamp_post', 'street_lamp', 'street_lamp_top', 'ceiling_lamp',
+  // La Fábrica, season 4
+  'staff_door', 'aero_sign', 'cargo_container', 'cargo_container_red', 'container_top', 'conveyor', 'conveyor_side', 'route_panel', 'monitor_desk', 'desk_top',
   // farm 2
   'orange_0', 'orange_1', 'orange_2', 'orange_3', 'nest_box', 'nest_box_top', 'incubator', 'incubator_top',
 ];
@@ -234,6 +236,14 @@ const LIST = [
   def(169, 'ceiling_lamp_paving', { tex: { top: 'paving', side: 'paving', bottom: 'ceiling_lamp' }, hardness: 1.5, tool: 'pick', drop: 'paving', light: 12 }),
   def(170, 'ceiling_lamp_tiles', { tex: { top: 'roof_tiles', side: 'roof_tiles', bottom: 'ceiling_lamp' }, hardness: 1.5, tool: 'pick', drop: 'roof_tiles', light: 12 }),
   def(171, 'ceiling_lamp_lime', { tex: { top: 'limestone', side: 'limestone', bottom: 'ceiling_lamp' }, hardness: 1.5, tool: 'pick', drop: 'limestone', light: 12 }),
+  // season 4, the airport's cargo terminal
+  def(172, 'staff_door', { tex: 'staff_door', hardness: -1 }),
+  def(173, 'aero_sign', { tex: 'aero_sign', hardness: -1 }),
+  def(174, 'cargo_container', { tex: { top: 'container_top', side: 'cargo_container', bottom: 'container_top' }, hardness: -1 }),
+  def(175, 'cargo_container_red', { tex: { top: 'container_top', side: 'cargo_container_red', bottom: 'container_top' }, hardness: -1 }),
+  def(176, 'conveyor', { tex: { top: 'conveyor', side: 'conveyor_side', bottom: 'conveyor_side' }, hardness: -1 }),
+  def(177, 'route_panel', { tex: { top: 'desk_top', side: 'route_panel', bottom: 'desk_top' }, hardness: -1, light: 6 }),
+  def(178, 'monitor_desk', { tex: { top: 'desk_top', side: 'monitor_desk', bottom: 'desk_top' }, hardness: -1 }),
   def(167, 'street_lamp', { tex: { top: 'street_lamp_top', side: 'street_lamp', bottom: 'street_lamp_top' }, layer: 1, solid: false, opaque: false, light: 15, hardness: -1 }),
   def(134, 'orange_0', { tex: 'orange_0', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 0 }),
   def(135, 'orange_1', { tex: 'orange_1', shape: 'cross', layer: 1, solid: false, opaque: false, hardness: 0, drop: 'none', crop: 'orange', stage: 1 }),
