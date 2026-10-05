@@ -14,6 +14,7 @@ import { Audio } from './audio/audio.js';
 import { Game, loadCityData } from './game.js';
 import { loadProfile, loadWorld, storageOk } from './save/db.js';
 import { screenInfo, initAccount, slot, storeProfile, localWorlds, removeWorld, MAX_WORLDS, sendPresence, onAccount, account, econ } from './save/account.js';
+import { pickSeason } from './quest/seasons.js';
 import { seedFromString } from './world/structures.js';
 import { initDevPanel } from './ui/dev.js';
 import { LEVELS as QUEST_LEVELS } from './world/quest.js';
@@ -73,6 +74,12 @@ async function boot() {
         await loadCityData(params.city);
       } catch (e) { console.warn('city', e); ui.showTitle(); ui.toast(t('city.loadFailed'), 'warn'); return; }
       await startGame(app.game.newCityMeta(params));
+    },
+    // La Fábrica: a season picked on the title screen, played in the latest Malaga world (or a new one)
+    async playSeason(n, { world, creative }) {
+      app.pendingSeason = n;
+      if (world) await app.continueGame(world.base);
+      else await app.newCity({ city: 'malaga', name: t('city.malaga.name'), creative, difficulty: 'normal' });
     },
     async newGame(params) {
       if (app.worlds.length >= MAX_WORLDS) { ui.toast(t('worlds.full', { n: MAX_WORLDS }), 'warn'); return; }
@@ -198,6 +205,8 @@ async function boot() {
     try {
       await app.game.start(meta, (f) => ui.setLoading(0.1 + f * 0.9, t('loading.chunks')));
       ui.closeAll();
+      // a season picked on the title screen
+      if (app.pendingSeason) { const n = app.pendingSeason; app.pendingSeason = 0; if (app.game.meta.city) pickSeason(app.game, n); }
       app.presence();
       // "play with friends": the world opens to friends at once and the friends list comes up to invite them
       if (app.togetherNext && !meta.guest) {

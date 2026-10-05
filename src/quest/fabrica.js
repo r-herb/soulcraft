@@ -322,9 +322,9 @@ export class Fabrica {
     if (bags && account.user && account.available && econ.fabrica) { try { paid = (await econ.fabrica(bags)).paid || 0; } catch { /* once per account */ } }
     if (bags) g.inventory.remove('money_bag', bags);
     s.act = 7; s.done = true; s.bags = bags; s.paid = paid;
-    if (!g.creative) g.addCrystals(150 + 15 * bags);
+    if (!g.creative && !s.cleared) g.addCrystals(150 + 15 * bags);
     g.save(true);
-    g.ui.open('fabFinale', { bags, paid });
+    g.ui.open('fabFinale', { bags, paid, again: !!s.cleared });
   }
 
   // ---------- every frame ----------

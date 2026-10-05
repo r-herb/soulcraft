@@ -78,7 +78,7 @@ export async function listWorlds(prefix) {
     let all = await tx('worlds', 'readonly', (s) => (s ? s.getAll() : null));
     if (!all) all = [...memory.worlds.values()];
     return all.filter((r) => typeof r.id === 'string' && r.id.startsWith(prefix) && !r.id.slice(prefix.length).includes(':'))
-      .map((r) => ({ slot: r.id, base: r.id.slice(prefix.length - 2), id: r.worldId, name: r.name, day: r.day, creative: !!r.creative, savedAt: r.savedAt || 0, bosses: Object.values(r.bosses || {}).filter(Boolean).length }))
+      .map((r) => ({ slot: r.id, base: r.id.slice(prefix.length - 2), id: r.worldId, name: r.name, day: r.day, creative: !!r.creative, city: r.city || null, savedAt: r.savedAt || 0, bosses: Object.values(r.bosses || {}).filter(Boolean).length }))
       .sort((a, b) => b.savedAt - a.savedAt);
   } catch (e) {
     console.warn('listWorlds failed', e);

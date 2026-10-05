@@ -2092,5 +2092,22 @@
   "block.ceiling_lamp": "Griestu gaisma",
   "block.ceiling_lamp_paving": "Griestu gaisma",
   "block.ceiling_lamp_tiles": "Griestu gaisma",
-  "block.ceiling_lamp_lime": "Griestu gaisma"
+  "block.ceiling_lamp_lime": "Griestu gaisma",
+  "title.seasons": "La Fábrica: sezonas",
+  "seasons.title": "La Fábrica: izvēlies sezonu",
+  "seasons.where": "Spēle notiks tavā Malagas pasaulē: {name}",
+  "seasons.newWorld": "Tam tiks izveidota jauna Malagas pasaule.",
+  "seasons.d1": "Vecā tabakas fabrika: El Maestro stunda, tad naudas drukāšana aplenkumā un bēgšana pa tuneli.",
+  "seasons.d2": "La Térmica: izglāb Siroco, kausē zeltu aplenkumā un izkļūsti pa cauruli uz jūru.",
+  "seasons.d3": "Ostas noliktava: garām kamerām un lāzeriem, atver seifu un atbrīvo El Maestro.",
+  "seasons.d4": "Malagas lidosta: garām apsargiem, pagriez lentes uz 7. angāru un aizlido ar zeltu.",
+  "seasons.new": "Nav sākta",
+  "seasons.playing": "Notiek: {n}. cēliens",
+  "seasons.done": "Pabeigta",
+  "seasons.play": "Spēlēt",
+  "seasons.continue": "Turpināt",
+  "seasons.again": "Spēlēt vēlreiz",
+  "seasons.note": "Var spēlēt jebkuru sezonu: iepriekšējās nav vajadzīgas. Atkārtoti spēlēta sezona monētas un kristālus maksā tikai pirmajā reizē.",
+  "seasons.started": "{name}: seko zelta bultai!",
+  "seasons.replayed": "Spēlēts vēlreiz: balva tika izmaksāta pirmajā reizē."
 }

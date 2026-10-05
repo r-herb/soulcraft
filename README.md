@@ -572,6 +572,20 @@ airport to Madrid. The crew takes it back, and leaves with it.
 
 The test panel jumps to any act of season 4.
 
+## La Fábrica: picking a season
+
+**La Fábrica: seasons** on the title screen lists the four seasons, each
+with where it stands (not started, in progress at an act, finished) and a
+button to play, continue or play it again. A season plays in the latest
+Malaga world, or in a new one (its mode chosen on that screen) when there is
+none. Any season can be picked: the seasons before it are not needed (a
+season opens when the one before it is finished, or when it was picked;
+`profile.fabPick` keeps the highest one picked, and the host sends it to the
+guests with the team's state). A finished season picked again starts over
+(its missions and its quest items are cleared); the wardrobe's items stay
+(an achievement counts a season finished once, `cleared`), and the coins and
+crystals are given only the first time (`src/quest/seasons.js`).
+
 ## Gems and gold
 
 Gems are ranked as in the real world, from cheap to precious: **quartz,
@@ -926,6 +940,11 @@ What the tests cover:
   next blow; the axe throws back further and hits only its target); the war
   hammer's blow also hits the monsters beside the one struck; the crossbow
   uses an arrow, the soul staff none; a thrown knife can be picked up again.
+- `tests/seasons.spec.js` (desktop): the title screen's season picker shows
+  four new seasons; season 4 picked first plays in a new Malaga world and is
+  open without seasons 1 to 3; back on the title screen a finished season 3
+  shows as finished in that world, and played again it starts over there,
+  without crystals a second time.
 - `tests/aero.spec.js` (desktop): season 4 is hidden until season 3 is
   done; El Maestro's plan and quiz; the forger's passport and the baggage
   handler's badge; the cargo terminal has its staff door, containers, belt

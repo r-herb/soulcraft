@@ -238,6 +238,21 @@ body.touch .desktop-only { display: none !important; }
 .fab-panel.four { background: rgba(10, 16, 30, 0.78); border-color: #f0a030; }
 .fab-panel.four .fp-title { color: #ffd08a; }
 .fab-panel.four .fp-alerts p { animation: none; color: #e8eef5; }
+/* La Fábrica: the title screen's button and the season picker */
+.btn.fab-btn { background: linear-gradient(180deg, #c81e1e, #8a1414); border-color: #5a0d0d; color: #fff3e8; }
+.seasons-panel .panel-body { overflow-y: auto; }
+.seasons-panel .panel-body > * { flex: none; }
+.season-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.season-card { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(200, 30, 30, 0.12); }
+.season-card .sc-n { font-size: 28px; font-weight: 700; color: #ff8a7a; width: 32px; text-align: center; flex: none; }
+.season-card .sc-body { flex: 1; min-width: 0; }
+.season-card h3 { margin: 0; font-size: 16px; }
+.season-card p { margin: 2px 0; }
+.season-card .sc-status { color: #9aa0a8; }
+.season-card.playing .sc-status { color: #ffd65c; }
+.season-card.done .sc-status { color: #7dff8a; }
+.season-card .btn { flex: none; }
+@media (max-width: 480px) { .season-card { flex-wrap: wrap; } .season-card .btn { width: 100%; } }
 /* season 4: the belts' routing panel */
 .route-ui .panel-body { align-items: center; gap: var(--sp-2); }
 .route-grid { display: grid; gap: 4px; align-items: center; }

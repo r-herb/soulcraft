@@ -2092,5 +2092,22 @@
   "block.ceiling_lamp": "Luz del techo",
   "block.ceiling_lamp_paving": "Luz del techo",
   "block.ceiling_lamp_tiles": "Luz del techo",
-  "block.ceiling_lamp_lime": "Luz del techo"
+  "block.ceiling_lamp_lime": "Luz del techo",
+  "title.seasons": "La Fábrica: temporadas",
+  "seasons.title": "La Fábrica: elige una temporada",
+  "seasons.where": "Se juega en tu mundo de Málaga: {name}",
+  "seasons.newWorld": "Se creará un nuevo mundo de Málaga para ello.",
+  "seasons.d1": "La antigua fábrica de tabaco: la clase de El Maestro, imprimir dinero bajo asedio y huir por el túnel.",
+  "seasons.d2": "La Térmica: rescata a Siroco, funde el oro bajo asedio y sal por la tubería al mar.",
+  "seasons.d3": "El almacén del puerto: pasa las cámaras y los láseres, abre la caja fuerte y libera a El Maestro.",
+  "seasons.d4": "El aeropuerto de Málaga: pasa a los guardias, gira las cintas al hangar 7 y vuela con el oro.",
+  "seasons.new": "Sin empezar",
+  "seasons.playing": "En curso: acto {n}",
+  "seasons.done": "Terminada",
+  "seasons.play": "Jugar",
+  "seasons.continue": "Continuar",
+  "seasons.again": "Jugar otra vez",
+  "seasons.note": "Se puede jugar cualquier temporada: no hacen falta las anteriores. Una temporada jugada otra vez paga monedas y cristales solo la primera vez.",
+  "seasons.started": "{name}: ¡sigue la flecha dorada!",
+  "seasons.replayed": "Jugada otra vez: la recompensa se pagó la primera vez."
 }

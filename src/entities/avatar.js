@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { humanoid, animateWalk, skinColors, box } from './models.js';
 import { ITEMS } from '../player/items.js';
+import { cleared } from '../quest/seasons.js';
 
 export const TONES = ['#ffe0c4', '#f5c9a0', '#e0ac86', '#c68a5e', '#9a6440', '#6e4528', '#f5cd30', '#9fe0ff'];
 export const COLORS = ['#e8443a', '#ff8a2a', '#f5cd30', '#5cc94a', '#1f9e6e', '#38b6e8', '#2f5fd6', '#2b2f5a', '#7a4fd6', '#e85aa8',
@@ -46,10 +47,10 @@ export const ACHIEVEMENTS = [
   { id: 'bosses', test: (p) => (p.bossesBeaten || []).length >= 5 },
   { id: 'heist', test: (p) => !!(p.heist && (p.heist.robbed || p.heist.traded)) },
   { id: 'mayor', test: (p) => !!p.mayorAt },
-  { id: 'fabrica', test: (p) => !!(p.fabrica && p.fabrica.done) },
-  { id: 'fabrica2', test: (p) => !!(p.oro && p.oro.done) },
-  { id: 'fabrica3', test: (p) => !!(p.puerto && p.puerto.done) },
-  { id: 'fabrica4', test: (p) => !!(p.aero && p.aero.done) },
+  { id: 'fabrica', test: (p) => cleared(p, 'fabrica') },
+  { id: 'fabrica2', test: (p) => cleared(p, 'oro') },
+  { id: 'fabrica3', test: (p) => cleared(p, 'puerto') },
+  { id: 'fabrica4', test: (p) => cleared(p, 'aero') },
 ];
 // (the superadmin's test account wears every achievement's items)
 export const hasAch = (p, id) => { if (p.testAll) return true; const a = ACHIEVEMENTS.find((x) => x.id === id); return !!(a && a.test(p)); };

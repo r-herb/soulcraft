@@ -1,5 +1,32 @@
 [
   {
+    "id": "2026-10-05-seasons",
+    "title": {
+      "en": "Pick a La Fábrica season",
+      "lv": "Izvēlies La Fábrica sezonu",
+      "ru": "Выбери сезон Ла Фабрики",
+      "es": "Elige una temporada de La Fábrica"
+    },
+    "items": {
+      "en": [
+        "New on the title screen: La Fábrica: seasons. Pick any of the four seasons and play it, even without the earlier ones.",
+        "Each season shows where it stands: not started, in progress or finished; a finished one can be played again (its coins and crystals only the first time)."
+      ],
+      "lv": [
+        "Jaunums sākuma ekrānā: La Fábrica: sezonas. Izvēlies jebkuru no četrām sezonām un spēlē, arī bez iepriekšējām.",
+        "Katrai sezonai redzams stāvoklis: nav sākta, notiek vai pabeigta; pabeigtu var spēlēt vēlreiz (monētas un kristāli tikai pirmajā reizē)."
+      ],
+      "ru": [
+        "Новое на главном экране: Ла Фабрика: сезоны. Выбери любой из четырёх сезонов и играй, даже без предыдущих.",
+        "У каждого сезона видно состояние: не начат, идёт или пройден; пройденный можно сыграть снова (монеты и кристаллы только в первый раз)."
+      ],
+      "es": [
+        "Novedad en la pantalla de inicio: La Fábrica: temporadas. Elige cualquiera de las cuatro temporadas y juégala, incluso sin las anteriores.",
+        "Cada temporada muestra cómo va: sin empezar, en curso o terminada; una terminada se puede jugar otra vez (monedas y cristales solo la primera vez)."
+      ]
+    }
+  },
+  {
     "id": "2026-10-05-fabrica4",
     "title": {
       "en": "La Fábrica season 4: El Vuelo",

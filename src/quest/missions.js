@@ -223,13 +223,13 @@ export class Missions {
     const n = this.game.net;
     if (!n || !n.isHost) return;
     this.dirty = false; this.syncT = 0;
-    n.send({ t: 'team', to, missions: this.state(), heist: this.game.heist ? this.game.heist.state() : null, fabrica: this.game.fabrica ? this.game.fabrica.state() : null, oro: this.game.oro ? this.game.oro.state() : null, puerto: this.game.puerto ? this.game.puerto.state() : null, aero: this.game.aero ? this.game.aero.state() : null });
+    n.send({ t: 'team', to, missions: this.state(), heist: this.game.heist ? this.game.heist.state() : null, fabrica: this.game.fabrica ? this.game.fabrica.state() : null, oro: this.game.oro ? this.game.oro.state() : null, puerto: this.game.puerto ? this.game.puerto.state() : null, aero: this.game.aero ? this.game.aero.state() : null, fabPick: this.game.profile.fabPick || 0 });
   }
   // messages of the room about the missions
   onNet(msg, from) {
     const g = this.game;
     if (msg.t === 'mev' && this.host) this.event(msg.ev, msg.data || {}, { x: msg.x, z: msg.z });
-    else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist, fabrica: msg.fabrica, oro: msg.oro, puerto: msg.puerto, aero: msg.aero };
+    else if (msg.t === 'team' && this.guest) g.team = { missions: msg.missions, heist: msg.heist, fabrica: msg.fabrica, oro: msg.oro, puerto: msg.puerto, aero: msg.aero, fabPick: msg.fabPick || 0 };
     else if (msg.t === 'hplace' && this.host && g.heist) { if (g.heist.place(msg.key, msg.slot)) this.sendTeam(); }
     else if (msg.t === 'mdone' && this.guest) this.rewardMine(this.byId(msg.id) || { id: msg.id, key: msg.key, heist: !!msg.key && !msg.approach && !msg.fab, approach: !!msg.approach, items: msg.items, reward: msg.reward, steps: [] }, true);
   }

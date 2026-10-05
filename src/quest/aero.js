@@ -16,6 +16,7 @@
 // (profile.aero), as in the other seasons.
 import * as THREE from 'three';
 import { t } from '../i18n/index.js';
+import { seasonOpenFor } from './seasons.js';
 import { humanoid, box } from '../entities/models.js';
 import { account, econ } from '../save/account.js';
 import { bankCoords, bankPoint, bankWidth, aeroLayout } from '../world/city.js';
@@ -105,7 +106,7 @@ export class Aero {
 
   // ---------- state ----------
   get guest() { const n = this.game.net; return !!(n && !n.isHost); }
-  get open() { const u = this.game.puerto && this.game.puerto.state(); return !!(u && u.done); }
+  get open() { return seasonOpenFor(this.game, 4); }
   state() {
     const g = this.game;
     if (this.guest) return (g.team && g.team.aero) || fresh();
@@ -309,11 +310,11 @@ export class Aero {
     let paid = 0;
     if (account.user && account.available && econ.aero) { try { paid = (await econ.aero()).paid || 0; } catch { /* once per account */ } }
     s.act = 7; s.done = true; s.paid = paid;
-    if (!g.creative) g.addCrystals(300);
+    if (!g.creative && !s.cleared) g.addCrystals(300);
     g.inventory.remove('fake_passport', g.inventory.count('fake_passport'));
     if (this.jet) this.jet.takeoff = 0;
     g.save(true);
-    g.ui.open('aeroFinale', { paid });
+    g.ui.open('aeroFinale', { paid, again: !!s.cleared });
   }
 
   // ---------- every frame ----------

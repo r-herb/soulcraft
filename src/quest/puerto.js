@@ -15,6 +15,7 @@
 // rest (profile.puerto), as in the other seasons.
 import * as THREE from 'three';
 import { t } from '../i18n/index.js';
+import { seasonOpenFor } from './seasons.js';
 import { humanoid, box } from '../entities/models.js';
 import { account, econ } from '../save/account.js';
 import { bankCoords, bankPoint, bankWidth, puertoLayout } from '../world/city.js';
@@ -52,7 +53,7 @@ export class Puerto {
 
   // ---------- state ----------
   get guest() { const n = this.game.net; return !!(n && !n.isHost); }
-  get open() { const o = this.game.oro && this.game.oro.state(); return !!(o && o.done); }
+  get open() { return seasonOpenFor(this.game, 3); }
   state() {
     const g = this.game;
     if (this.guest) return (g.team && g.team.puerto) || fresh();
@@ -270,9 +271,9 @@ export class Puerto {
     let paid = 0;
     if (account.user && account.available && econ.puerto) { try { paid = (await econ.puerto()).paid || 0; } catch { /* once per account */ } }
     s.act = 8; s.done = true; s.paid = paid;
-    if (!g.creative) g.addCrystals(250);
+    if (!g.creative && !s.cleared) g.addCrystals(250);
     g.save(true);
-    g.ui.open('puertoFinale', { paid });
+    g.ui.open('puertoFinale', { paid, again: !!s.cleared });
   }
 
   // ---------- every frame ----------

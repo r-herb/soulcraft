@@ -77,7 +77,7 @@ export function fabFinale(args, ui) {
       <h2 class="panel-title" data-i18n="fab.end.title"></h2>
       <p>${esc(t('fab.end.text', { alias: s.alias ? t('fab.alias.' + s.alias) : t('heist.you') }))}</p>
       <p class="mayor-paid">${esc(t('fab.end.bags', { n: args.bags || 0, total: TARGET }))}</p>
-      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('fab.end.guest'))}</p>`}
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t(args.again ? 'seasons.replayed' : 'fab.end.guest'))}</p>`}
       <p class="faint small">${esc(t('fab.end.items'))}</p>
       <p class="faint small">${esc(t('fab.end.next'))}</p>
       <button class="btn primary" data-act="close" data-i18n="heist.mayorOk"></button>
@@ -188,7 +188,7 @@ export function oroFinale(args, ui) {
       <h2 class="panel-title" data-i18n="oro.end.title"></h2>
       <p>${esc(t('oro.end.text', { alias: f.alias ? t('fab.alias.' + f.alias) : t('heist.you') }))}</p>
       <p class="mayor-paid">${esc(t('oro.end.sacks', { n: args.sacks || 0, total: ORO_TARGET }))}</p>
-      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('oro.end.guest'))}</p>`}
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t(args.again ? 'seasons.replayed' : 'oro.end.guest'))}</p>`}
       <p class="faint small">${esc(t('oro.end.items'))}</p>
       <p class="faint small">${esc(t('oro.end.next'))}</p>
       <button class="btn primary" data-act="close" data-i18n="oro.end.ok"></button>
@@ -287,7 +287,7 @@ export function puertoFinale(args, ui) {
       <div class="mayor-crown" aria-hidden="true">&#9875;</div>
       <h2 class="panel-title" data-i18n="puerto.end.title"></h2>
       <p>${esc(t('puerto.end.text', { alias: f.alias ? t('fab.alias.' + f.alias) : t('heist.you') }))}</p>
-      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('puerto.end.guest'))}</p>`}
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t(args.again ? 'seasons.replayed' : 'puerto.end.guest'))}</p>`}
       <p class="faint small">${esc(t('puerto.end.items'))}</p>
       <p class="faint small">${esc(t('puerto.end.next'))}</p>
       <button class="btn primary" data-act="close" data-i18n="puerto.end.ok"></button>
@@ -392,7 +392,7 @@ export function aeroFinale(args, ui) {
       <div class="mayor-crown" aria-hidden="true">&#9992;</div>
       <h2 class="panel-title" data-i18n="aero.end.title"></h2>
       <p>${esc(t('aero.end.text', { alias: f.alias ? t('fab.alias.' + f.alias) : t('heist.you') }))}</p>
-      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t('aero.end.guest'))}</p>`}
+      ${args.paid ? `<p class="mayor-paid">${esc(t('fab.end.paid', { n: Number(args.paid).toLocaleString() }))}</p>` : `<p class="faint small">${esc(t(args.again ? 'seasons.replayed' : 'aero.end.guest'))}</p>`}
       <p class="faint small">${esc(t('aero.end.items'))}</p>
       <p class="faint small">${esc(t('aero.end.next'))}</p>
       <button class="btn primary" data-act="close" data-i18n="aero.end.ok"></button>

@@ -2092,5 +2092,22 @@
   "block.ceiling_lamp": "Ceiling light",
   "block.ceiling_lamp_paving": "Ceiling light",
   "block.ceiling_lamp_tiles": "Ceiling light",
-  "block.ceiling_lamp_lime": "Ceiling light"
+  "block.ceiling_lamp_lime": "Ceiling light",
+  "title.seasons": "La Fábrica: seasons",
+  "seasons.title": "La Fábrica: pick a season",
+  "seasons.where": "Plays in your Malaga world: {name}",
+  "seasons.newWorld": "A new Malaga world will be made for it.",
+  "seasons.d1": "The old tobacco factory: El Maestro's class, then print money under siege and escape through the tunnel.",
+  "seasons.d2": "La Térmica: rescue Siroco, melt the gold under siege and get out through the pipe to the sea.",
+  "seasons.d3": "The port warehouse: past the cameras and the lasers, open the safe and free El Maestro.",
+  "seasons.d4": "Málaga airport: past the guards, turn the belts to Hangar 7 and fly away with the gold.",
+  "seasons.new": "Not started",
+  "seasons.playing": "In progress: act {n}",
+  "seasons.done": "Finished",
+  "seasons.play": "Play",
+  "seasons.continue": "Continue",
+  "seasons.again": "Play again",
+  "seasons.note": "Any season can be played: the ones before it are not needed. A season played again pays its coins and crystals only the first time.",
+  "seasons.started": "{name}: follow the gold arrow!",
+  "seasons.replayed": "Played again: the reward was paid the first time."
 }

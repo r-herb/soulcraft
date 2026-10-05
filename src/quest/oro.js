@@ -16,6 +16,7 @@
 // ('oro' messages, the missions' events, the state sent with the team's).
 import * as THREE from 'three';
 import { t } from '../i18n/index.js';
+import { seasonOpenFor } from './seasons.js';
 import { humanoid, box } from '../entities/models.js';
 import { account, econ } from '../save/account.js';
 import { bankCoords, bankPoint, bankWidth, oroLayout } from '../world/city.js';
@@ -60,7 +61,7 @@ export class Oro {
   // ---------- state ----------
   get guest() { const n = this.game.net; return !!(n && !n.isHost); }
   // the season opens once season 1 is done
-  get open() { const g = this.game, f = g.fabrica && g.fabrica.state(); return !!(f && f.done); }
+  get open() { return seasonOpenFor(this.game, 2); }
   state() {
     const g = this.game;
     if (this.guest) return (g.team && g.team.oro) || fresh();
@@ -349,9 +350,9 @@ export class Oro {
     if (sacks && account.user && account.available && econ.oro) { try { paid = (await econ.oro(sacks)).paid || 0; } catch { /* once per account */ } }
     if (sacks) g.inventory.remove('gold_sack', sacks);
     s.act = 9; s.done = true; s.sacks = sacks; s.paid = paid;
-    if (!g.creative) g.addCrystals(200 + 15 * sacks);
+    if (!g.creative && !s.cleared) g.addCrystals(200 + 15 * sacks);
     g.save(true);
-    g.ui.open('oroFinale', { sacks, paid });
+    g.ui.open('oroFinale', { sacks, paid, again: !!s.cleared });
   }
 
   // ---------- every frame ----------

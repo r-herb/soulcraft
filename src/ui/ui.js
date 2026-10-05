@@ -17,6 +17,7 @@ import { heistMap, mayor } from './heistui.js';
 import { wardrobe, emotes } from './wardrobe.js';
 import { testPanel, isTester } from './testpanel.js';
 import { fabLesson, fabPhone, fabFinale, oroLesson, oroRescue, oroPhone, oroFinale, puertoLesson, puertoSafe, puertoFinale, aeroLesson, aeroRoute, aeroFinale } from './fabricaui.js';
+import { SEASONS, seasonStatus } from '../quest/seasons.js';
 import { currentEvent } from '../quest/daily.js';
 import { forgotPassword, resetPassword, sendFeedback } from '../save/account.js';
 import { account, signIn, signOut, updateProfile, changePassword, resizeAvatar, friends as friendsApi, toAdminPanel } from '../save/account.js';
@@ -186,6 +187,7 @@ export class UI {
           </button>
           <div class="row"><button class="btn violet" style="flex:1" data-act="new" data-i18n="title.new"></button><button class="btn violet" style="flex:1" data-act="worlds" data-i18n="title.worlds"></button></div>
           <div class="row"><button class="btn gold" style="flex:1" data-act="quest" data-i18n="title.quest"></button><button class="btn city-btn" style="flex:1" data-act="city" data-i18n="title.city"></button></div>
+          <button class="btn fab-btn" data-act="seasons" data-i18n="title.seasons"></button>
           ${account.available ? '<button class="btn together-btn" data-act="together" data-i18n="together.btn"></button>' : ''}
           <div class="row"><button class="btn" style="flex:1" data-act="skins" data-i18n="title.skins"></button><button class="btn" style="flex:1" data-act="settings" data-i18n="title.settings"></button></div>
         </div>
@@ -221,6 +223,7 @@ export class UI {
     node.querySelector('[data-act="skins"]').addEventListener('click', () => { this.click(); this.open('shop'); });
     node.querySelector('[data-act="quest"]').addEventListener('click', () => { this.click(); this.open('questIntro'); });
     node.querySelector('[data-act="city"]').addEventListener('click', () => { this.click(); this.open('cityIntro', { city: 'malaga' }); });
+    node.querySelector('[data-act="seasons"]').addEventListener('click', () => { this.click(); this.open('seasons'); });
     const tg = node.querySelector('[data-act="together"]');
     if (tg) tg.addEventListener('click', () => { this.click(); this.open('together'); });
     const si = node.querySelector('[data-act="signin"]');
@@ -693,6 +696,40 @@ export class UI {
       this.click();
       this.app.newCity({ city: id, name: t('city.' + id + '.name'), creative: mode === 'creative', difficulty: 'normal' });
     });
+    return node;
+  }
+
+  // ---------- La Fábrica: pick a season ----------
+  // The four seasons, where each one stands, and a button to play it: in the
+  // latest Malaga world, or a new one (its mode chosen here).
+  screen_seasons() {
+    const p = this.app.profile || {}, world = this.app.worlds.find((w) => w.city === 'malaga');
+    let mode = 'survival';
+    const node = el(`<div class="screen solid" data-screen="seasons">
+      <div class="panel seasons-panel" style="width:min(640px,100%)">
+        <div class="panel-head"><h2 class="panel-title" data-i18n="seasons.title"></h2>
+          <button class="btn icon-btn ghost close-x" data-act="back" data-i18n-aria="common.back">${SVG.close}</button></div>
+        <div class="panel-body col" style="gap:var(--sp-3)">
+          <p class="faint" style="margin:0">${esc(world ? t('seasons.where', { name: world.name }) : t('seasons.newWorld'))}</p>
+          ${world ? '' : `<div class="seg" data-seg="mode"><button data-v="creative" data-i18n="mode.creative"></button><button data-v="survival" class="on" data-i18n="mode.survival"></button></div>`}
+          <div class="season-list">${SEASONS.map((s) => {
+            const st = seasonStatus(p, s.n), act = st === 'playing' ? p[s.key].act : 0;
+            return `<div class="season-card ${st}" data-season="${s.n}">
+              <div class="sc-n">${s.n}</div>
+              <div class="sc-body"><h3>${esc(t(s.title))}</h3><p class="small">${esc(t('seasons.d' + s.n))}</p>
+                <span class="sc-status small">${esc(st === 'done' ? t('seasons.done') : st === 'playing' ? t('seasons.playing', { n: act }) : t('seasons.new'))}</span></div>
+              <button class="btn ${st === 'playing' ? 'primary' : ''}" data-play="${s.n}">${esc(t(st === 'done' ? 'seasons.again' : st === 'playing' ? 'seasons.continue' : 'seasons.play'))}</button>
+            </div>`;
+          }).join('')}</div>
+          <p class="faint small" style="margin:0" data-i18n="seasons.note"></p>
+        </div>
+      </div></div>`);
+    node.querySelectorAll('[data-seg="mode"] button').forEach((b) => b.addEventListener('click', () => {
+      this.click(); mode = b.dataset.v;
+      node.querySelectorAll('[data-seg="mode"] button').forEach((x) => x.classList.toggle('on', x === b));
+    }));
+    node.querySelector('[data-act="back"]').addEventListener('click', () => { this.click(); this.back(); });
+    node.querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', () => { this.click(); this.app.playSeason(+b.dataset.play, { world, creative: mode === 'creative' }); }));
     return node;
   }
 
